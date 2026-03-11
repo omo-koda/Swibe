@@ -209,12 +209,29 @@ class Lexer {
     // %% ... (prompt marker)
     this.advance(); // skip %
     this.advance(); // skip %
-    const chars = [];
-    while (this.current() && this.current() !== '\n') {
-      chars.push(this.current());
-      this.advance();
+    
+    const start = this.pos;
+    let endOfLine = this.pos;
+    while (this.source[endOfLine] && this.source[endOfLine] !== '\n') {
+      endOfLine++;
     }
-    return chars.join('').trim();
+    
+    const lineContent = this.source.substring(this.pos, endOfLine);
+    const nextPromptIdx = lineContent.indexOf('%%');
+    
+    if (nextPromptIdx !== -1) {
+      // Prompt ends at the next %%
+      const content = lineContent.substring(0, nextPromptIdx).trim();
+      this.pos += nextPromptIdx + 2;
+      this.column += nextPromptIdx + 2;
+      return content;
+    } else {
+      // Prompt takes the rest of the line
+      const content = lineContent.trim();
+      this.pos = endOfLine;
+      this.column += lineContent.length;
+      return content;
+    }
   }
 
   readVoicePrompt() {

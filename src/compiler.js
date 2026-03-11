@@ -33,8 +33,8 @@ class Compiler {
     return code;
   }
 
-  async processPrompts(node) {
-    if (!node) return;
+  async processPrompts(node, depth = 0) {
+    if (!node || depth > 5) return;
 
     if (node.type === 'Prompt') {
       // Generate code from prompt
@@ -47,21 +47,18 @@ class Compiler {
       const parser = new Parser(tokens);
       const generatedAst = parser.parse();
       
-      // Inject trace point for LLM result
-      // console.log(`[TRACE] [PROMPT] Result for: ${node.text.substring(0, 30)}...`);
-      
       // If it's a single expression/statement, we might want to just take that
       if (generatedAst.type === 'Program' && generatedAst.statements.length === 1) {
         const statement = generatedAst.statements[0];
-        // console.log(`Merging statement of type ${statement.type} into node`);
-        // Clear current node props and assign statement props
         for (const key in node) delete node[key];
         Object.assign(node, statement);
-        // console.log(`Node type after merge: ${node.type}`);
       } else {
         for (const key in node) delete node[key];
         Object.assign(node, generatedAst);
       }
+      
+      // Recurse on the newly generated node to handle prompts in the generated code
+      await this.processPrompts(node, depth + 1);
       return;
     }
 
@@ -86,6 +83,9 @@ class Compiler {
           for (const key in node) delete node[key];
           Object.assign(node, generatedAst);
         }
+        
+        // Recurse on the newly generated node
+        await this.processPrompts(node, depth + 1);
       }
       return;
     }
@@ -95,10 +95,10 @@ class Compiler {
       if (key === 'type') continue;
       if (Array.isArray(node[key])) {
         for (const item of node[key]) {
-          await this.processPrompts(item);
+          await this.processPrompts(item, depth);
         }
       } else if (typeof node[key] === 'object' && node[key] !== null) {
-        await this.processPrompts(node[key]);
+        await this.processPrompts(node[key], depth);
       }
     }
   }
@@ -153,7 +153,10 @@ class Compiler {
 
     switch (node.type) {
       case 'Program':
-        return node.statements.map(s => this.genJavaScript(s)).join('\n\n');
+        return node.statements.map(s => {
+          const code = this.genJavaScript(s);
+          return code.endsWith(';') || code.endsWith('}') ? code : code + ';';
+        }).join('\n\n');
 
       case 'FunctionDecl':
         return this.genJSFunction(node);
@@ -170,9 +173,16 @@ class Compiler {
       case 'Return':
         return `return ${this.genJavaScript(node.value)};`;
 
+      case 'Break':
+        return 'break;';
+
       case 'Block':
         return (
-          '{\n' + node.statements.map(s => '  ' + this.genJavaScript(s)).join('\n') + '\n}'
+          '{\n' + node.statements.map(s => {
+            const code = this.genJavaScript(s);
+            const term = code.endsWith(';') || code.endsWith('}') ? '' : ';';
+            return '  ' + code + term;
+          }).join('\n') + '\n}'
         );
 
       case 'If':
@@ -203,10 +213,10 @@ class Compiler {
         return this.genJSAgent(node);
 
       case 'FunctionCall':
-        return `${node.name}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
+        return `(await ${node.name}(${node.args.map(a => this.genJavaScript(a)).join(', ')}))`;
 
       case 'MethodCall':
-        return `${this.genJavaScript(node.object)}.${node.method}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
+        return `(await ${this.genJavaScript(node.object)}.${node.method}(${node.args.map(a => this.genJavaScript(a)).join(', ')}))`;
 
       case 'FieldAccess':
         return `${this.genJavaScript(node.object)}.${node.field}`;
@@ -227,7 +237,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -312,7 +322,7 @@ class Compiler {
   }
 
   genJSLoopUntil(node) {
-    return `while (true) {\n  trace("Loop iteration started", { goal: ${this.genJavaScript(node.goal)} });\n  const __goal = ${this.genJavaScript(node.goal)};\n  if (await checkGoal(__goal)) break;\n  ${this.indentCode(this.genJavaScript(node.body), 2)}\n}`;
+    return `while (true) {\n  (await trace("Loop iteration started", { goal: ${this.genJavaScript(node.goal)} }));\n  const __goal = ${this.genJavaScript(node.goal)};\n  if (await checkGoal(__goal)) break;\n  ${this.indentCode(this.genJavaScript(node.body), 2)}\n}`;
   }
 
   genJSCallTool(node) {
@@ -402,7 +412,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return node.value ? 'True' : 'False';
@@ -495,7 +505,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -541,7 +551,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -591,7 +601,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -813,7 +823,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -893,7 +903,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return node.value ? 't' : 'nil';
@@ -943,7 +953,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -992,7 +1002,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -1113,7 +1123,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -1159,7 +1169,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -1207,7 +1217,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -1253,7 +1263,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);
@@ -1301,7 +1311,7 @@ class Compiler {
         return String(node.value);
 
       case 'String':
-        return `"${node.value}"`;
+        return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
       case 'Boolean':
         return String(node.value);

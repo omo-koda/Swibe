@@ -8,6 +8,7 @@ import { Agent, LLMIntegration } from './llm-integration.js';
 
 class StandardLibrary {
   constructor() {
+    this.goalAttempts = new Map();
     this.builtins = {
       // Array operations
       'len': this.len,
@@ -43,7 +44,25 @@ class StandardLibrary {
       'trace': this.trace,
       'type': this.type,
       'exit': this.exit,
+      'create_agent': this.create_agent,
     };
+  }
+
+  // ... (rest of methods)
+
+  create_agent(config) {
+    return new Agent(config);
+  }
+
+  async checkGoal(goal) {
+    console.log(`[GOAL] Checking: ${goal}`);
+    const attempts = this.goalAttempts.get(goal) || 0;
+    this.goalAttempts.set(goal, attempts + 1);
+    
+    // Force at least one failure to show the loop body
+    if (attempts < 1) return false;
+    
+    return true; // Succeed after 1 attempt
   }
 
   // Array operations
@@ -96,11 +115,6 @@ class StandardLibrary {
     const timestamp = new Date().toISOString();
     console.log(`[TRACE] [${timestamp}] ${message}`, data ? JSON.stringify(data) : '');
   }
-
-  async checkGoal(goal) {
-    console.log(`[GOAL] Checking: ${goal}`);
-    return Math.random() > 0.8;
-  }
 }
 
 const sandbox = {
@@ -126,6 +140,15 @@ const sandbox = {
 const mcp = {
   async call_tool(name, args) {
     console.log(`[MCP] Calling tool: ${name}`, JSON.stringify(args));
+    
+    if (name === "coinbase_api") {
+      return JSON.stringify({ data: { amount: "67890.12", currency: "USD" } });
+    }
+    
+    if (name === "sui_rpc") {
+      return `0x${Math.random().toString(16).substring(2, 66)}`; // Mock tx digest
+    }
+
     return `Result from ${name}`;
   }
 };

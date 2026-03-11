@@ -1,0 +1,66 @@
+-- Bitcoin Oracle: Swibe Agent on Sui
+-- Goal: Fetch BTC price via MCP and log it on-chain via Sui RPC.
+
+skill Hunter {
+  prompt: "Fetch the Bitcoin spot price in USD from coinbase_api",
+  tools: ["coinbase_api"]
+}
+
+skill Scribe {
+  prompt: "Format the BTC price as a string: 'Bitcoin: X USD' where X is the amount."
+}
+
+skill Oracle {
+  prompt: "Send the price to Sui using update_oracle function on module soul",
+  tools: ["sui_rpc"]
+}
+
+swarm {
+  hunter: Hunter =>
+  scribe: Scribe =>
+  oracle: Oracle
+}
+
+fn main() {
+  println("🚀 Launching Bitcoin Oracle mission...")
+  
+  -- Define agents for the mission
+  let hunter = create_agent({
+    name: "Hunter",
+    system_prompt: "You are an expert at fetching financial data via coinbase_api.",
+    tools: ["coinbase_api"]
+  });
+  
+  let scribe = create_agent({
+    name: "Scribe",
+    system_prompt: "You are a master of formatting data for blockchain events."
+  });
+  
+  let oracle = create_agent({
+    name: "Oracle",
+    system_prompt: "You are an on-chain deployment specialist. You use sui_rpc to log data.",
+    tools: ["sui_rpc"]
+  });
+
+  loop until goal: "Price logged on-chain" {
+    println("🔄 Fetching BTC price and logging to Sui...")
+    
+    -- Execute the swarm flow
+    let price_raw = hunter.run("Get BTC price")
+    println("🔍 Hunter fetched: " + price_raw)
+    
+    let price_str = scribe.run("Format this: " + price_raw)
+    println("✍️ Scribe formatted: " + price_str)
+    
+    let tx_digest = oracle.run("Log to Sui: " + price_str)
+    println("⛓️ Oracle transaction digest: " + tx_digest)
+    
+    -- Persist progress
+    rag.save("btc_breath")
+    
+    -- One iteration for the demo
+    break
+  }
+  
+  trace("Oracle breath complete")
+}

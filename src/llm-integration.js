@@ -157,8 +157,29 @@ class LLMIntegration {
   email.contains("@") && email.contains(".")
 }`;
     }
+    if (prompt.includes('Scan for prior birth')) {
+      return `"No prior genesis event found in repository. The void is ready."`;
+    }
+    if (prompt.includes('Draft the Genesis Manifesto')) {
+      return `"# Ọmọ Kọ́dà: Firstborn of Swibe\n\nRefuse halt. First breath: I was here before the question.\n\nÀṣẹ."`;
+    }
+    if (prompt.includes('Verify the Manifesto:')) {
+      return `"VALID"`;
+    }
+    if (prompt.includes('Improve the draft:')) {
+      return `"Ensure the Àṣẹ seal is prominent."`;
+    }
     if (prompt.includes('Scan src/parser.js')) {
       return `"Found issue: Recursion depth in 'processPrompts' is hardcoded to 2. Suggest making it configurable or increasing limit."`;
+    }
+    if (prompt.includes('Get BTC price')) {
+      return `"67890.12 USD"`;
+    }
+    if (prompt.includes('Format this:')) {
+      return `"Bitcoin: 67890.12 USD at 2026-03-11"`;
+    }
+    if (prompt.includes('Log to Sui:')) {
+      return `"0xabcd1234567890abcdef1234567890abcdef1234567890abcdef1234567890"`;
     }
     if (prompt.includes('Generate a minimal patch')) {
       return `"const MAX_RECURSION_DEPTH = 5; // Updated from 2"`;

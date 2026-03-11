@@ -127,6 +127,13 @@ class Parser {
       return new ASTNode('Return', { value });
     }
 
+    // Break statement
+    if (token.type === TokenType.BREAK) {
+      this.advance();
+      this.match(TokenType.SEMICOLON);
+      return new ASTNode('Break', {});
+    }
+
     // Variable declaration
     if (token.type === TokenType.LET || token.type === TokenType.CONST) {
       return this.parseVariableDecl();
@@ -726,6 +733,10 @@ class Parser {
         this.expect(TokenType.RBRACE);
         return new ASTNode('StructLiteral', { name, fields });
       }
+    }
+
+    if (token.type === TokenType.CALL_TOOL) {
+      return this.parseCallToolStatement();
     }
 
     throw new Error(`Unexpected token: ${token.type} at ${token.line}:${token.column}`);
