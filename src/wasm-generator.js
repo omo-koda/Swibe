@@ -108,7 +108,7 @@ function callWasm(funcName, ...args) {
   return func(...args);
 }
 
-module.exports = { initWasm, loadWasm, callWasm };
+export { { initWasm, loadWasm, callWasm } };
 `;
   }
 
@@ -147,4 +147,4 @@ module.exports = { initWasm, loadWasm, callWasm };
   }
 }
 
-module.exports = WasmGenerator;
+export { WasmGenerator };

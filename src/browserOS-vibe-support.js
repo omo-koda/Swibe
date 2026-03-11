@@ -443,4 +443,4 @@ jobs:
   }
 }
 
-module.exports = BrowserOSVibeSupport;
+export { BrowserOSVibeSupport };

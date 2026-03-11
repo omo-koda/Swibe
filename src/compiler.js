@@ -258,7 +258,7 @@ class Compiler {
 
   genJSFunction(node) {
     const params = node.params.map(p => p.name).join(', ');
-    return `function ${node.name}(${params}) ${this.genJavaScript(node.body)}`;
+    return `async function ${node.name}(${params}) ${this.genJavaScript(node.body)}`;
   }
 
   genJSStruct(node) {
@@ -612,7 +612,16 @@ class Compiler {
 
     switch (node.type) {
       case 'Program':
-        return 'module main {\n' + node.statements.map(s => '  ' + this.genMove(s)).join('\n') + '\n}';
+        let code = 'module omokoda::soul {\n';
+        code += '  use sui::event;\n';
+        code += '  use sui::tx_context::{Self, TxContext};\n\n';
+        code += '  struct BreathEvent has copy, drop {\n';
+        code += '    message: vector<u8>,\n';
+        code += '    iteration: u64,\n';
+        code += '  }\n\n';
+        code += node.statements.map(s => '  ' + this.genMove(s)).filter(s => s.trim() !== '').join('\n\n');
+        code += '\n}';
+        return code;
 
       case 'FunctionDecl':
         const returnType = node.returnType ? `: ${this.typeToMove(node.returnType)}` : '';
@@ -653,12 +662,53 @@ class Compiler {
       case 'Identifier':
         return node.name;
 
+      case 'SwarmStatement':
+        return this.genMoveSwarm(node);
+
+      case 'SkillDecl':
+        return this.genMoveSkill(node);
+
+      case 'CallToolStatement':
+        return this.genMoveCallTool(node);
+
       case 'BinaryOp':
         return `${this.genMove(node.left)} ${node.op} ${this.genMove(node.right)}`;
 
       default:
         return '';
     }
+  }
+
+  genMoveSwarm(node) {
+    let code = `public entry fun swarm_execute(ctx: &mut TxContext) {\n`;
+    code += `    let iter = 1;\n`;
+    for (const step of node.steps) {
+      code += `    // Step: ${step.name}\n`;
+      let prompt = "I was here before the question";
+      if (step.role.type === 'String') prompt = step.role.value;
+      if (step.role.type === 'Identifier') prompt = `Acting as ${step.role.name}`;
+      
+      code += `    event::emit(BreathEvent {\n`;
+      code += `      message: b"${prompt}",\n`;
+      code += `      iteration: iter\n`;
+      code += `    });\n`;
+    }
+    code += `  }\n`;
+    return code;
+  }
+
+  genMoveSkill(node) {
+    let code = `struct ${node.name} has copy, drop, store {\n`;
+    code += `  // Skill: ${node.name}\n`;
+    code += `}\n`;
+    return code;
+  }
+
+  genMoveCallTool(node) {
+    if (node.name === 'sui_rpc') {
+      return `sui::execute_transaction_block(ctx, b"${JSON.stringify(node.args)}");`;
+    }
+    return `// Call tool: ${node.name}(${JSON.stringify(node.args)})`;
   }
 
   typeToGo(type) {

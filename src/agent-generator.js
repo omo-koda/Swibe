@@ -176,4 +176,4 @@ module.exports = { agents, createAgent };
   }
 }
 
-module.exports = AgentGenerator;
+export { AgentGenerator };

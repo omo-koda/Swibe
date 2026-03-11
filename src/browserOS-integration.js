@@ -449,8 +449,8 @@ self.addEventListener('message', event => {
    */
   generateElectronMain() {
     return `
-const { app, BrowserWindow, Menu } = require('electron');
-const path = require('path');
+import { app, BrowserWindow, Menu } from "electron";
+import path from "node:path";
 
 let mainWindow;
 
@@ -587,4 +587,4 @@ Menu.setApplicationMenu(menu);
   }
 }
 
-module.exports = BrowserOSIntegration;
+export { BrowserOSIntegration };

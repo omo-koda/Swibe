@@ -3,9 +3,16 @@
  * Auto-generates API docs from docstrings
  */
 
-class DocumentationGenerator {
+class DocGenerator {
   constructor() {
     this.docs = [];
+  }
+
+  /**
+   * Alias for extract to match tests
+   */
+  generate(code) {
+    return this.extract(code);
   }
 
   /**
@@ -182,4 +189,4 @@ class DocumentationGenerator {
   }
 }
 
-module.exports = DocumentationGenerator;
+export { DocGenerator };

@@ -35,12 +35,59 @@ async function main() {
         target = args[args.indexOf('--target') + 1];
       }
 
-      const fs = await import('fs');
+      const fs = await import('node:fs');
       const source = fs.readFileSync(file, 'utf-8');
 
       const compiler = new Compiler(source, target);
       const code = await compiler.compile();
       console.log(code);
+      break;
+    }
+
+    case 'run': {
+      if (args.length < 2) {
+        console.error('Usage: vibe run <file>');
+        process.exit(1);
+      }
+
+      const file = args[1];
+      const fs = await import('node:fs');
+      const source = fs.readFileSync(file, 'utf-8');
+
+      const compiler = new Compiler(source, 'javascript');
+      const code = await compiler.compile();
+
+      const { StandardLibrary, SwarmPipeline, sandbox, mcp } = await import('./stdlib.js');
+      const { RAGIntegration, Agent } = await import('./llm-integration.js');
+      const std = new StandardLibrary();
+      const rag = new RAGIntegration();
+
+      const vm = await import('node:vm');
+      const context = vm.createContext({
+        ...std.builtins,
+        SwarmPipeline,
+        Agent,
+        RAGIntegration,
+        sandbox,
+        mcp,
+        rag,
+        checkGoal: std.checkGoal.bind(std),
+        console,
+        setTimeout,
+        clearTimeout,
+        process
+      });
+
+      try {
+        const wrappedCode = `(async () => { 
+          ${code} 
+          if (typeof main === "function") await main(); 
+        })()`;
+        await vm.runInContext(wrappedCode, context);
+      } catch (err) {
+        console.error(`Runtime Error: ${err.message}`);
+        process.exit(1);
+      }
       break;
     }
 

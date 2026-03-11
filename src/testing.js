@@ -284,18 +284,27 @@ class TestMacroParser {
   }
 }
 
-module.exports = {
+const assert = Assertions.assert;
+const assertEquals = Assertions.assertEquals;
+const assertTrue = Assertions.assertTrue;
+const assertFalse = Assertions.assertFalse;
+const assertThrows = Assertions.assertThrows;
+const assertArrayEquals = Assertions.assertArrayEquals;
+const assertObjectEquals = Assertions.assertObjectEquals;
+const assertCloseTo = Assertions.assertCloseTo;
+const assertStringContains = Assertions.assertStringContains;
+
+export {
   TestRunner,
   Assertions,
   TestMacroParser,
-  // Convenient exports for tests
-  assert: Assertions.assert,
-  assertEquals: Assertions.assertEquals,
-  assertTrue: Assertions.assertTrue,
-  assertFalse: Assertions.assertFalse,
-  assertThrows: Assertions.assertThrows,
-  assertArrayEquals: Assertions.assertArrayEquals,
-  assertObjectEquals: Assertions.assertObjectEquals,
-  assertCloseTo: Assertions.assertCloseTo,
-  assertStringContains: Assertions.assertStringContains
+  assert,
+  assertEquals,
+  assertTrue,
+  assertFalse,
+  assertThrows,
+  assertArrayEquals,
+  assertObjectEquals,
+  assertCloseTo,
+  assertStringContains
 };

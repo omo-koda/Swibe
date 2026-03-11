@@ -265,4 +265,4 @@ spec:
   }
 }
 
-module.exports = MicroservicesGenerator;
+export { MicroservicesGenerator };

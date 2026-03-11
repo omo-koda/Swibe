@@ -132,6 +132,15 @@ class Parser {
       return this.parseVariableDecl();
     }
 
+    // Top-level assignment (implicit let)
+    if (token.type === TokenType.IDENTIFIER && this.peek().type === TokenType.ASSIGN) {
+      const name = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.ASSIGN);
+      const value = this.parseExpression();
+      this.match(TokenType.SEMICOLON);
+      return new ASTNode('VariableDecl', { name, value, isMut: true });
+    }
+
     // Expression statement
     const expr = this.parseExpression();
     this.match(TokenType.SEMICOLON);

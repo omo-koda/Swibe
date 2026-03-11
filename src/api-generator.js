@@ -247,4 +247,4 @@ async def ${endpoint.name}(${paramList}):
   }
 }
 
-module.exports = APIGenerator;
+export { APIGenerator };

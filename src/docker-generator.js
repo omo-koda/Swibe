@@ -218,4 +218,4 @@ WantedBy=multi-user.target
   }
 }
 
-module.exports = DockerGenerator;
+export { DockerGenerator };

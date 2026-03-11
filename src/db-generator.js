@@ -3,7 +3,7 @@
  * Generates SQL and ORM models from #[table] macros
  */
 
-class DatabaseGenerator {
+class DBGenerator {
   constructor() {
     this.tables = [];
   }
@@ -116,7 +116,7 @@ class DatabaseGenerator {
       }).join(',\n');
 
       code += schema + fields + '\n});\n\n';
-      code += `module.exports = mongoose.model('${table.name}', ${table.name}Schema);\n\n`;
+      code += `export const ${table.name} = mongoose.model('${table.name}', ${table.name}Schema);\n\n`;
     }
 
     return code;
@@ -214,4 +214,4 @@ Base = declarative_base()
   }
 }
 
-module.exports = DatabaseGenerator;
+export { DBGenerator };

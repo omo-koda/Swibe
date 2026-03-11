@@ -173,4 +173,4 @@ class Formatter {
   }
 }
 
-module.exports = Formatter;
+export { Formatter };

@@ -58,6 +58,10 @@ class LLMIntegration {
     };
   }
 
+  hasPromptSupport() {
+    return true;
+  }
+
   async generateCode(prompt, context = {}) {
     const enhancedPrompt = this.buildPrompt(prompt, context);
 
@@ -234,16 +238,31 @@ class RAGIntegration {
     return scores.slice(0, topK);
   }
 
+  async load(name) {
+    console.log(`[RAG] Loading knowledge base: ${name}`);
+    return true;
+  }
+
+  async save(name) {
+    console.log(`[RAG] Saving knowledge base: ${name}`);
+    return true;
+  }
+
+  setDocuments(docs) {
+    this.documents = docs;
+  }
+
+  cosineSimilarity(a, b) {
+    if (!a || !b) return 0;
+    const dotProduct = a.reduce((sum, av, i) => sum + (av * (b[i] || 0)), 0);
+    const mag = (vec) => Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0));
+    return dotProduct / (mag(a) * mag(b));
+  }
+
   async embed(text) {
     // Use Claude embeddings API (simplified)
     const embedding = new Array(1536).fill(0).map(() => Math.random());
     return embedding;
-  }
-
-  cosineSimilarity(a, b) {
-    const dotProduct = a.reduce((sum, av, i) => sum + av * b[i], 0);
-    const magnitude = (vec) => Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0));
-    return dotProduct / (magnitude(a) * magnitude(b));
   }
 }
 

@@ -113,4 +113,4 @@ class Profiler {
   }
 }
 
-module.exports = Profiler;
+export { Profiler };

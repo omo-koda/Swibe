@@ -195,4 +195,4 @@ class IRGenerator {
   }
 }
 
-module.exports = IRGenerator;
+export { IRGenerator };

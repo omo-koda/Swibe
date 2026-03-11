@@ -3,7 +3,7 @@
  * Bidirectional type inference with constraint solving
  */
 
-class TypeInferenceEngine {
+class TypeInference {
   constructor() {
     this.primitives = {
       'i32': { kind: 'primitive', bits: 32 },
@@ -198,4 +198,4 @@ class TypeInferenceEngine {
   }
 }
 
-module.exports = TypeInferenceEngine;
+export { TypeInference };
