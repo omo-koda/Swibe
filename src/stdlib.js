@@ -448,6 +448,42 @@ class StandardLibrary {
   all(arr, predicate = x => x) {
     return arr.every(predicate);
   }
+
+  // Agentic Primitives
+  trace(message, data = null) {
+    const timestamp = new Date().toISOString();
+    console.log(`[TRACE] [${timestamp}] ${message}`, data ? JSON.stringify(data) : '');
+  }
 }
 
-module.exports = StandardLibrary;
+class SwarmPipeline {
+  constructor(steps) {
+    this.steps = steps;
+    this.results = {};
+  }
+
+  async run() {
+    console.log(`[SWARM] Starting pipeline with ${this.steps.length} steps`);
+    for (const step of this.steps) {
+      console.log(`[SWARM] Step: ${step.name}`);
+      // In a real implementation, this would call the LLM/Agent
+      this.results[step.name] = `Result from ${step.name}`;
+    }
+    return this.results;
+  }
+}
+
+class Agent {
+  constructor(config) {
+    this.config = config;
+  }
+}
+
+async function checkGoal(goal) {
+  // Mock goal checking
+  console.log(`[GOAL] Checking goal: ${goal}`);
+  return Math.random() > 0.8; // Randomly "succeed" for demo
+}
+
+export { StandardLibrary, SwarmPipeline, Agent, checkGoal };
+

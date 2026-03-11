@@ -42,7 +42,22 @@ class Compiler {
         targetLanguage: this.targetLanguage,
       });
       // Parse and replace with generated AST
-      console.log(`Generated from prompt: ${generated}`);
+      const lexer = new Lexer(generated);
+      const tokens = lexer.tokenize();
+      const parser = new Parser(tokens);
+      const generatedAst = parser.parse();
+      
+      // If it's a single expression/statement, we might want to just take that
+      if (generatedAst.type === 'Program' && generatedAst.statements.length === 1) {
+        const statement = generatedAst.statements[0];
+        // Clear current node props and assign statement props
+        for (const key in node) delete node[key];
+        Object.assign(node, statement);
+      } else {
+        for (const key in node) delete node[key];
+        Object.assign(node, generatedAst);
+      }
+      return;
     }
 
     if (node.type === 'Voice') {
@@ -53,8 +68,21 @@ class Compiler {
         const generated = await this.llm.generateCode(command, {
           targetLanguage: this.targetLanguage,
         });
-        console.log(`Generated from voice: ${generated}`);
+        const lexer = new Lexer(generated);
+        const tokens = lexer.tokenize();
+        const parser = new Parser(tokens);
+        const generatedAst = parser.parse();
+        
+        if (generatedAst.type === 'Program' && generatedAst.statements.length === 1) {
+          const statement = generatedAst.statements[0];
+          for (const key in node) delete node[key];
+          Object.assign(node, statement);
+        } else {
+          for (const key in node) delete node[key];
+          Object.assign(node, generatedAst);
+        }
       }
+      return;
     }
 
     // Recursively process child nodes
@@ -107,6 +135,8 @@ class Compiler {
         return this.genScheme(node);
       case 'wolfram':
         return this.genWolfram(node);
+      case 'agent-skills':
+        return this.genAgentSkillsFormat(node);
       default:
         return this.genJavaScript(node);
     }
@@ -148,6 +178,21 @@ class Compiler {
       case 'Match':
         return this.genJSMatch(node);
 
+      case 'SwarmStatement':
+        return this.genJSSwarm(node);
+
+      case 'SkillDecl':
+        return this.genJSSkill(node);
+
+      case 'SecureBlock':
+        return this.genJSSecure(node);
+
+      case 'LoopUntil':
+        return this.genJSLoopUntil(node);
+
+      case 'AgentDefinition':
+        return this.genJSAgent(node);
+
       case 'FunctionCall':
         return `${node.name}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
 
@@ -188,6 +233,7 @@ class Compiler {
         return `[${node.elements.map(e => this.genJavaScript(e)).join(', ')}]`;
 
       case 'StructLiteral':
+      case 'DictLiteral':
         return `{ ${Object.entries(node.fields).map(([k, v]) => `${k}: ${this.genJavaScript(v)}`).join(', ')} }`;
 
       case 'Prompt':
@@ -226,6 +272,53 @@ class Compiler {
     }
     code += `})()`;
     return code;
+  }
+
+  genJSSwarm(node) {
+    let code = `const __swarm = new SwarmPipeline([\n`;
+    for (const step of node.steps) {
+      code += `  { name: "${step.name}", role: ${this.genJavaScript(step.role)} },\n`;
+    }
+    code += `]);\nawait __swarm.run();\n`;
+    return code;
+  }
+
+  genJSSkill(node) {
+    let code = `const ${node.name} = {\n`;
+    code += `  type: "skill",\n`;
+    for (const [key, value] of Object.entries(node.body)) {
+      code += `  ${key}: ${this.genJavaScript(value)},\n`;
+    }
+    code += `};\n`;
+    return code;
+  }
+
+  genJSSecure(node) {
+    return `(() => { "use strict"; ${this.genJavaScript(node.body)} })();`;
+  }
+
+  genJSLoopUntil(node) {
+    return `while (true) {\n  trace("Loop iteration started", { goal: ${this.genJavaScript(node.goal)} });\n  const __goal = ${this.genJavaScript(node.goal)};\n  if (await checkGoal(__goal)) break;\n  ${this.indentCode(this.genJavaScript(node.body), 2)}\n}`;
+  }
+
+  genJSAgent(node) {
+    let code = `new Agent({\n`;
+    for (const [key, value] of Object.entries(node.fields)) {
+      code += `  ${key}: ${this.genJavaScript(value)},\n`;
+    }
+    code += `})`;
+    return code;
+  }
+
+  genAgentSkillsFormat(node) {
+    if (node.type !== 'SkillDecl') return '';
+    return JSON.stringify({
+      version: "2026.1",
+      name: node.name,
+      instructions: node.body.prompt ? this.genJavaScript(node.body.prompt) : "",
+      tools: node.body.tools ? node.body.tools.elements.map(e => e.value) : [],
+      resources: []
+    }, null, 2);
   }
 
   genPython(node) {

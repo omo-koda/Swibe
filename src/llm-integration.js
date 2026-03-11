@@ -153,12 +153,11 @@ class LLMIntegration {
   email.contains("@") && email.contains(".")
 }`;
     }
-    if (prompt.includes('positive') || prompt.includes('sentiment')) {
-      return `{ sentiment: "positive", confidence: 0.85, keywords: ["amazing", "great"] }`;
+    if (prompt.includes('agent') || prompt.includes('You are')) {
+      return `"You are a helpful agent"`;
     }
-    return `-- Generated code from: ${prompt.substring(0, 50)}...
-fn generated() {
-  print("Implement with real LLM provider")
+    return `fn generated() {
+  println("Implement with real LLM provider")
 }`;
   }
 

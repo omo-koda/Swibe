@@ -31,14 +31,19 @@ class Parser {
   }
 
   expect(type) {
-    if (this.current().type !== type) {
+    const current = this.current();
+    if (current.type !== type) {
+      // Special case: PRINTLN is a valid IDENTIFIER
+      if (type === TokenType.IDENTIFIER && current.type === TokenType.PRINTLN) {
+        this.advance();
+        return current;
+      }
       throw new Error(
-        `Expected ${type}, got ${this.current().type} at ${this.current().line}:${this.current().column}`
+        `Expected ${type}, got ${current.type} at ${current.line}:${current.column}`
       );
     }
-    const token = this.current();
     this.advance();
-    return token;
+    return current;
   }
 
   match(...types) {
@@ -84,6 +89,26 @@ class Parser {
     // Match statement
     if (token.type === TokenType.MATCH) {
       return this.parseMatchStatement();
+    }
+
+    // Swarm statement
+    if (token.type === TokenType.SWARM) {
+      return this.parseSwarmStatement();
+    }
+
+    // Skill declaration
+    if (token.type === TokenType.SKILL) {
+      return this.parseSkillDecl();
+    }
+
+    // Secure block
+    if (token.type === TokenType.SECURE) {
+      return this.parseSecureBlock();
+    }
+
+    // Loop until goal
+    if (token.type === TokenType.LOOP) {
+      return this.parseLoopUntil();
     }
 
     // Return statement
@@ -263,6 +288,80 @@ class Parser {
     this.expect(TokenType.RBRACE);
 
     return new ASTNode('Match', { expr, arms });
+  }
+
+  parseSwarmStatement() {
+    this.expect(TokenType.SWARM);
+    this.expect(TokenType.LBRACE);
+
+    const steps = [];
+    while (this.current().type !== TokenType.RBRACE) {
+      const name = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      
+      let role;
+      if (this.current().type === TokenType.IDENTIFIER && this.current().value === 'Agent') {
+        this.advance();
+        this.expect(TokenType.LBRACE);
+        const fields = {};
+        while (this.current().type !== TokenType.RBRACE) {
+          const fieldName = this.expect(TokenType.IDENTIFIER).value;
+          this.expect(TokenType.COLON);
+          fields[fieldName] = this.parseExpression();
+          if (this.current().type === TokenType.COMMA) this.advance();
+        }
+        this.expect(TokenType.RBRACE);
+        role = new ASTNode('AgentDefinition', { fields });
+      } else {
+        role = this.parseExpression();
+      }
+      
+      steps.push({ name, role });
+
+      if (this.current().type === TokenType.FAT_ARROW) {
+        this.advance();
+      } else if (this.current().type === TokenType.COMMA) {
+        this.advance();
+      } else if (this.current().type !== TokenType.RBRACE) {
+        throw new Error(`Expected => or , in swarm at ${this.current().line}:${this.current().column}`);
+      }
+    }
+
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('SwarmStatement', { steps });
+  }
+
+  parseSkillDecl() {
+    this.expect(TokenType.SKILL);
+    const name = this.expect(TokenType.IDENTIFIER).value;
+    this.expect(TokenType.LBRACE);
+
+    const body = {};
+    while (this.current().type !== TokenType.RBRACE) {
+      const field = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      body[field] = this.parseExpression();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('SkillDecl', { name, body });
+  }
+
+  parseSecureBlock() {
+    this.expect(TokenType.SECURE);
+    const body = this.parseBlock();
+    return new ASTNode('SecureBlock', { body });
+  }
+
+  parseLoopUntil() {
+    this.expect(TokenType.LOOP);
+    this.expect(TokenType.UNTIL);
+    this.expect(TokenType.GOAL);
+    this.expect(TokenType.COLON);
+    const goal = this.parseExpression();
+    const body = this.parseBlock();
+    return new ASTNode('LoopUntil', { goal, body });
   }
 
   parsePattern() {
@@ -463,12 +562,17 @@ class Parser {
         const index = this.parseExpression();
         this.expect(TokenType.RBRACKET);
         expr = new ASTNode('Index', { object: expr, index });
-      } else if (this.current().type === TokenType.LPAREN && expr.type === 'Identifier') {
-        // Function call
+      } else if (this.current().type === TokenType.LPAREN) {
+        // Call
         this.advance();
         const args = this.parseArgumentList();
         this.expect(TokenType.RPAREN);
-        expr = new ASTNode('FunctionCall', { name: expr.name, args });
+        
+        if (expr.type === 'Identifier') {
+          expr = new ASTNode('FunctionCall', { name: expr.name, args });
+        } else {
+          expr = new ASTNode('Call', { callee: expr, args });
+        }
       } else {
         break;
       }
@@ -530,7 +634,7 @@ class Parser {
     }
 
     // Identifier
-    if (token.type === TokenType.IDENTIFIER) {
+    if (token.type === TokenType.IDENTIFIER || token.type === TokenType.PRINTLN) {
       this.advance();
       return new ASTNode('Identifier', { name: token.value });
     }
@@ -549,7 +653,7 @@ class Parser {
       return new ASTNode('ArrayLiteral', { elements });
     }
 
-    // Grouped expression
+    // Grouped expression or tuple
     if (token.type === TokenType.LPAREN) {
       this.advance();
       const expr = this.parseExpression();
@@ -557,7 +661,21 @@ class Parser {
       return expr;
     }
 
-    // Struct literal
+    // Anonymous Dictionary Literal
+    if (token.type === TokenType.LBRACE) {
+      this.advance();
+      const fields = {};
+      while (this.current().type !== TokenType.RBRACE) {
+        const fieldName = this.expect(TokenType.IDENTIFIER).value;
+        this.expect(TokenType.COLON);
+        fields[fieldName] = this.parseExpression();
+        if (this.current().type === TokenType.COMMA) this.advance();
+      }
+      this.expect(TokenType.RBRACE);
+      return new ASTNode('DictLiteral', { fields });
+    }
+
+    // Struct literal (named)
     if (token.type === TokenType.IDENTIFIER) {
       const name = token.value;
       if (this.peek().type === TokenType.LBRACE) {

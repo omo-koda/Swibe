@@ -30,6 +30,7 @@ const TokenType = {
   FOR: 'FOR',
   WHILE: 'WHILE',
   LOOP: 'LOOP',
+  PRINTLN: 'PRINTLN',
   TRUE: 'TRUE',
   FALSE: 'FALSE',
   NIL: 'NIL',
@@ -45,6 +46,11 @@ const TokenType = {
   RAG: 'RAG',
   EMBED: 'EMBED',
   AGENT: 'AGENT',
+  SWARM: 'SWARM',
+  SKILL: 'SKILL',
+  SECURE: 'SECURE',
+  UNTIL: 'UNTIL',
+  GOAL: 'GOAL',
   PROMPT: 'PROMPT', // %%
   VOICE: 'VOICE',   // [voice: ...]
 
@@ -108,6 +114,8 @@ class Lexer {
     this.pos = 0;
     this.line = 1;
     this.column = 1;
+    this.tokenLine = 1;
+    this.tokenColumn = 1;
     this.tokens = [];
   }
 
@@ -152,7 +160,7 @@ class Lexer {
   readString(quote) {
     this.advance(); // skip opening quote
     const chars = [];
-    while (this.current() && this.current() !== quote) {
+    while (this.pos < this.source.length && this.current() !== quote) {
       if (this.current() === '\\') {
         this.advance();
         const escaped = {
@@ -170,7 +178,9 @@ class Lexer {
         this.advance();
       }
     }
-    this.advance(); // skip closing quote
+    if (this.current() === quote) {
+      this.advance(); // skip closing quote
+    }
     return chars.join('');
   }
 
@@ -239,6 +249,7 @@ class Lexer {
     for: TokenType.FOR,
     while: TokenType.WHILE,
     loop: TokenType.LOOP,
+    println: TokenType.PRINTLN,
     true: TokenType.TRUE,
     false: TokenType.FALSE,
     nil: TokenType.NIL,
@@ -248,10 +259,15 @@ class Lexer {
     rag: TokenType.RAG,
     embed: TokenType.EMBED,
     agent: TokenType.AGENT,
+    swarm: TokenType.SWARM,
+    skill: TokenType.SKILL,
+    secure: TokenType.SECURE,
+    until: TokenType.UNTIL,
+    goal: TokenType.GOAL,
   };
 
   addToken(type, value = null) {
-    const token = new Token(type, value, this.line, this.column);
+    const token = new Token(type, value, this.tokenLine, this.tokenColumn);
     this.tokens.push(token);
   }
 
@@ -261,9 +277,9 @@ class Lexer {
 
       if (this.pos >= this.source.length) break;
 
+      this.tokenLine = this.line;
+      this.tokenColumn = this.column;
       const char = this.current();
-      const line = this.line;
-      const column = this.column;
 
       // Comments
       if (char === '-' && this.peek() === '-') {
@@ -430,7 +446,7 @@ class Lexer {
         this.addToken(TokenType.RBRACKET, ']');
         this.advance();
       } else {
-        throw new Error(`Unexpected character: ${char} at ${line}:${column}`);
+        throw new Error(`Unexpected character: ${char} at ${this.line}:${this.column}`);
       }
     }
 

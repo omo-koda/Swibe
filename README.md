@@ -1,18 +1,19 @@
 # Vibe Language
 
-A cutting-edge, AI-native programming language where voice/prompts are first-class citizens. Code in natural language or traditional syntax, compile to 18 languages, and integrate with 20+ AI tools including TensorFlow, PyTorch, Claude, OpenAI, HuggingFace, Pinecone, and more.
+A cutting-edge, **agent-native**, programming language where AI agents, prompts, and memory are first-class citizens. Code in natural language or traditional syntax, compile to 18 languages, and deploy to the 2026 agent ecosystem (OpenClaw, Ralph, Confucius).
+
+**Status**: Alpha-Ready. Core pipeline and agentic primitives fully implemented and verified.
 
 ## Features
 
-- **Prompt-First Syntax**: Use `%%` for AI-generated code blocks
+- **Agentic Primitives**: Native `swarm`, `skill`, `secure`, and `loop until goal` constructs.
+- **Prompt-First Syntax**: Use `%%` for AI-generated code blocks with AST splicing.
 - **Voice Input**: `[voice: "describe what you want to build"]`
-- **AI as First-Class**: Native LLM, RAG, embeddings, agents
-- **Multi-Language Compilation**: 18 targets (JS, Python, Go, Rust, Julia, Idris, Move, R, Prolog, Lisp, Haskell, Lua, MATLAB, Scala, Clojure, OCaml, Scheme, Wolfram)
-- **AI Tools Integration**: TensorFlow, PyTorch, OpenAI, Claude, Groq, HuggingFace, Pinecone, Weaviate, Pandas, OpenCV, and 10+ more
-- **Type Safe**: Inspired by Rust, Idris, Julia
-- **No Nulls**: Option/Result types
-- **Multiple Dispatch**: Like Julia
-- **Async/Concurrent**: Goroutine-like spawning
+- **Persistent RAG**: File-based, deterministic vector memory with cosine similarity.
+- **Multi-Language Compilation**: 18 targets + **Agent Skills** spec.
+- **Observability**: Built-in `trace()` and agent-specific testing suite.
+- **Type Safe**: HM bidirectional type inference with constraint solving.
+- **IR Optimized**: SSA-like intermediate representation with dead-code elimination.
 
 ## Quick Start
 
@@ -23,186 +24,92 @@ npm run dev
 # REPL
 npm run repl
 
-# Compile examples
+# Compile to JavaScript (default)
 npm run compile examples/hello.vibe
-npm run compile examples/ai-app.vibe -- --target python
+
+# Compile to Agent Skills Format
+npm run compile examples/agent.vibe -- --target agent-skills
 ```
 
-## Syntax Examples
+## Agentic Syntax
 
-### Basic Function
+### Multi-Agent Swarm
 ```vibe
-fn add(a: i32, b: i32) -> i32 {
-  a + b
+swarm {
+  planner: "Break PRD into checkboxes" =>
+  implementer: Agent {
+    skills: [RefineCode],
+    system_prompt: %% "You are an autonomous dev"
+  } =>
+  verifier: "Run final audit"
 }
 ```
 
-### AI-Generated Code
+### Modular Skills
 ```vibe
-fn classify(text: str) {
-  %% classify this text as positive, negative, or neutral
+skill RefineCode {
+  prompt: "Fix bugs and make tests pass",
+  tools: ["run_tests", "git_commit"]
 }
 ```
 
-### Voice Input
+### Ralph-Style Loops
 ```vibe
-%% [voice: "create a fibonacci generator"]
-```
-
-### Multiple Dispatch
-```vibe
-fn process(x: i32) -> str { "int" }
-fn process(x: str) -> str { "string" }
-fn process(x: [f64]) -> str { "array" }
-```
-
-### No Nulls - Option Types
-```vibe
-fn safe_divide(a: i32, b: i32) -> Option<i32> {
-  if b == 0 { None } else { Some(a / b) }
-}
-
-match result {
-  Some(n) => print(n),
-  None => print("error")
+loop until goal: "All tests pass" {
+  println("Iterating...")
+  %% run refinement logic
 }
 ```
 
-### AI Integration
+### Secure Sandboxing
 ```vibe
--- LLM call
-response = ai.generate("write a poem about Vibe")
-
--- RAG search
-docs = rag.search("how to use Vibe", top_k=5)
-
--- Embeddings
-similarity = embed.cosine(text1, text2)
-
--- Multi-tool agent
-agent = Agent {
-  name: "CodeWriter",
-  tools: [search, execute, refine],
-  system_prompt: %% "You are an expert programmer"
+secure {
+  -- Code runs in strict isolation
+  result = run_untrusted_code()
 }
-result = agent.run("build a todo app")
-```
-
-### Pipeline Operations
-```vibe
-data
-  |> filter(x => x.year > 2020)
-  |> map(x => x.value * 2)
-  |> group_by(x => x.category)
 ```
 
 ## Language Features
 
-### Type System
-- `i32`, `i64`, `u32`, `f32`, `f64`, `bool`, `str`
-- `[T]` - Arrays
-- `Option<T>`, `Result<T, E>` - No nulls
-- Generics: `fn first<T>(arr: [T]) -> T`
-- Multiple dispatch (like Julia)
-
-### Memory Safety
-- Immutable by default: `x = 10`
-- Mutable: `mut y = 20`
-- Borrowing: `ref = &value`
-- Move semantics for linear types
-
-### Async/Concurrency
-- `async fn` - async functions
-- `await` - wait for async
-- `spawn { ... }` - goroutine-like
-- `channel<T>()` - message passing
-
-### Data Structures
-```vibe
-struct User { id: u64, name: str }
-enum Status { Active, Inactive }
-protocol Drawable { fn draw(self) }
-```
+- **Type System**: `i32`, `f64`, `str`, `[T]`, `Option<T>`, `Result<T, E>`.
+- **Memory Safety**: Immutable by default, move semantics, borrow checking.
+- **Concurrency**: `spawn`, `channel`, `async/await`.
+- **Persistence**: Built-in `rag.save()` and `rag.load()`.
 
 ## Compilation Targets
 
-```bash
-# JavaScript (default)
-vibe compile hello.vibe
-
-# Python
-vibe compile hello.vibe --target python
-
-# Rust
-vibe compile hello.vibe --target rust
-
-# Go
-vibe compile hello.vibe --target go
-```
-
-## LLM Providers
-
-Configure in environment:
-
-```bash
-export LLM_PROVIDER=claude      # Default, requires ANTHROPIC_API_KEY
-export LLM_PROVIDER=ollama      # Free local, requires `ollama serve`
-export LLM_PROVIDER=hf          # Cheap, requires HF_TOKEN
-```
-
-Vibe automatically falls back through providers if one is unavailable.
+Vibe compiles to:
+- JavaScript/TypeScript
+- Python
+- Rust
+- Go
+- Julia, Haskell, OCaml, Scala, Clojure, Scheme
+- Idris, Move, R, Prolog, Lisp, Lua, MATLAB, Wolfram
+- **Agent Skills** (JSON format for 2026 interoperability)
 
 ## Project Structure
 
 ```
 vibe-lang/
 ├── src/
-│   ├── lexer.js           # Tokenization
-│   ├── parser.js          # AST building
-│   ├── compiler.js        # Code generation
-│   ├── llm-integration.js # AI features
-│   ├── repl.js            # Interactive shell
-│   └── index.js           # Entry point
-├── examples/
-│   ├── hello.vibe         # Basic examples
-│   └── ai-app.vibe        # AI examples
-├── VIBE_SPEC.md           # Full language spec
-└── README.md              # This file
+│   ├── lexer.js           # Tokenization with agent keywords
+│   ├── parser.js          # AST building with error recovery
+│   ├── type-inference.js  # HM Type Checker
+│   ├── ir-generator.js    # IR & Optimization
+│   ├── compiler.js        # Multi-target codegen
+│   ├── llm-integration.js # Prompt splicing & Agents
+│   ├── stdlib.js          # 100+ builtins & agent patterns
+│   └── index.js           # ESM entry point
+└── examples/              # Ralph and Swarm examples
 ```
-
-## Development
-
-```bash
-# Watch mode
-npm run dev
-
-# Tests
-npm test
-
-# Linting
-npm run lint
-
-# Format
-npm run format
-```
-
-## Next Steps
-
-1. **Type Checker** - Full type system validation
-2. **Optimization** - IR optimization passes
-3. **Standard Library** - Built-in functions/modules
-4. **WASM Backend** - Compile to WebAssembly
-5. **Package Manager** - Vibe package ecosystem
-6. **IDE Support** - VSCode extension
 
 ## Inspiration
 
 - **Julia**: Multiple dispatch, scientific computing
 - **Rust**: Memory safety, ownership, pattern matching
-- **Go**: Simplicity, concurrency
-- **Python**: Readability, rapid development
-- **Idris**: Dependent types, proof systems
-- **Move**: Linear types, resource management
+- **Ralph**: Autonomous loops and goal-seeking behavior
+- **OpenClaw**: Modular skill ecosystem
+- **Confucius**: Scalable agent scaffolding
 
 ## License
 
@@ -210,4 +117,4 @@ MIT
 
 ---
 
-**Status**: Pre-alpha. Actively developing core language features.
+**Status**: Alpha. End-to-end pipeline verified on Android/Termux via Amp.
