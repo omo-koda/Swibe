@@ -7,8 +7,8 @@ import { TokenType } from './lexer.js';
 
 class ASTNode {
   constructor(type, props = {}) {
-    this.type = type;
     Object.assign(this, props);
+    this.type = type;
   }
 }
 
@@ -19,10 +19,12 @@ class Parser {
   }
 
   current() {
+    if (this.pos >= this.tokens.length) return this.tokens[this.tokens.length - 1];
     return this.tokens[this.pos];
   }
 
   peek(offset = 1) {
+    if (this.pos + offset >= this.tokens.length) return this.tokens[this.tokens.length - 1];
     return this.tokens[this.pos + offset];
   }
 
@@ -110,6 +112,11 @@ class Parser {
     // Loop until goal
     if (token.type === TokenType.LOOP) {
       return this.parseLoopUntil();
+    }
+
+    // Call tool statement
+    if (token.type === TokenType.CALL_TOOL) {
+      return this.parseCallToolStatement();
     }
 
     // Return statement
@@ -363,6 +370,13 @@ class Parser {
     const goal = this.parseExpression();
     const body = this.parseBlock();
     return new ASTNode('LoopUntil', { goal, body });
+  }
+
+  parseCallToolStatement() {
+    this.expect(TokenType.CALL_TOOL);
+    const name = this.expect(TokenType.STRING).value;
+    const args = this.parseExpression(); // Expecting a DictLiteral or other expression
+    return new ASTNode('CallToolStatement', { name, args });
   }
 
   parsePattern() {

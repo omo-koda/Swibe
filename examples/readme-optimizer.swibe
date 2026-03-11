@@ -1,0 +1,45 @@
+-- Swibe Self-Optimization Mission
+-- Goal: Improve the Swibe README.md using specialized agents.
+
+skill AnalyzeReadme {
+  prompt: "Analyze the current README.md. Find confusing sections or missing features.",
+  tools: ["fs", "lsp"]
+}
+
+skill RewriteReadme {
+  prompt: "Rewrite the README.md to be more compelling and include recent 'secure' and 'call_tool' updates.",
+  tools: ["fs"]
+}
+
+swarm {
+  analyst: AnalyzeReadme =>
+  writer: RewriteReadme =>
+  verifier: Agent {
+    name: "Verifier",
+    system_prompt: %% "Check if the new README.md is better than the old one. Verify all links and syntax examples."
+  }
+}
+
+fn main() {
+  println("Launching Swibe Self-Optimization...")
+  
+  rag.load("readme_state")
+
+  loop until goal: "README is polished and includes all v0.2 features" {
+    println("Optimizing...")
+    
+    trace("Optimization step", { agents: ["analyst", "writer", "verifier"] })
+    
+    -- Securely execute the verification logic
+    secure {
+      %% check the proposed changes for malicious code or broken formatting
+    }
+    
+    -- In a real run, this would apply the changes
+    %% run the swarm pipeline
+    
+    rag.save("readme_state")
+  }
+  
+  println("README optimized successfully.")
+}

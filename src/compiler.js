@@ -1,6 +1,6 @@
 /**
- * Vibe Compiler
- * Compiles Vibe AST to target languages
+ * Swibe Compiler
+ * Compiles Swibe AST to target languages
  */
 
 import { Lexer } from './lexer.js';
@@ -48,14 +48,16 @@ class Compiler {
       const generatedAst = parser.parse();
       
       // Inject trace point for LLM result
-      console.log(`[TRACE] [PROMPT] Result for: ${node.text.substring(0, 30)}...`);
+      // console.log(`[TRACE] [PROMPT] Result for: ${node.text.substring(0, 30)}...`);
       
       // If it's a single expression/statement, we might want to just take that
       if (generatedAst.type === 'Program' && generatedAst.statements.length === 1) {
         const statement = generatedAst.statements[0];
+        // console.log(`Merging statement of type ${statement.type} into node`);
         // Clear current node props and assign statement props
         for (const key in node) delete node[key];
         Object.assign(node, statement);
+        // console.log(`Node type after merge: ${node.type}`);
       } else {
         for (const key in node) delete node[key];
         Object.assign(node, generatedAst);
@@ -90,11 +92,12 @@ class Compiler {
 
     // Recursively process child nodes
     for (const key in node) {
+      if (key === 'type') continue;
       if (Array.isArray(node[key])) {
         for (const item of node[key]) {
           await this.processPrompts(item);
         }
-      } else if (typeof node[key] === 'object') {
+      } else if (typeof node[key] === 'object' && node[key] !== null) {
         await this.processPrompts(node[key]);
       }
     }
@@ -192,6 +195,9 @@ class Compiler {
 
       case 'LoopUntil':
         return this.genJSLoopUntil(node);
+
+      case 'CallToolStatement':
+        return this.genJSCallTool(node);
 
       case 'AgentDefinition':
         return this.genJSAgent(node);
@@ -297,11 +303,15 @@ class Compiler {
   }
 
   genJSSecure(node) {
-    return `(() => { "use strict"; ${this.genJavaScript(node.body)} })();`;
+    return `await sandbox.run(async () => {\n${this.indentCode(this.genJavaScript(node.body), 2)}\n});`;
   }
 
   genJSLoopUntil(node) {
     return `while (true) {\n  trace("Loop iteration started", { goal: ${this.genJavaScript(node.goal)} });\n  const __goal = ${this.genJavaScript(node.goal)};\n  if (await checkGoal(__goal)) break;\n  ${this.indentCode(this.genJavaScript(node.body), 2)}\n}`;
+  }
+
+  genJSCallTool(node) {
+    return `await mcp.call_tool("${node.name}", ${this.genJavaScript(node.args)});`;
   }
 
   genJSAgent(node) {
@@ -1287,31 +1297,6 @@ class Compiler {
       .map(line => (line ? indent + line : line))
       .join('\n');
   }
-}
-
-// CLI
-async function main() {
-  const args = process.argv.slice(2);
-
-  if (args.length < 1) {
-    console.log('Usage: vibe compile <file> [--target language]');
-    process.exit(1);
-  }
-
-  const file = args[0];
-  let target = 'javascript';
-
-  if (args.includes('--target')) {
-    target = args[args.indexOf('--target') + 1];
-  }
-
-  const fs = await import('fs');
-  const source = fs.readFileSync(file, 'utf-8');
-
-  const compiler = new Compiler(source, target);
-  const code = await compiler.compile();
-
-  console.log(code);
 }
 
 export { Compiler };

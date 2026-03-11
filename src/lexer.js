@@ -51,6 +51,7 @@ const TokenType = {
   SECURE: 'SECURE',
   UNTIL: 'UNTIL',
   GOAL: 'GOAL',
+  CALL_TOOL: 'CALL_TOOL',
   PROMPT: 'PROMPT', // %%
   VOICE: 'VOICE',   // [voice: ...]
 
@@ -255,6 +256,8 @@ class Lexer {
     nil: TokenType.NIL,
     none: TokenType.NONE,
     some: TokenType.SOME,
+    let: TokenType.LET,
+    const: TokenType.CONST,
     ai: TokenType.AI,
     rag: TokenType.RAG,
     embed: TokenType.EMBED,
@@ -264,6 +267,7 @@ class Lexer {
     secure: TokenType.SECURE,
     until: TokenType.UNTIL,
     goal: TokenType.GOAL,
+    call_tool: TokenType.CALL_TOOL,
   };
 
   addToken(type, value = null) {

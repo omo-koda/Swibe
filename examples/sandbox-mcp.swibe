@@ -1,0 +1,23 @@
+-- Swibe Sandbox & MCP Demo
+-- Goal: Demonstrate tool calling and secure execution.
+
+fn main() {
+  println("--- MCP Test ---")
+  
+  -- Calling a tool via MCP
+  call_tool "web_search" { query: "Latest Swibe Lang updates" }
+  
+  println("--- Sandbox Test ---")
+  
+  -- Secure execution block
+  secure {
+    println("This code runs inside a sandbox.")
+    
+    -- This would normally throw if it tried to access the host's 'process'
+    let x = 10
+    let y = 20
+    println("Calculated in sandbox: " + (x + y))
+  }
+  
+  println("--- Completed ---")
+}
