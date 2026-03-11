@@ -1,7 +1,7 @@
 {
-  "name": "vibe-lang",
+  "name": "swibe",
   "version": "0.1.0",
-  "description": "AI-native programming language with voice/prompt input and multi-language compilation",
+  "description": "Compact, agent-native scripting language with autonomous loops and swarms",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
