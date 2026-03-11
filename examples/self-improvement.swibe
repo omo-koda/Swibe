@@ -1,0 +1,50 @@
+-- Swibe Self-Improving Loop Demo
+-- This script coordinates agents to analyze code, improve tests, and iterate until coverage goals are met.
+
+skill AnalyzeCode {
+  prompt: "Spot bugs and suggest fixes for the current implementation",
+  tools: ["fs", "lsp"]
+}
+
+skill ImproveTests {
+  prompt: "Write comprehensive unit tests based on the coverage report",
+  tools: ["test_runner", "coverage_analyzer"]
+}
+
+-- Define the multi-agent orchestration pipeline
+swarm {
+  analyst: AnalyzeCode =>
+  tester: ImproveTests =>
+  verifier: Agent {
+    name: "Verifier",
+    system_prompt: %% "Check if coverage > 95% and there are no lint errors. Output 'PASSED' or 'FAILED'."
+  } =>
+  reflector: Agent {
+    name: "Reflector",
+    system_prompt: %% "If the verifier failed, summarize the blockers and suggest a strategy for the next iteration."
+  }
+}
+
+fn main() {
+  println("Starting Swibe self-improvement mission...")
+  
+  -- Persistent memory for the loop
+  rag.load("last_iteration")
+
+  -- Bounded autonomous loop
+  loop until goal: "Tests are green and coverage is 95%+" {
+    println("Running iteration...")
+    
+    -- Execute the swarm pipeline
+    trace("Executing swarm", { pipeline: ["analyst", "tester", "verifier", "reflector"] })
+    
+    -- In a real execution, the swarm results would be processed here
+    %% run the swarm pipeline and update the workspace
+    
+    -- Persist progress
+    rag.save("last_iteration")
+  }
+  
+  trace("Converged: Development goal achieved.")
+  println("Mission complete.")
+}

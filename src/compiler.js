@@ -47,6 +47,9 @@ class Compiler {
       const parser = new Parser(tokens);
       const generatedAst = parser.parse();
       
+      // Inject trace point for LLM result
+      console.log(`[TRACE] [PROMPT] Result for: ${node.text.substring(0, 30)}...`);
+      
       // If it's a single expression/statement, we might want to just take that
       if (generatedAst.type === 'Program' && generatedAst.statements.length === 1) {
         const statement = generatedAst.statements[0];
@@ -311,14 +314,41 @@ class Compiler {
   }
 
   genAgentSkillsFormat(node) {
-    if (node.type !== 'SkillDecl') return '';
-    return JSON.stringify({
-      version: "2026.1",
-      name: node.name,
-      instructions: node.body.prompt ? this.genJavaScript(node.body.prompt) : "",
-      tools: node.body.tools ? node.body.tools.elements.map(e => e.value) : [],
-      resources: []
-    }, null, 2);
+    if (node.type === 'SkillDecl') {
+      return JSON.stringify({
+        version: "2026.1",
+        name: node.name,
+        type: "skill",
+        instructions: node.body.prompt ? this.genJavaScript(node.body.prompt) : "",
+        tools: node.body.tools ? node.body.tools.elements.map(e => e.value) : [],
+        resources: []
+      }, null, 2);
+    }
+    
+    if (node.type === 'SwarmStatement') {
+      return JSON.stringify({
+        version: "2026.1",
+        type: "swarm",
+        agents: node.steps.map(s => s.name),
+        pipeline: node.steps.map(s => s.name).join(" => "),
+        memory: "rag.last_iteration"
+      }, null, 2);
+    }
+
+    if (node.type === 'LoopUntil') {
+      return JSON.stringify({
+        version: "2026.1",
+        type: "loop",
+        until: this.genJavaScript(node.goal),
+        trace: true
+      }, null, 2);
+    }
+
+    if (node.type === 'Program') {
+      return node.statements.map(s => this.genAgentSkillsFormat(s)).filter(s => s !== "").join('\n---\n');
+    }
+
+    return '';
   }
 
   genPython(node) {

@@ -33,8 +33,9 @@ class Parser {
   expect(type) {
     const current = this.current();
     if (current.type !== type) {
-      // Special case: PRINTLN is a valid IDENTIFIER
-      if (type === TokenType.IDENTIFIER && current.type === TokenType.PRINTLN) {
+      // Special case: keywords as valid IDENTIFIER
+      const allowed = [TokenType.PRINTLN, TokenType.RAG, TokenType.AI, TokenType.EMBED];
+      if (type === TokenType.IDENTIFIER && allowed.includes(current.type)) {
         this.advance();
         return current;
       }
@@ -633,8 +634,12 @@ class Parser {
       return new ASTNode('Voice', { text: token.value });
     }
 
-    // Identifier
-    if (token.type === TokenType.IDENTIFIER || token.type === TokenType.PRINTLN) {
+    // Identifier or AI keywords as identifiers
+    if (token.type === TokenType.IDENTIFIER || 
+        token.type === TokenType.PRINTLN ||
+        token.type === TokenType.RAG ||
+        token.type === TokenType.AI ||
+        token.type === TokenType.EMBED) {
       this.advance();
       return new ASTNode('Identifier', { name: token.value });
     }
