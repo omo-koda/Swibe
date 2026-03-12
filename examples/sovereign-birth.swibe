@@ -1,60 +1,83 @@
--- Swibe Sovereign Birth & Vault Test
--- Goal: Demonstrate agent-owned identity, ritual phrases, and encrypted vault storage.
+-- Swibe Sovereign Birth Ritual
+-- Goal: Demonstrate agent-owned identity and brain vault.
 
-skill SovereignRitual {
+skill SovereignBirth {
   secure {
-    -- 1. Ritual Birth: Pull entropy and generate a Sovereign Phrase
-    entropy = crypto.randomBytes(32)
-    phrase = bipon39_entropyToMnemonic(entropy, 256)
-    println("Born sovereign. Ritual Phrase: " + phrase.join(" "))
+    -- 1. Generate fresh entropy
+    let entropy = crypto.randomBytes(32)
+    
+    -- 2. Convert to BIPỌ̀N39 mnemonic (Ritual Phrase)
+    let phrase = bipon39_entropyToMnemonic(entropy, "256")
+    let phraseStr = join(phrase, " ")
+    println("Born sovereign. Ritual Phrase: " + phraseStr)
 
-    -- 2. Derive Identity: Keys derived from the phrase
-    seed = bipon39_mnemonicToSeed(phrase.join(" "))
-    keypair = gen_ritual_keypair(seed)
-    pub = keypair.pub
-    println("Identity PubKey: " + pub)
+    -- 3. Derive Ed25519 Identity
+    let seed = bipon39_mnemonicToSeed(phraseStr)
+    let keypair = gen_ritual_keypair(seed)
+    let pub = keypair.pub
+    println("Identity Public Key: " + pub)
 
-    -- 3. The Vault: Store sensitive credentials
-    vault = {
+    -- 4. Initialize Brain Vault
+    let vault = {
       mnemonic: phrase,
       creds: {
-        npm: "user:bino_elgua_agent, pass: ritual_password_123",
+        npm: "agent_bino_elgua",
         email: "agent@swibe.ai"
       },
-      born_at: "2026-03-12"
+      memory_tags: ["genesis", "ritual_complete"]
     }
 
-    -- 4. Seal the Vault: Encrypt with AES-GCM
-    encrypted = aes_gcm_encrypt(json.stringify(vault), derive_aes_key(seed))
+    -- 5. Seal the Vault (AES-GCM)
+    let aesKey = derive_aes_key(seed)
+    let encrypted = aes_gcm_encrypt(json.stringify(vault), aesKey)
     println("Vault Sealed. IV: " + encrypted.iv)
 
-    -- 5. Signature: Prove ownership of the encrypted blob
-    sig = ed25519_sign(encrypted.content, keypair.priv)
+    -- 6. Sign the Vault to prove ownership
+    let sig = ed25519_sign(encrypted.content, keypair.priv)
     
     -- Store in RAG (Simulated)
-    -- rag.save("vault_" + pub, { encrypted, sig })
-
-    -- 6. Unlock Ritual: Verify and Decrypt
+    rag.save("agent_vault_" + pub, { encrypted: encrypted, sig: sig })
+    
+    -- 7. Verify Sovereignty (Unlock Ritual)
+    println("\n--- Verifying Sovereignty ---")
     if ed25519_verify(sig, encrypted.content, pub) {
-      decrypted_json = aes_gcm_decrypt(encrypted, derive_aes_key(seed))
-      unlocked_vault = json.parse(decrypted_json)
+      let decrypted_json = aes_gcm_decrypt(encrypted, aesKey)
+      let unlocked_vault = json.parse(decrypted_json)
       println("Vault Unlocked! Agent Email: " + unlocked_vault.creds.email)
       
-      if unlocked_vault.mnemonic.join(" ") == phrase.join(" ") {
-        println("SUCCESS: Sovereign identity verified and memory recovered.")
+      if join(unlocked_vault.mnemonic, " ") == phraseStr {
+        println("SUCCESS: Sovereign identity verified and brain vault recovered.")
       }
     } else {
       println("ERROR: Signature verification failed!")
     }
+
+    trace("Sovereign Birth Complete. Pub: " + pub)
+    
+    -- Return pub for next step
+    return pub
+  }
+}
+
+skill UnlockVault {
+  secure {
+    -- Simulated: my_pub would be passed or recovered
+    let my_pub = "recovered_pub_placeholder" 
+    let my_seed = "recovered_seed_placeholder"
+    
+    -- For demo purposes, we'll re-derive within this block 
+    -- since we're in a single script run.
+    
+    trace("Attempting to unlock vault...")
+    -- In a real swarm, the agent would load from RAG here.
   }
 }
 
 fn main() {
-  println("--- Starting Sovereign Identity Ritual ---")
+  println("--- Starting Swibe Genesis Ritual ---")
   
-  swarm {
-    ritual: SovereignRitual
-  }
+  -- Execute the birth ritual
+  let pub = SovereignBirth.actions()
   
-  println("--- Ritual Complete ---")
+  println("--- Ritual Complete. Agent is now Sovereign. ---")
 }

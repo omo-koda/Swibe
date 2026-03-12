@@ -182,6 +182,18 @@ class StandardLibrary {
       encrypt_storage: this.encrypt_storage.bind(this),
       no_external_upload: this.no_external_upload.bind(this),
       println: (...args) => console.log('[SANDBOX-LOG]', ...args),
+      join: this.join.bind(this),
+      trace: this.trace.bind(this),
+      rag: {
+        save: (name, data) => {
+          console.log(`[SANDBOX-LOG] [RAG] Saving: ${name}`);
+          return true;
+        },
+        load: (name) => {
+          console.log(`[SANDBOX-LOG] [RAG] Loading: ${name}`);
+          return null;
+        }
+      },
       
       // Sovereign Rituals exposed to sandbox
       gen_ritual_keypair: this.gen_ritual_keypair.bind(this),
@@ -213,11 +225,11 @@ class StandardLibrary {
   }
 
   aes_gcm_encrypt(data, seed) {
-    return sovereign.encryptVault(JSON.parse(data), seed);
+    return sovereign.encryptVault(data, seed);
   }
 
   aes_gcm_decrypt(encrypted, seed) {
-    return JSON.stringify(sovereign.decryptVault(encrypted, seed));
+    return sovereign.decryptVault(encrypted, seed);
   }
 
   ed25519_sign(data, privKey) {
