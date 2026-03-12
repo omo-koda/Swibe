@@ -66,6 +66,15 @@ class StandardLibrary {
       'elemental_signature': this.elemental_signature.bind(this),
       'refuse_if': (cond) => cond,
       'seal': (msg) => msg,
+      'NeuralLayer': {
+        type: "skill",
+        actions: async function() {
+          console.log("Neural layer: 86B neurons internal, 86M synapses public.");
+          console.log("[SUI-MOVE-STUB] Creating internal vault for 86000000000 neurons (non-transferable)...");
+          console.log("[SUI-MOVE-STUB] Minting 86000000 public synapse tokens (fungible) to agent owner...");
+          return { neurons: 86000000000, synapses: 86000000 };
+        }
+      }
     };
   }
 
@@ -186,6 +195,7 @@ class StandardLibrary {
       println: (...args) => console.log('[SANDBOX-LOG]', ...args),
       join: this.join.bind(this),
       trace: this.trace.bind(this),
+      NeuralLayer: this.builtins.NeuralLayer,
       rag: {
         save: (name, data) => {
           console.log(`[SANDBOX-LOG] [RAG] Saving: ${name}`);

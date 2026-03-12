@@ -58,8 +58,16 @@ skill SovereignRitual {
 fn main() {
   println("--- Starting Swibe Sovereign Identity Ritual ---")
   
-  -- We run the ritual within a swarm step or directly as a skill action
+  -- Opt-in to NeuralLayer: if true, initializing internal & public tokens
+  let opt_in = true 
+  
+  -- 1. Run the primary sovereign birth ritual
   SovereignRitual.actions()
+  
+  -- 2. If opted-in, initialize the neural layer (internal & public tokens)
+  if opt_in {
+    NeuralLayer.actions()
+  }
   
   println("--- Ritual Complete ---")
 }

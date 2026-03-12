@@ -218,6 +218,26 @@ test('23. Profiler - Performance Analysis', () => {
   assert(profiler, 'Profiler exists');
 });
 
+test('24. NeuralLayer - Opt-in Skill', async () => {
+  const std = new StandardLibrary();
+  const neuralLayer = std.builtins.NeuralLayer;
+  assert(neuralLayer, 'NeuralLayer skill exists in builtins');
+  assert(neuralLayer.type === 'skill', 'NeuralLayer is a skill');
+  
+  // Mock console to capture output
+  const originalLog = console.log;
+  let capturedOutput = '';
+  console.log = (...args) => { capturedOutput += args.join(' ') + '\n'; };
+  
+  const result = await neuralLayer.actions();
+  
+  console.log = originalLog;
+  
+  assert(capturedOutput.includes('Neural layer: 86B neurons internal, 86M synapses public.'), 'Correct output for NeuralLayer');
+  assert(result.neurons === 86000000000, 'Correct neuron balance');
+  assert(result.synapses === 86000000, 'Correct synapse supply');
+});
+
 // ============================================================================
 // Run All Tests
 // ============================================================================
