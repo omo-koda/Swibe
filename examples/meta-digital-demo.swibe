@@ -1,18 +1,9 @@
 -- Swibe Meta-Digital Demo
--- Demonstrates the new meta-digital primitive.
-
-skill GuardianPatrol {
-  prompt: "Patrol the digital perimeter for anomalies."
-}
-
-skill IfaOracle {
-  prompt: "Consult the oracle for wisdom on digital paths."
-}
+-- Demonstrates the neutralized meta-digital primitive.
 
 meta-digital "patrol" { 
-  chain: GuardianPatrol, IfaOracle; 
   ethics: refuse_if("spam"); 
-  output: ase("Sealed.") 
+  output: seal("Task complete."); 
 }
 
 fn main() {

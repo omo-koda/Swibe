@@ -65,7 +65,7 @@ class StandardLibrary {
       'lookup_meta': this.lookup_meta.bind(this),
       'elemental_signature': this.elemental_signature.bind(this),
       'refuse_if': (cond) => cond,
-      'ase': (msg) => `${msg} Àṣẹ.`,
+      'seal': (msg) => msg,
     };
   }
 
