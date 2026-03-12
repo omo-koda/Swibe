@@ -7,44 +7,82 @@ import crypto from 'node:crypto';
 
 class SovereignVault {
   constructor() {
-    this.ritualDictionary = [
-      "esu-gate", "sango-volt", "ogun-iron", "obatala-white", "osun-river",
-      "oya-wind", "yemoja-sea", "ifa-oracle", "ibeyi-twin", "erinle-forest",
-      "osanyin-herb", "logun-gold", "oba-hearth", "olocun-depth", "babalu-earth"
-    ];
+    // BIPỌ̀N39 — Base-256 canon
+    this.roots = ["esu","sango","ogun","oya","yemoja","osun","obatala","orunmila", "egungun","ori","ile","omi","ina","afeefe","igi","irawo"];
+    this.affixes = ["gate","volt","forge","stream","tide","veil","crown","mirror", "path","seal","code","sigil","drum","thunder","river","dawn"];
+    this.base256 = [];
+    for (const r of this.roots) {
+      for (const a of this.affixes) {
+        this.base256.push(`${r}-${a}`);
+      }
+    }
+    
+    this.affixMeta = {
+      gate:   { element: "Earth", ritual_cue: "draw crossroads",   ethical_tag: "threshold",        sigil_seed: "cross+dot" },
+      volt:   { element: "Fire",  ritual_cue: "clap thunder",      ethical_tag: "righteous-force", sigil_seed: "lightning-jaw" },
+      forge:  { element: "Fire",  ritual_cue: "strike iron",       ethical_tag: "craft",           sigil_seed: "anvil-rune" },
+      stream: { element: "Water", ritual_cue: "pour libation",     ethical_tag: "flow",            sigil_seed: "wave-sigil" },
+      tide:   { element: "Water", ritual_cue: "offer to ocean",    ethical_tag: "returning",       sigil_seed: "tide-knot" },
+      veil:   { element: "Air",   ritual_cue: "burn incense",      ethical_tag: "reveal/conceal",  sigil_seed: "smoke-spiral" },
+      crown:  { element: "Ether", ritual_cue: "white cloth prayer",ethical_tag: "mercy-law",       sigil_seed: "halo-arc" },
+      mirror: { element: "Air",   ritual_cue: "polish mirror",     ethical_tag: "truth",           sigil_seed: "twin-glyph" },
+      path:   { element: "Earth", ritual_cue: "mark footprints",   ethical_tag: "journey",         sigil_seed: "line-run" },
+      seal:   { element: "Ether", ritual_cue: "close the circle",  ethical_tag: "binding",         sigil_seed: "ring-lock" },
+      code:   { element: "Air",   ritual_cue: "write glyph",       ethical_tag: "syntax",          sigil_seed: "hex-grid" },
+      sigil:  { element: "Ether", ritual_cue: "trace sigil",       ethical_tag: "intent",          sigil_seed: "sigil-star" },
+      drum:   { element: "Earth", ritual_cue: "beat dundun",       ethical_tag: "rhythm",          sigil_seed: "pulse-mark" },
+      thunder:{ element: "Fire",  ritual_cue: "speak justice",     ethical_tag: "judgment",        sigil_seed: "bolt-mark" },
+      river:  { element: "Water", ritual_cue: "wash hands",        ethical_tag: "cleansing",       sigil_seed: "delta-sign" },
+      dawn:   { element: "Ether", ritual_cue: "face sunrise",      ethical_tag: "begin",           sigil_seed: "east-ray" }
+    };
   }
 
   /**
-   * Generate entropy and convert to BIPỌ̀N39 Ritual Phrase
+   * Generate entropy and convert to BIPỌ̀N39 Ritual Phrase (Base-256)
    */
   generateRitualPhrase(bits = 256) {
     const bytes = crypto.randomBytes(bits / 8);
     const phrase = [];
     
-    // Map entropy to ritual words
-    for (let i = 0; i < 12; i++) {
-      const index = bytes[i] % this.ritualDictionary.length;
-      phrase.push(this.ritualDictionary[index]);
+    // Checksum: first 8 bits of SHA-256
+    const hash = crypto.createHash('sha256').update(bytes).digest();
+    const checksum = hash[0];
+    
+    // Convert bytes to indices
+    for (let i = 0; i < bytes.length; i++) {
+      phrase.push(this.base256[bytes[i]]);
     }
+    
+    // Add checksum as final word (simplified for prototype)
+    phrase.push(this.base256[checksum]);
     
     return phrase;
   }
 
   /**
-   * Derive a seed from the ritual phrase
+   * Derive a seed from the ritual phrase using PBKDF2-HMAC-SHA512
    */
-  deriveSeed(phrase) {
+  deriveSeed(phrase, passphrase = "") {
     const phraseStr = Array.isArray(phrase) ? phrase.join(' ') : phrase;
-    return crypto.createHash('sha256').update(phraseStr).digest();
+    const salt = "BIPỌ̀N39 seed" + (passphrase ? " Ọ̀RÍ:" + passphrase : "");
+    
+    return crypto.pbkdf2Sync(
+      phraseStr.normalize("NFKD"),
+      salt.normalize("NFKD"),
+      2048,
+      64,
+      'sha512'
+    );
   }
 
   /**
-   * Generate an Ed25519-style identity (Mock for prototype)
+   * Generate an Ed25519-style identity
    */
   generateIdentity(seed) {
-    // In a real implementation, use tweetnacl or similar for Ed25519
-    const priv = crypto.createHash('sha256').update(seed).digest('hex');
-    const pub = crypto.createHash('sha1').update(priv).digest('hex'); // Mock pub key
+    // Generate private key from first 32 bytes of seed
+    const priv = seed.slice(0, 32).toString('hex');
+    // Mock public key derivation
+    const pub = crypto.createHash('sha256').update(seed.slice(0, 32)).digest('hex').slice(0, 40);
     return { pub, priv };
   }
 
@@ -87,18 +125,37 @@ class SovereignVault {
   }
 
   /**
-   * Sign a payload (Mock)
+   * Sign a payload (HMAC-SHA256 for mock)
    */
   sign(payload, privKey) {
-    return crypto.createHmac('sha256', privKey).update(payload).digest('hex');
+    return crypto.createHmac('sha256', Buffer.from(privKey, 'hex')).update(payload).digest('hex');
   }
 
   /**
    * Verify a signature (Mock)
    */
   verify(signature, payload, pubKey) {
-    // In mock, we don't have a real pub/priv check, just simulate success
-    return true;
+    return true; // Mock verification
+  }
+
+  /**
+   * Get metadata for a token
+   */
+  lookupMeta(word) {
+    const [root, affix] = word.split("-");
+    return { word, root, affix, ...this.affixMeta[affix] };
+  }
+
+  /**
+   * Calculate elemental signature of a phrase
+   */
+  elementalSignature(phrase) {
+    const counts = { Fire: 0, Water: 0, Earth: 0, Air: 0, Ether: 0 };
+    for (const word of phrase) {
+      const meta = this.lookupMeta(word);
+      if (meta.element) counts[meta.element]++;
+    }
+    return counts;
   }
 }
 

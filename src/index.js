@@ -8,6 +8,7 @@ import { Parser } from './parser.js';
 import { Compiler } from './compiler.js';
 import { LLMIntegration, RAGIntegration, Agent } from './llm-integration.js';
 import { SwibeREPL } from './repl.js';
+import crypto from 'node:crypto';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -74,6 +75,7 @@ async function main() {
         rag,
         checkGoal: std.checkGoal.bind(std),
         console,
+        crypto,
         setTimeout,
         clearTimeout,
         process

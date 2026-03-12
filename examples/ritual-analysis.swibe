@@ -1,0 +1,43 @@
+-- Swibe Ritual Analysis
+-- Goal: Analyze the elemental signature and ritual cues of a sovereign phrase.
+
+fn main() {
+  println("--- Ritual Analysis Starting ---")
+
+  let entropy = crypto.randomBytes(32)
+  let phrase = bipon39_entropyToMnemonic(entropy, 256)
+  
+  println("Mnemonic: " + join(phrase, " "))
+  
+  let signature = elemental_signature(phrase)
+  println("Elemental Signature: ")
+  println("  Fire:  " + signature.Fire)
+  println("  Water: " + signature.Water)
+  println("  Earth: " + signature.Earth)
+  println("  Air:   " + signature.Air)
+  println("  Ether: " + signature.Ether)
+
+  println("\n--- Ritual Cues for first 3 words ---")
+  let word0 = phrase[0]
+  let meta0 = lookup_meta(word0)
+  println("Word 1: " + word0)
+  println("  Element: " + meta0.element)
+  println("  Cue:     " + meta0.ritual_cue)
+  println("  Sigil:   " + meta0.sigil_seed)
+
+  let word1 = phrase[1]
+  let meta1 = lookup_meta(word1)
+  println("Word 2: " + word1)
+  println("  Element: " + meta1.element)
+  println("  Cue:     " + meta1.ritual_cue)
+  println("  Sigil:   " + meta1.sigil_seed)
+
+  let word2 = phrase[2]
+  let meta2 = lookup_meta(word2)
+  println("Word 3: " + word2)
+  println("  Element: " + meta2.element)
+  println("  Cue:     " + meta2.ritual_cue)
+  println("  Sigil:   " + meta2.sigil_seed)
+
+  println("\n--- Analysis Complete ---")
+}

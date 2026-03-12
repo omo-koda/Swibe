@@ -62,7 +62,17 @@ class StandardLibrary {
       'derive_aes_key': this.derive_aes_key.bind(this),
       'bipon39_entropyToMnemonic': this.bipon39_entropyToMnemonic.bind(this),
       'bipon39_mnemonicToSeed': this.bipon39_mnemonicToSeed.bind(this),
+      'lookup_meta': this.lookup_meta.bind(this),
+      'elemental_signature': this.elemental_signature.bind(this),
     };
+  }
+
+  lookup_meta(word) {
+    return sovereign.lookupMeta(word);
+  }
+
+  elemental_signature(phrase) {
+    return sovereign.elementalSignature(phrase);
   }
 
   encrypt_storage() {
