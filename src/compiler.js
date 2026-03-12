@@ -218,6 +218,9 @@ class Compiler {
       case 'AgentDefinition':
         return this.genJSAgent(node);
 
+      case 'Think':
+        return this.genJSThink(node);
+
       case 'FunctionCall':
         return `(await ${node.name}(${node.args.map(a => this.genJavaScript(a)).join(', ')}))`;
 
@@ -358,6 +361,16 @@ class Compiler {
 
   genJSCallTool(node) {
     return `await mcp.call_tool("${node.name}", ${this.genJavaScript(node.args)});`;
+  }
+
+  genJSThink(node) {
+    const prompt = this.genJavaScript(node.prompt);
+    let config = '{';
+    for (const [key, value] of Object.entries(node.config)) {
+      config += `${key}: ${this.genJavaScript(value)}, `;
+    }
+    config += '}';
+    return `await think(${prompt}, ${config});`;
   }
 
   genJSAgent(node) {

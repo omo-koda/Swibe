@@ -238,6 +238,23 @@ test('24. NeuralLayer - Opt-in Skill', async () => {
   assert(result.synapses === 86000000, 'Correct synapse supply');
 });
 
+test('25. Think - LLM Query', async () => {
+  const std = new StandardLibrary();
+  
+  // Mock console to capture output
+  const originalLog = console.log;
+  let capturedOutput = '';
+  console.log = (...args) => { capturedOutput += args.join(' ') + '\n'; };
+  
+  const response = await std.think("Hello world", { model: "ollama:llama3" });
+  
+  console.log = originalLog;
+  
+  assert(response.includes("Hello world"), 'Response should contain prompt');
+  assert(capturedOutput.includes('[THINK] Querying model: ollama:llama3'), 'Should log model query');
+  assert(capturedOutput.includes('[THINK] Receipt Sealed:'), 'Should log receipt');
+});
+
 // ============================================================================
 // Run All Tests
 // ============================================================================

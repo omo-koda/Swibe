@@ -60,6 +60,7 @@ fn main() {
   
   -- Opt-in to NeuralLayer: if true, initializing internal & public tokens
   let opt_in = true 
+  let opt_in_think = true
   
   -- 1. Run the primary sovereign birth ritual
   SovereignRitual.actions()
@@ -67,6 +68,11 @@ fn main() {
   -- 2. If opted-in, initialize the neural layer (internal & public tokens)
   if opt_in {
     NeuralLayer.actions()
+  }
+
+  -- 3. Optional Think query
+  if opt_in_think {
+    think "What is my next task?" { model: "ollama:llama3" }
   }
   
   println("--- Ritual Complete ---")

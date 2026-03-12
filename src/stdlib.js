@@ -64,6 +64,7 @@ class StandardLibrary {
       'bipon39_mnemonicToSeed': this.bipon39_mnemonicToSeed.bind(this),
       'lookup_meta': this.lookup_meta.bind(this),
       'elemental_signature': this.elemental_signature.bind(this),
+      'think': this.think.bind(this),
       'refuse_if': (cond) => cond,
       'seal': (msg) => msg,
       'NeuralLayer': {
@@ -80,6 +81,33 @@ class StandardLibrary {
 
   lookup_meta(word) {
     return sovereign.lookupMeta(word);
+  }
+
+  async think(prompt, config = {}) {
+    const model = config.model || "ollama:llama3";
+    const max_tokens = config.max_tokens || 512;
+    
+    const availableModels = ["ollama:llama3", "grok", "gemini"];
+    if (!availableModels.includes(model)) {
+      throw new Error("Model unavailable");
+    }
+
+    console.log(`[THINK] Querying model: ${model} (max_tokens: ${max_tokens})`);
+    console.log(`[THINK] Prompt: ${prompt}`);
+    
+    // Mock response
+    const response = `Mock response for: ${prompt}`;
+    console.log(`[THINK] Response: ${response}`);
+
+    // Auto-seal receipt: hash(prompt + response)
+    const receiptContent = prompt + response;
+    const receipt = crypto.createHash('sha256').update(receiptContent).digest('hex');
+    console.log(`[THINK] Receipt Sealed: ${receipt}`);
+    
+    // Log to vault (Simulated)
+    console.log(`[THINK] Logged to vault: ${receipt}`);
+
+    return response;
   }
 
   elemental_signature(phrase) {
@@ -195,6 +223,7 @@ class StandardLibrary {
       println: (...args) => console.log('[SANDBOX-LOG]', ...args),
       join: this.join.bind(this),
       trace: this.trace.bind(this),
+      think: this.think.bind(this),
       NeuralLayer: this.builtins.NeuralLayer,
       rag: {
         save: (name, data) => {

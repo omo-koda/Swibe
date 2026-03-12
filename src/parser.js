@@ -129,6 +129,11 @@ class Parser {
       return this.parseCallToolStatement();
     }
 
+    // Think statement
+    if (token.type === TokenType.THINK) {
+      return this.parseThinkStatement();
+    }
+
     // Return statement
     if (token.type === TokenType.RETURN) {
       this.advance();
@@ -461,6 +466,24 @@ class Parser {
     const goal = this.parseExpression();
     const body = this.parseBlock();
     return new ASTNode('LoopUntil', { goal, body });
+  }
+
+  parseThinkStatement() {
+    this.expect(TokenType.THINK);
+    const prompt = this.parseExpression();
+    this.expect(TokenType.LBRACE);
+
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE) {
+      const field = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      const value = this.parseExpression();
+      config[field] = value;
+      if (this.current().type === TokenType.COMMA) this.advance();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('Think', { prompt, config });
   }
 
   parseCallToolStatement() {

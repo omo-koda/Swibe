@@ -54,6 +54,7 @@ const TokenType = {
   UNTIL: 'UNTIL',
   GOAL: 'GOAL',
   CALL_TOOL: 'CALL_TOOL',
+  THINK: 'THINK',
   PROMPT: 'PROMPT', // %%
   VOICE: 'VOICE',   // [voice: ...]
 
@@ -289,6 +290,7 @@ class Lexer {
     until: TokenType.UNTIL,
     goal: TokenType.GOAL,
     call_tool: TokenType.CALL_TOOL,
+    think: TokenType.THINK,
     app: TokenType.APP,
   };
 
