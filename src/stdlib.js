@@ -207,7 +207,21 @@ class StandardLibrary {
       crypto: { 
         randomBytes: (n) => crypto.randomBytes(n) 
       },
-      json: JSON,
+      json: {
+        stringify: (obj) => JSON.stringify(obj),
+        parse: (str) => JSON.parse(str)
+      },
+      rag: {
+        save: (key, data) => {
+          console.log(`[SANDBOX-LOG] [RAG] Storing vault blob: ${key}`);
+          // In real implementation, this persists to disk/DB
+          return true;
+        },
+        load: (key) => {
+          console.log(`[SANDBOX-LOG] [RAG] Loading vault blob: ${key}`);
+          return null; 
+        }
+      },
 
       process: { exit: () => { throw new Error('process.exit() is forbidden'); } }
     });
