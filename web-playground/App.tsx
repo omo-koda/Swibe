@@ -95,6 +95,10 @@ export default function App() {
             <option value="rust">Rust</option>
             <option value="go">Go</option>
             <option value="move">Sui Move</option>
+            <option value="elixir">Elixir</option>
+            <option value="pony">Pony</option>
+            <option value="mojo">Mojo</option>
+            <option value="aether">Aether</option>
           </select>
           <button onClick={handleCompile} disabled={state.isCompiling} className="btn-primary">
             {state.isCompiling ? 'Compiling...' : 'Compile'}
@@ -139,7 +143,7 @@ export default function App() {
       </div>
 
       <footer className="playground-footer">
-        <p>Swibe v0.4.0 | JS, Python, Rust, Go, Sui Move</p>
+        <p>Swibe v0.4.1 | JS, Python, Rust, Go, Move, Elixir, Pony, Mojo, Aether</p>
       </footer>
     </div>
   );

@@ -6,6 +6,10 @@
 import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
 import { LLMIntegration } from './llm-integration.js';
+import { genElixir } from './backends/elixir.js';
+import { genPony } from './backends/pony.js';
+import { genMojo } from './backends/mojo.js';
+import { genAether } from './backends/aether.js';
 
 class Compiler {
   constructor(source, targetLanguage = 'javascript') {
@@ -141,6 +145,14 @@ class Compiler {
         return this.genScheme(node);
       case 'wolfram':
         return this.genWolfram(node);
+      case 'elixir':
+        return genElixir(node);
+      case 'pony':
+        return genPony(node);
+      case 'mojo':
+        return genMojo(node);
+      case 'aether':
+        return genAether(node);
       case 'agent-skills':
         return this.genAgentSkillsFormat(node);
       default:

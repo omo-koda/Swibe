@@ -40,6 +40,38 @@ describe('Swibe v0.4.0 Sovereign Birth', () => {
       expect(code).toContain('module omokoda::soul');
       expect(code).toContain('struct BreathEvent');
     });
+
+    it('compiles to Elixir (BEAM Actors)', async () => {
+      const source = 'swarm { Genesis: Agent { name: "Genesis" } }';
+      const compiler = new Compiler(source, 'elixir');
+      const code = await compiler.compile();
+      expect(code).toContain('defmodule Swibe.Sovereign');
+      expect(code).toContain('spawn(fn ->');
+    });
+
+    it('compiles to Pony (Lock-free Actors)', async () => {
+      const source = 'swarm { Genesis: Agent { name: "Genesis" } }';
+      const compiler = new Compiler(source, 'pony');
+      const code = await compiler.compile();
+      expect(code).toContain('actor Main');
+      expect(code).toContain('AgentActor("Genesis")');
+    });
+
+    it('compiles to Mojo (Neural Kernels)', async () => {
+      const source = 'neural;';
+      const compiler = new Compiler(source, 'mojo');
+      const code = await compiler.compile();
+      expect(code).toContain('fn main():');
+      expect(code).toContain('Mojo High-Performance Kernel: Neural Simulation');
+    });
+
+    it('compiles to Aether (Work-stealing Queues)', async () => {
+      const source = 'swarm { Genesis: Agent { name: "Genesis" } }';
+      const compiler = new Compiler(source, 'aether');
+      const code = await compiler.compile();
+      expect(code).toContain('#include <aether/core.h>');
+      expect(code).toContain('aether::spawn_task');
+    });
   });
 
   describe('Sovereign Vault', () => {

@@ -99,6 +99,13 @@ class Parser {
       return this.parseSwarmStatement();
     }
 
+    // Neural statement
+    if (token.type === TokenType.NEURAL) {
+      this.advance();
+      this.match(TokenType.SEMICOLON);
+      return new ASTNode('NeuralLayer', {});
+    }
+
     // App declaration
     if (token.type === TokenType.APP) {
       return this.parseAppDecl();
