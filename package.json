@@ -16,7 +16,7 @@
     "repl": "node src/repl.js",
     "compile": "node src/compiler.js",
     "run": "node src/index.js run",
-    "test": "node src/swibe-test.js",
+    "test": "vitest run",
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "roadmap": "node src/roadmap-cli.js"
@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "eslint": "^8.50.0",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "vitest": "^1.0.0"
   }
 }

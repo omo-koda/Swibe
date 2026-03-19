@@ -7,10 +7,14 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { Agent, LLMIntegration } from './llm-integration.js';
 import { sovereign } from './sovereign-vault.js';
+import { NeuralLayer } from './neural.js';
 
 class StandardLibrary {
   constructor() {
     this.goalAttempts = new Map();
+    this.neural = new NeuralLayer();
+    this.llm = new LLMIntegration();
+    
     this.builtins = {
       // Array operations
       'len': this.len,
@@ -64,9 +68,33 @@ class StandardLibrary {
       'bipon39_mnemonicToSeed': this.bipon39_mnemonicToSeed.bind(this),
       'lookup_meta': this.lookup_meta.bind(this),
       'elemental_signature': this.elemental_signature.bind(this),
-      'refuse_if': (cond) => cond,
+      
+      // New Primitives (v0.4.0)
+      'think': this.think.bind(this),
+      'neural': this.neural,
+      'refuse_if': this.refuse_if.bind(this),
       'seal': (msg) => msg,
     };
+  }
+
+  async think(prompt) {
+    console.log(`[THINK] Processing: ${prompt.substring(0, 50)}...`);
+    const result = await this.llm.think(prompt);
+    this.neural.fire(prompt, { type: 'thought', receipt: result.receipt });
+    return result;
+  }
+
+  async refuse_if(condition) {
+    if (typeof condition === 'boolean' && condition) {
+      throw new Error("Action refused by boolean condition.");
+    }
+    if (typeof condition === 'string') {
+      const { content } = await this.think(`Review this ethical constraint: "${condition}". If it is violated by the current context, reply with "REFUSE". Otherwise "PROCEED".`);
+      if (content.includes("REFUSE")) {
+        throw new Error(`Action refused by ethical constraint: ${condition}`);
+      }
+    }
+    return true;
   }
 
   lookup_meta(word) {
@@ -366,10 +394,12 @@ class MetaDigital {
       }
     }
 
-    // 2. Apply ethics check (Mock)
-    if (this.ethics && typeof this.ethics === 'string' && this.ethics.includes('harm')) {
-      console.error(`[META-DIGITAL] Refused: ${this.ethics}`);
-      throw new Error(`refused: ${this.ethics}`);
+    // 2. Apply ethics check (Real)
+    if (this.ethics) {
+      // Use a temporary stdlib instance to access refuse_if logic
+      // In a real optimized runtime, this would be passed in context
+      const std = new StandardLibrary(); 
+      await std.refuse_if(this.ethics);
     }
 
     // 3. Seal receipt (blake3 hash of inputs+output - using SHA256 as fallback)

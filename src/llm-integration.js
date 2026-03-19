@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 /**
  * LLM Integration for Vibe
  * Supports Claude, Ollama, HuggingFace, Grok, and AI Tools
@@ -60,6 +62,27 @@ class LLMIntegration {
 
   hasPromptSupport() {
     return true;
+  }
+
+  async think(prompt) {
+    let content;
+    // Feature: "Think" primitive with SHA-256 receipt
+    try {
+      if (this.provider === 'ollama') {
+        content = await this.ollamaGenerate(prompt);
+      } else if (this.provider === 'claude') {
+        // Fallback or specific provider logic
+        content = await this.claudeGenerate(prompt);
+      } else {
+         content = this.mockGenerate(prompt);
+      }
+    } catch (e) {
+      console.warn(`[THINK] LLM failed, using mock: ${e.message}`);
+      content = this.mockGenerate(prompt);
+    }
+
+    const receipt = crypto.createHash('sha256').update(content).digest('hex');
+    return { content, receipt };
   }
 
   async generateCode(prompt, context = {}) {

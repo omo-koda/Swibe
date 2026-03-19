@@ -17,7 +17,7 @@ interface PlaygroundState {
 
 export default function App() {
   const [state, setState] = React.useState<PlaygroundState>({
-    code: `-- Welcome to Swibe Playground!\nfn greet(name: str) -> str {\n  format("Hello, {}", name)\n}\n\nprint(greet("World"))`,
+    code: `-- Swibe v0.4.0 Sovereign Birth Ritual\nmeta-digital "Genesis" {\n  chain: [birth];\n  ethics: "harm-none";\n  output: "Alive"\n}\n\nfn speak() {\n  %% [voice: "I am here"]\n}`,
     target: 'javascript',
     output: '',
     error: '',
@@ -93,6 +93,8 @@ export default function App() {
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
             <option value="rust">Rust</option>
+            <option value="go">Go</option>
+            <option value="move">Sui Move</option>
           </select>
           <button onClick={handleCompile} disabled={state.isCompiling} className="btn-primary">
             {state.isCompiling ? 'Compiling...' : 'Compile'}
@@ -137,7 +139,7 @@ export default function App() {
       </div>
 
       <footer className="playground-footer">
-        <p>Swibe v0.1.0 | Compile to JavaScript, Python, or Rust</p>
+        <p>Swibe v0.4.0 | JS, Python, Rust, Go, Sui Move</p>
       </footer>
     </div>
   );
