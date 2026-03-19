@@ -14,24 +14,31 @@ In v0.3 “App Genesis”, Swibe gained the ability to birth full applications a
 - **Self-Healing Loops** — Agents that monitor and repair themselves
 - **Persistent RAG** — Causal memory that survives across runs
 - **Secure Sandbox** — Privacy-first execution with resource limits
-- **22 Compilation Targets** — Elixir, Pony, Mojo, Aether, JS, Rust, Go, Move, and more
+- **25 Compilation Targets** — Lua, Zig, Julia, Elixir, Pony, Mojo, Aether, JS, Rust, Go, Move, and more
 
 ## Backends
 
 | Target | Architecture | Use Case |
 | --- | --- | --- |
+| **Lua** | Coroutines | Embedded Agents |
+| **Zig** | Comptime | Zero-overhead Edge |
+| **Julia** | Matrix SIMD | Neural Simulation |
 | **Elixir** | BEAM Actors | Massive Swarms |
-| **Pony** | Lock-free Actors | Performance & Safety |
+| **Pony** | Lock-free | Performance & Safety |
 | **Mojo** | SIMD Kernels | Neural Layer Ops |
 | **Aether** | Work-stealing | Zero-copy Agents |
 | **Sui Move** | On-chain Soul | Sovereign Birth |
 
-## Extending Backends
+## Technosis Bridge
 
-To add a new ritual target:
+To add a new ritual target (The Bridge Pattern):
 1. Create `src/backends/yourlang.js`.
-2. Map Swibe AST nodes (Swarm, MetaDigital, etc.) to your language's primitives.
-3. Register in `src/compiler.js`.
+2. Implement a `genYourLang(node)` function that walks the Swibe AST.
+3. Map primitives:
+   - `swarm` → Native concurrency (Processes, Threads, Coroutines)
+   - `think` → LLM/Osovm API wrapper
+   - `neural` → SIMD/Matrix kernels
+4. Register in `src/compiler.js`.
 
 ## Installation
 

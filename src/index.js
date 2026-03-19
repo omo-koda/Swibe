@@ -102,14 +102,14 @@ async function main() {
     }
 
     case 'version': {
-      console.log('Swibe v0.4.1');
+      console.log('Swibe v0.5.0');
       break;
     }
 
     case 'help':
     default: {
       console.log(`
-Swibe Language CLI v0.4.1
+Swibe Language CLI v0.5.0
 
 Usage:
   swibe                              Start interactive REPL
@@ -118,12 +118,12 @@ Usage:
   swibe version                     Show version
   swibe help                        Show this help
 
-Target languages: javascript, python, rust, go, move, elixir, pony, mojo, aether (default: javascript)
+Target languages: lua, zig, julia, elixir, pony, mojo, aether, javascript, python, rust, go, move (default: javascript)
 
 Examples:
   swibe compile hello.swibe
-  swibe compile app.swibe --target elixir
-  swibe compile ai-app.swibe --target mojo
+  swibe compile app.swibe --target zig
+  swibe compile ai-app.swibe --target julia
       `);
       break;
     }
