@@ -14,22 +14,27 @@ In v0.3 “App Genesis”, Swibe gained the ability to birth full applications a
 - **Self-Healing Loops** — Agents that monitor and repair themselves
 - **Persistent RAG** — Causal memory that survives across runs
 - **Secure Sandbox** — Privacy-first execution with resource limits
-- **25 Compilation Targets** — Lua, Zig, Julia, Elixir, Pony, Mojo, Aether, JS, Rust, Go, Move, and more
+- **33 Compilation Targets** — Organized into Tiers for any ecosystem.
 
 ## Backends
 
+### Tier 1: High-Speed & Embedded (Ready)
 | Target | Architecture | Use Case |
 | --- | --- | --- |
-| **Lua** | Coroutines | Embedded Agents |
-| **Zig** | Comptime | Zero-overhead Edge |
-| **Julia** | Matrix SIMD | Neural Simulation |
-| **Elixir** | BEAM Actors | Massive Swarms |
-| **Pony** | Lock-free | Performance & Safety |
-| **Mojo** | SIMD Kernels | Neural Layer Ops |
-| **Aether** | Work-stealing | Zero-copy Agents |
-| **Sui Move** | On-chain Soul | Sovereign Birth |
+| **JavaScript** | Async/Node | Universal UI/Web |
+| **Lua** | Coroutines | Tiny Embedded |
+| **Nim** | Macros/DSL | High Performance |
+| **Crystal** | Fibers | Safe Concurrency |
+| **Janet** | Lisp Macros | Scripting/Embed |
+| **Scheme** | Lambdas | Minimal Footprint |
 
-## Technosis Bridge
+### Tier 2: Systems & Safety (Implementing)
+**Rust**, **Go**, **Zig**, **V**, **Odin**, **OCaml**, **F#**, **Clojure**, **Haskell**
+
+### Tier 3: Exotic & Specialized (Planned)
+**Pony**, **Aether**, **Mojo**, **Sui Move**, **Julia**, **APL**, **J**, **K**, **Forth**, **Prolog**, **Mercury**, **Ada**, **COBOL**, **Smalltalk**, **D**, **Raku**, **Scala**, **Idris**
+
+## Technosis Bridge (Ecosystem Independence)
 
 To add a new ritual target (The Bridge Pattern):
 1. Create `src/backends/yourlang.js`.

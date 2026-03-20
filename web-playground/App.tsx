@@ -102,6 +102,19 @@ export default function App() {
             <option value="lua">Lua</option>
             <option value="zig">Zig</option>
             <option value="julia">Julia</option>
+            <option value="nim">Nim</option>
+            <option value="crystal">Crystal</option>
+            <option value="janet">Janet</option>
+            <option value="scheme">Scheme</option>
+            <option value="rust">Rust</option>
+            <option value="go">Go</option>
+            <option value="zig">Zig</option>
+            <option value="v">V</option>
+            <option value="odin">Odin</option>
+            <option value="ocaml">OCaml</option>
+            <option value="fsharp">F#</option>
+            <option value="clojure">Clojure</option>
+            <option value="haskell">Haskell</option>
           </select>
           <button onClick={handleCompile} disabled={state.isCompiling} className="btn-primary">
             {state.isCompiling ? 'Compiling...' : 'Compile'}
@@ -146,7 +159,7 @@ export default function App() {
       </div>
 
       <footer className="playground-footer">
-        <p>Swibe v0.5.0 | 25 Targets including Lua, Zig, Julia, Elixir, Pony</p>
+        <p>Swibe v0.5.2 | 33 Planned Targets across Tier 1, 2, and 3</p>
       </footer>
     </div>
   );

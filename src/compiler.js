@@ -13,6 +13,10 @@ import { genAether } from './backends/aether.js';
 import { genLua } from './backends/lua.js';
 import { genZig } from './backends/zig.js';
 import { genJulia } from './backends/julia.js';
+import { genNim } from './backends/nim.js';
+import { genCrystal } from './backends/crystal.js';
+import { genJanet } from './backends/janet.js';
+import { genScheme } from './backends/scheme.js';
 
 class Compiler {
   constructor(source, targetLanguage = 'javascript') {
@@ -132,20 +136,24 @@ class Compiler {
         return this.genProlog(node);
       case 'lisp':
         return this.genLisp(node);
+      case 'janet':
+        return genJanet(node);
       case 'haskell':
         return this.genHaskell(node);
       case 'lua':
         return genLua(node);
+      case 'nim':
+        return genNim(node);
+      case 'crystal':
+        return genCrystal(node);
+      case 'scheme':
+        return genScheme(node);
       case 'matlab':
         return this.genMatlab(node);
-      case 'scala':
-        return this.genScala(node);
       case 'clojure':
         return this.genClojure(node);
       case 'ocaml':
         return this.genOCaml(node);
-      case 'scheme':
-        return this.genScheme(node);
       case 'wolfram':
         return this.genWolfram(node);
       case 'elixir':
