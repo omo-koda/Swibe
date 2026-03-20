@@ -47,11 +47,19 @@ async function main() {
 
     case 'run': {
       if (args.length < 2) {
-        console.error('Usage: swibe run <file>');
+        console.error('Usage: swibe run <file> [--plugin path]');
         process.exit(1);
       }
 
       const file = args[1];
+      let pluginPath = null;
+      if (args.includes('--plugin')) {
+        const index = args.indexOf('--plugin');
+        if (index + 1 < args.length) {
+          pluginPath = args[index + 1];
+        }
+      }
+
       const fs = await import('node:fs');
       const source = fs.readFileSync(file, 'utf-8');
 
@@ -61,6 +69,24 @@ async function main() {
       const { StandardLibrary, SwarmPipeline, sandbox, mcp, MetaDigital } = await import('./stdlib.js');
       const { RAGIntegration, Agent } = await import('./llm-integration.js');
       const std = new StandardLibrary();
+      
+      // Load Plugin if specified
+      if (pluginPath) {
+        try {
+          // Resolve relative paths
+          const absolutePath = pluginPath.startsWith('.') 
+            ? await import('node:path').then(p => p.resolve(process.cwd(), pluginPath))
+            : pluginPath;
+            
+          const { default: PluginClass } = await import(absolutePath);
+          const plugin = new PluginClass();
+          std.setPlugin(plugin);
+          console.log(`[CORE] Plugin loaded: ${pluginPath}`);
+        } catch (err) {
+          console.warn(`[CORE-WARN] Failed to load plugin ${pluginPath}: ${err.message}`);
+        }
+      }
+
       const rag = new RAGIntegration();
 
       const vm = await import('node:vm');
@@ -88,8 +114,14 @@ async function main() {
           if (typeof main === "function") await main(); 
         })()`;
         await vm.runInContext(wrappedCode, context);
+        if (std.plugin && typeof std.plugin.onSettle === 'function') {
+          std.plugin.onSettle({ status: 'completed' });
+        }
       } catch (err) {
         console.error(`Runtime Error: ${err.message}`);
+        if (std.plugin && typeof std.plugin.onSettle === 'function') {
+          std.plugin.onSettle({ status: 'error', error: err.message });
+        }
         process.exit(1);
       }
       break;
@@ -114,6 +146,7 @@ Swibe Language CLI v0.5.0
 Usage:
   swibe                              Start interactive REPL
   swibe compile <file> [--target]   Compile Swibe to target language
+  swibe run <file> [--plugin path]  Run Swibe code with optional ecosystem plugin
   swibe repl                        Interactive shell
   swibe version                     Show version
   swibe help                        Show this help
@@ -122,7 +155,7 @@ Target languages: lua, zig, julia, elixir, pony, mojo, aether, javascript, pytho
 
 Examples:
   swibe compile hello.swibe
-  swibe compile app.swibe --target zig
+  swibe run agent.swibe --plugin ./technosis-adapter.js
   swibe compile ai-app.swibe --target julia
       `);
       break;

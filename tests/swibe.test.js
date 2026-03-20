@@ -131,4 +131,28 @@ describe('Swibe v0.4.0 Sovereign Birth', () => {
       expect(result.receipt).toBeDefined();
     });
   });
+
+  describe('Plugin System', () => {
+    it('calls lifecycle hooks when a plugin is registered', async () => {
+      const std = new StandardLibrary();
+      const mockPlugin = {
+        onBirth: vi.fn(),
+        onThink: vi.fn(),
+        onReceipt: vi.fn(),
+        onSettle: vi.fn(),
+      };
+
+      std.setPlugin(mockPlugin);
+
+      // Test onBirth
+      std.create_agent({ name: "TestAgent" });
+      expect(mockPlugin.onBirth).toHaveBeenCalled();
+
+      // Test onThink and onReceipt
+      vi.spyOn(std.llm, 'think').mockResolvedValue({ content: "Hi", receipt: "hash" });
+      await std.think("Hello");
+      expect(mockPlugin.onThink).toHaveBeenCalledWith("Hello");
+      expect(mockPlugin.onReceipt).toHaveBeenCalledWith({ content: "Hi", receipt: "hash" });
+    });
+  });
 });

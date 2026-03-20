@@ -14,48 +14,49 @@ class StandardLibrary {
     this.goalAttempts = new Map();
     this.neural = new NeuralLayer();
     this.llm = new LLMIntegration();
+    this.plugin = null;
     
     this.builtins = {
       // Array operations
-      'len': this.len,
-      'push': this.push,
-      'pop': this.pop,
-      'map': this.map,
-      'filter': this.filter,
-      'reduce': this.reduce,
-      'find': this.find,
-      'any': this.any,
-      'all': this.all,
-      'range': this.range,
-      'reverse': this.reverse,
-      'sort': this.sort,
+      'len': this.len.bind(this),
+      'push': this.push.bind(this),
+      'pop': this.pop.bind(this),
+      'map': this.map.bind(this),
+      'filter': this.filter.bind(this),
+      'reduce': this.reduce.bind(this),
+      'find': this.find.bind(this),
+      'any': this.any.bind(this),
+      'all': this.all.bind(this),
+      'range': this.range.bind(this),
+      'reverse': this.reverse.bind(this),
+      'sort': this.sort.bind(this),
       
       // Dictionary operations
-      'keys': this.keys,
-      'values': this.values,
-      'items': this.items,
-      'get': this.get,
+      'keys': this.keys.bind(this),
+      'values': this.values.bind(this),
+      'items': this.items.bind(this),
+      'get': this.get.bind(this),
       
       // String operations
-      'upper': this.upper,
-      'lower': this.lower,
-      'trim': this.trim,
-      'split': this.split,
-      'join': this.join,
-      'contains': this.contains,
+      'upper': this.upper.bind(this),
+      'lower': this.lower.bind(this),
+      'trim': this.trim.bind(this),
+      'split': this.split.bind(this),
+      'join': this.join.bind(this),
+      'contains': this.contains.bind(this),
       
       // I/O & Utils
-      'print': this.print,
-      'println': this.println,
-      'trace': this.trace,
-      'type': this.type,
-      'exit': this.exit,
-      'sleep': this.sleep,
-      'create_agent': this.create_agent,
-      'deploy_app': this.deploy_app,
-      'encrypt_storage': this.encrypt_storage,
-      'no_external_upload': this.no_external_upload,
-      'search_tags': this.search_tags,
+      'print': this.print.bind(this),
+      'println': this.println.bind(this),
+      'trace': this.trace.bind(this),
+      'type': this.type.bind(this),
+      'exit': this.exit.bind(this),
+      'sleep': this.sleep.bind(this),
+      'create_agent': this.create_agent.bind(this),
+      'deploy_app': this.deploy_app.bind(this),
+      'encrypt_storage': this.encrypt_storage.bind(this),
+      'no_external_upload': this.no_external_upload.bind(this),
+      'search_tags': this.search_tags.bind(this),
 
       // Sovereign Identity & Vault (Rituals)
       'gen_ritual_keypair': this.gen_ritual_keypair.bind(this),
@@ -77,10 +78,28 @@ class StandardLibrary {
     };
   }
 
+  setPlugin(plugin) {
+    this.plugin = plugin;
+  }
+
+  create_agent(config) {
+    const agent = new Agent(config);
+    if (this.plugin && typeof this.plugin.onBirth === 'function') {
+      this.plugin.onBirth(agent);
+    }
+    return agent;
+  }
+
   async think(prompt) {
+    if (this.plugin && typeof this.plugin.onThink === 'function') {
+      this.plugin.onThink(prompt);
+    }
     console.log(`[THINK] Processing: ${prompt.substring(0, 50)}...`);
     const result = await this.llm.think(prompt);
     this.neural.fire(prompt, { type: 'thought', receipt: result.receipt });
+    if (this.plugin && typeof this.plugin.onReceipt === 'function') {
+      this.plugin.onReceipt(result);
+    }
     return result;
   }
 
@@ -133,10 +152,6 @@ class StandardLibrary {
 
   async sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  create_agent(config) {
-    return new Agent(config);
   }
 
   async checkGoal(goal) {

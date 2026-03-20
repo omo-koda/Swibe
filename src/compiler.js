@@ -120,6 +120,32 @@ class Compiler {
         return this.genRust(node);
       case 'go':
         return this.genGo(node);
+      case 'julia':
+        return genJulia(node); // Using new Julia backend
+      case 'idris':
+        return this.genIdris(node);
+      case 'move':
+        return this.genMove(node);
+      case 'r':
+        return this.genR(node);
+      case 'prolog':
+        return this.genProlog(node);
+      case 'lisp':
+        return this.genLisp(node);
+      case 'haskell':
+        return this.genHaskell(node);
+      case 'lua':
+        return genLua(node);
+      case 'matlab':
+        return this.genMatlab(node);
+      case 'scala':
+        return this.genScala(node);
+      case 'clojure':
+        return this.genClojure(node);
+      case 'ocaml':
+        return this.genOCaml(node);
+      case 'scheme':
+        return this.genScheme(node);
       case 'wolfram':
         return this.genWolfram(node);
       case 'elixir':
@@ -130,12 +156,8 @@ class Compiler {
         return genMojo(node);
       case 'aether':
         return genAether(node);
-      case 'lua':
-        return genLua(node);
       case 'zig':
         return genZig(node);
-      case 'julia':
-        return genJulia(node);
       case 'agent-skills':
         return this.genAgentSkillsFormat(node);
       default:

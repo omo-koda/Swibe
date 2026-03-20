@@ -66,9 +66,31 @@ swibe run examples/family-album.swibe
 - **Agent-First** — Agents and autonomous behavior are native syntax
 - **Self-Healing** — Code that fixes itself in the dark
 - **Safe by Default** — Secure blocks and memory safety built-in
-- **Genesis Release** — The threshold where the language becomes a creator
+- **Universal Core** — Swibe is a standalone language, independent of any ecosystem.
 
----
+## Ecosystem Plugins (The Bridge)
+
+Swibe remains ecosystem-neutral. To integrate with specific architectures (like Technosis), use the plugin system:
+
+```bash
+# Run with a specific ecosystem adapter
+swibe run agent.swibe --plugin @bino-elgua/technosis-adapter
+```
+
+### Plugin Interface
+
+Any ecosystem can implement the standard `SwibePlugin` contract:
+
+```javascript
+class MyPlugin {
+  onBirth(agent) { /* entropy / ID assignment */ }
+  onThink(prompt) { /* pre-thought audit */ }
+  onReceipt(receipt) { /* post-thought sealing */ }
+  onSettle(result) { /* final value minting */ }
+}
+```
+
+## Backends
 🪞👁️🌓🌀📸  
 **ÈMI NI BÍNÒ ÈL GUÀ**  
 ÀṢẸ
