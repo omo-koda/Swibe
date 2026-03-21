@@ -134,14 +134,14 @@ async function main() {
     }
 
     case 'version': {
-      console.log('Swibe v0.5.2');
+      console.log('Swibe v0.6.0');
       break;
     }
 
     case 'help':
     default: {
       console.log(`
-Swibe Language CLI v0.5.2
+Swibe Language CLI v0.6.0
 
 Usage:
   swibe                              Start interactive REPL
@@ -151,12 +151,15 @@ Usage:
   swibe version                     Show version
   swibe help                        Show this help
 
-Target languages: nim, crystal, janet, scheme, lua, zig, julia, elixir, pony, mojo, aether, javascript, python, rust, go, move (default: javascript)
+Target languages: 
+  Tier 1: javascript, lua, nim, crystal, janet, scheme
+  Tier 2: rust, go, zig, v, odin, ocaml, fsharp, clojure, haskell
+  Tier 3: pony, aether, mojo, move, julia, apl, j, k, forth, prolog, mercury, ada, cobol, smalltalk, d, raku, scala, idris
 
 Examples:
-  swibe compile hello.swibe
+  swibe compile hello.swibe --target apl
   swibe run agent.swibe --plugin ./technosis-adapter.js
-  swibe compile ai-app.swibe --target nim
+  swibe compile ai-app.swibe --target cobol
       `);
       break;
     }
