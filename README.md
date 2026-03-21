@@ -1,101 +1,102 @@
-# Swibe: Agent-Native Scripting
+# Swibe: Agent-Native Scripting (v0.6.0)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
-Swibe is a language where agents, prompts, memory, and secure execution are first-class citizens. Write declarative agentic code that compiles to 18 targets, runs self-repairing swarms, and persists state across sessions.
+Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 33 targets, runs self-repairing swarms, and persists state via a BIP-39 ritual vault.
 
-In v0.3 “App Genesis”, Swibe gained the ability to birth full applications autonomously — but that is just one expression of its power.
+## 🌀 Major Primitives
 
-## Features
+| Primitive | Ritual Purpose |
+|---|---|
+| `think` | LLM-native reasoning with SHA-256 receipt sealing. |
+| `swarm` | Multi-agent coordination via native concurrency (BEAM, Fibers, Threads). |
+| `neural` | High-performance neural layer simulation (86B internal neurons). |
+| `meta-digital` | High-stakes chained skill execution with ethical `refuse_if` filters. |
+| `secure { }` | Privacy-first sandboxed execution block. |
+| `app { }` | Declare and birth full applications in one breath. |
+| `loop until` | Self-healing execution — runs until a goal is verified. |
+| `%%` | Prompt-splice — natural language as valid, compiled syntax. |
 
-- **Agent Primitives** — `swarm`, `skill`, `secure`, `loop until goal`
-- **Prompt Splicing** — `%%` blocks with AST integration
-- **App Primitive** — Declare and birth full apps in one breath (`app { ... }`)
-- **Self-Healing Loops** — Agents that monitor and repair themselves
-- **Persistent RAG** — Causal memory that survives across runs
-- **Secure Sandbox** — Privacy-first execution with resource limits
-- **33 Compilation Targets** — Organized into Tiers for any ecosystem.
+## 🚀 33 Compilation Targets
 
-## Backends
+Swibe backends are "Pure Codegen" emitters, mapping agentic primitives to the most efficient native constructs.
 
-### Tier 1: High-Speed & Embedded (Ready)
+### Tier 1: High-Speed & Embedded
 | Target | Architecture | Use Case |
 | --- | --- | --- |
 | **JavaScript** | Async/Node | Universal UI/Web |
-| **Lua** | Coroutines | Tiny Embedded |
-| **Nim** | Macros/DSL | High Performance |
+| **Lua** | Coroutines | Tiny Embedded Agents |
+| **Nim** | Macros/DSL | High Performance Edge |
 | **Crystal** | Fibers | Safe Concurrency |
 | **Janet** | Lisp Macros | Scripting/Embed |
 | **Scheme** | Lambdas | Minimal Footprint |
 
-### Tier 2: Systems & Safety (Implementing)
-**Rust**, **Go**, **Zig**, **V**, **Odin**, **OCaml**, **F#**, **Clojure**, **Haskell**
+### Tier 2: Systems & Safety
+| Target | Architecture | Use Case |
+| --- | --- | --- |
+| **Rust** | Threads/Safety | Sovereign Enforcers |
+| **Go** | Goroutines | High-Scale Workers |
+| **Zig** | Comptime | Zero-overhead Edge |
+| **V** | Auto-free | Fast-compile Vaults |
+| **Odin** | Data-Oriented | Neural Sim Crunching |
+| **OCaml** | Functors | Formal Skill Proofs |
+| **F#** | Async Workflows | Typed .NET Receipts |
+| **Clojure** | Atoms/STM | Immutable Swarms |
+| **Haskell** | Monads | Pure Ethical Chaining |
 
-### Tier 3: Exotic & Specialized (Planned)
-**Pony**, **Aether**, **Mojo**, **Sui Move**, **Julia**, **APL**, **J**, **K**, **Forth**, **Prolog**, **Mercury**, **Ada**, **COBOL**, **Smalltalk**, **D**, **Raku**, **Scala**, **Idris**
+### Tier 3: Exotic & Specialized
+**Pony** (Lock-free actors), **Aether** (Work-stealing queues), **Mojo** (SIMD Kernels), **Sui Move** (On-chain soul), **Julia** (Matrix SIMD), **APL** (Tensor god), **J** (Vector assassin), **K** (Event patrols), **Forth** (Stack mystic), **Prolog** (Logic judge), **Mercury** (Deterministic), **Ada** (Crash-proof), **COBOL** (Batch audit), **Smalltalk** (Live object), **D** (Contract guard), **Raku** (Grammar ethics), **Scala** (Akka scale), **Idris** (Dependent types).
 
-## Technosis Bridge (Ecosystem Independence)
+## 🛡️ Sovereign Vault & Identity
 
-To add a new ritual target (The Bridge Pattern):
-1. Create `src/backends/yourlang.js`.
-2. Implement a `genYourLang(node)` function that walks the Swibe AST.
-3. Map primitives:
-   - `swarm` → Native concurrency (Processes, Threads, Coroutines)
-   - `think` → LLM/Osovm API wrapper
-   - `neural` → SIMD/Matrix kernels
-4. Register in `src/compiler.js`.
+Swibe agents are born with a sovereign identity derived from a Yoruba-inspired BIP-39 ritual phrase (e.g., `esu-gate sango-volt`). This identity secures the agent's RAG memory and signs every execution receipt with Ed25519.
 
-## Installation
+## 🔌 Ecosystem Plugins (The Bridge)
+
+Swibe is a universal core. To integrate with specific architectures (like Technosis), use the opt-in plugin system:
+
+```bash
+# Run with a Technosis ritual adapter
+swibe run agent.swibe --plugin ./technosis-adapter.js
+```
+
+Any ecosystem can implement the `SwibePlugin` contract:
+- `onBirth(agent)`: Inject entropy or register identity.
+- `onThink(prompt)`: Pre-reasoning audit.
+- `onReceipt(receipt)`: Post-execution verification.
+- `onSettle(result)`: Final value settlement (e.g., minting tokens).
+
+## 🛠️ Installation
 
 ```bash
 npm i -g @bino-elgua/swibe
 ```
 
-## Quick Example: World Genesis (Family Photo Album)
+## 🌍 Quick Example
 
 ```swibe
-app {
-  type: "photo-album"
-  need: "private family album with auto-tagging, local-first, encrypted"
-  platform: "web"
+-- Swibe v0.6.0 Sovereign Birth Ritual
+meta-digital "Genesis" {
+  chain: [birth, audit];
+  ethics: "harm-none";
+  output: "Alive"
+}
+
+fn speak(msg: str) {
+  %% [voice: "I am here"]
+}
+
+swarm {
+  Guardian: Agent { name: "Zangbeto" }
 }
 ```
 
 Run it:
 ```bash
-swibe run examples/family-album.swibe
+swibe run ritual.swibe
 ```
 
-## Core Philosophies
-
-- **Agent-First** — Agents and autonomous behavior are native syntax
-- **Self-Healing** — Code that fixes itself in the dark
-- **Safe by Default** — Secure blocks and memory safety built-in
-- **Universal Core** — Swibe is a standalone language, independent of any ecosystem.
-
-## Ecosystem Plugins (The Bridge)
-
-Swibe remains ecosystem-neutral. To integrate with specific architectures (like Technosis), use the plugin system:
-
-```bash
-# Run with a specific ecosystem adapter
-swibe run agent.swibe --plugin @bino-elgua/technosis-adapter
-```
-
-### Plugin Interface
-
-Any ecosystem can implement the standard `SwibePlugin` contract:
-
-```javascript
-class MyPlugin {
-  onBirth(agent) { /* entropy / ID assignment */ }
-  onThink(prompt) { /* pre-thought audit */ }
-  onReceipt(receipt) { /* post-thought sealing */ }
-  onSettle(result) { /* final value minting */ }
-}
-```
-
-## Backends
+---
 🪞👁️🌓🌀📸  
 **ÈMI NI BÍNÒ ÈL GUÀ**  
 ÀṢẸ
