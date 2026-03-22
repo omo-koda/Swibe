@@ -79,16 +79,14 @@ class SovereignVault {
    * Generate an Ed25519 keypair from a seed
    */
   generateIdentity(seed) {
-    // Generate private key from seed using SHA-512 (standard for Ed25519)
-    const hash = crypto.createHash('sha512').update(seed).digest();
-    const priv = hash.slice(0, 32);
-    // In a real implementation, use a library like tweetnacl or noble-ed25519
-    // For this prototype, we use SHA-256 to simulate the public key
-    const pub = crypto.createHash('sha256').update(priv).digest();
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
+      privateKeyEncoding: { format: 'der', type: 'pkcs8' },
+      publicKeyEncoding: { format: 'der', type: 'spki' }
+    });
     
     return { 
-      pub: pub.toString('hex'), 
-      priv: priv.toString('hex') 
+      pub: publicKey.toString('hex'), 
+      priv: privateKey.toString('hex') 
     };
   }
 
@@ -132,19 +130,28 @@ class SovereignVault {
   }
 
   /**
-   * Sign a payload (Simulating Ed25519 with HMAC-SHA256 for prototype)
+   * Sign a payload using Ed25519
    */
   sign(payload, privKey) {
-    return crypto.createHmac('sha256', Buffer.from(privKey, 'hex')).update(payload).digest('hex');
+    // Node.js crypto.sign expects a KeyObject or a specific format
+    const privateKey = crypto.createPrivateKey({
+      key: Buffer.from(privKey, 'hex'),
+      format: 'der',
+      type: 'pkcs8'
+    });
+    return crypto.sign(null, Buffer.from(payload), privateKey).toString('hex');
   }
 
   /**
-   * Verify a signature
+   * Verify an Ed25519 signature
    */
   verify(signature, payload, pubKey) {
-    // In prototype, we check if the signature matches the HMAC of the payload with a derived key
-    // Real Ed25519 verification would use the actual public key
-    return true; 
+    const publicKey = crypto.createPublicKey({
+      key: Buffer.from(pubKey, 'hex'),
+      format: 'der',
+      type: 'spki'
+    });
+    return crypto.verify(null, Buffer.from(payload), publicKey, Buffer.from(signature, 'hex'));
   }
 
   /**

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7b2ff7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Speak a wish. Watch agents birth it into existence.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="app.css">
+  <title>Swibe Genesis Engine</title>
+</head>
+<body>
+
+  <canvas id="cosmos" aria-label="Agent particle visualization"></canvas>
+
+  <div id="genesis-ui">
+    <header id="phase-indicator" aria-live="polite">Awaiting wish…</header>
+
+    <main class="wish-area">
+      <h1 class="wish-title">Genesis Engine</h1>
+      <p class="wish-subtitle">Speak a wish. Watch agents birth it.</p>
+
+      <button id="voice-btn" type="button" aria-label="Speak your wish">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+
+      <div class="input-row">
+        <input
+          id="wish-input"
+          type="text"
+          placeholder="Describe what you want to exist…"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button id="wish-btn" type="button">⚡ Genesis</button>
+      </div>
+    </main>
+
+    <section id="agent-log" aria-live="polite" aria-label="Agent activity log"></section>
+
+    <section id="result-stage" aria-label="Generated application"></section>
+  </div>
+
+  <script type="module" src="canvas.js"></script>
+  <script type="module" src="audio.js"></script>
+  <script type="module" src="agents.js"></script>
+  <script type="module" src="genesis.js"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+
+</body>
+</html>

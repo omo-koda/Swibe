@@ -290,8 +290,7 @@ class Lexer {
     'meta-digital': TokenType.META_DIGITAL,
     until: TokenType.UNTIL,
     goal: TokenType.GOAL,
-    call_tool: TokenType.CALL_TOOL,
-    app: TokenType.APP,
+    call_tool: TokenType.CALL_TOOL
   };
 
   addToken(type, value = null) {

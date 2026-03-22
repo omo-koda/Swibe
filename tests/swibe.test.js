@@ -45,8 +45,8 @@ describe('Swibe v0.4.0 Sovereign Birth', () => {
       const source = 'swarm { Genesis: Agent { name: "Genesis" } }';
       const compiler = new Compiler(source, 'elixir');
       const code = await compiler.compile();
-      expect(code).toContain('defmodule Swibe.Sovereign');
-      expect(code).toContain('spawn(fn ->');
+      expect(code).toContain('defmodule SwibeAgent.Application');
+      expect(code).toContain('DynamicSupervisor.start_child');
     });
 
     it('compiles to Pony (Lock-free Actors)', async () => {
@@ -151,8 +151,8 @@ describe('Swibe v0.4.0 Sovereign Birth', () => {
       // Test onThink and onReceipt
       vi.spyOn(std.llm, 'think').mockResolvedValue({ content: "Hi", receipt: "hash" });
       await std.think("Hello");
-      expect(mockPlugin.onThink).toHaveBeenCalledWith("Hello");
-      expect(mockPlugin.onReceipt).toHaveBeenCalledWith({ content: "Hi", receipt: "hash" });
+      expect(mockPlugin.onThink).toHaveBeenCalledWith("Hello", expect.anything());
+      expect(mockPlugin.onReceipt).toHaveBeenCalledWith("hash");
     });
   });
 });

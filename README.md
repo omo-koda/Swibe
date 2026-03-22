@@ -1,23 +1,32 @@
-# Swibe: Agent-Native Scripting (v0.6.0)
+# Swibe: Agent-Native Scripting (v1.1.0)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
-Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 33 targets, runs self-repairing swarms, and persists state via a BIP-39 ritual vault.
+Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 33+ targets (including Elixir/OTP), runs self-repairing swarms, and persists state via a BIP-39 ritual vault.
 
-## 🌀 Major Primitives
+## 🌀 Major Primitives (v1.1)
 
 | Primitive | Ritual Purpose |
 |---|---|
 | `think` | LLM-native reasoning with SHA-256 receipt sealing. |
-| `swarm` | Multi-agent coordination via native concurrency (BEAM, Fibers, Threads). |
+| `swarm` | Multi-agent coordination via BEAM (Elixir/OTP), Go, or Rust. |
 | `neural` | High-performance neural layer simulation (86B internal neurons). |
 | `meta-digital` | High-stakes chained skill execution with ethical `refuse_if` filters. |
 | `secure { }` | Privacy-first sandboxed execution block. |
 | `app { }` | Declare and birth full applications in one breath. |
 | `loop until` | Self-healing execution — runs until a goal is verified. |
+| `hybrid` | NEW in v1.1: Multi-target orchestration (e.g. BEAM for logic, Rust for speed). |
 | `%%` | Prompt-splice — natural language as valid, compiled syntax. |
 
-## 🚀 33 Compilation Targets
+## 🚀 33+ Compilation Targets
+Swibe now supports a hybrid compiler that can split a single source into multiple specialized targets:
+- **BEAM (Elixir/OTP)**: Fault-tolerant orchestration and agent supervisors.
+- **System (Rust/Go)**: High-speed safe enforcers.
+- **Frontend (TS/WASM)**: Web-playground and PWA distribution.
+- **Cloud (Lambda/FastAPI)**: Serverless agent endpoints.
+
+## 🛡️ Sovereign Identity
+v1.1 introduces persistent RAG storage and bip-39 ritual phrases for every agent. Every `think` command produces a verifiable SHA-256 receipt, and every `swarm` is monitored by an OTP Supervisor tree.
 
 Swibe backends are "Pure Codegen" emitters, mapping agentic primitives to the most efficient native constructs.
 

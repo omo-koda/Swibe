@@ -74,6 +74,9 @@ class StandardLibrary {
 
   create_agent(config) {
     const agent = new Agent(config);
+    if (this.plugin && typeof this.plugin.onBirth === 'function') {
+      this.plugin.onBirth(agent);
+    }
     return agent;
   }
 
