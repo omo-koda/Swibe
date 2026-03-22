@@ -84,7 +84,7 @@ npm i -g @bino-elgua/swibe
 ## 🌍 Quick Example
 
 ```swibe
--- Swibe v0.6.0 Sovereign Birth Ritual
+-- Swibe v1.1.0 Sovereign Birth Ritual
 meta-digital "Genesis" {
   chain: [birth, audit];
   ethics: "harm-none";

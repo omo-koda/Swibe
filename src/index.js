@@ -179,14 +179,14 @@ async function main() {
     }
 
     case 'version': {
-      console.log('Swibe v0.6.0');
+      console.log('Swibe v1.1.0');
       break;
     }
 
     case 'help':
     default: {
       console.log(`
-Swibe Language CLI v0.6.0
+Swibe Language CLI v1.1.0
 
 Usage:
   swibe                              Start interactive REPL

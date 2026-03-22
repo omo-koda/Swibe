@@ -22,7 +22,7 @@ class SwibeREPL {
   }
 
   start() {
-    console.log('🎵 Swibe Language REPL v0.1.0');
+    console.log('🎵 Swibe Language REPL v1.1.0');
     console.log('Type "help" for commands, "exit" to quit\n');
 
     this.prompt();
