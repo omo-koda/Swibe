@@ -160,13 +160,10 @@ class StandardLibrary {
     const attempts = this.goalAttempts.get(goal) || 0;
     this.goalAttempts.set(goal, attempts + 1);
     
-    // Force at least one failure to show the loop body
     if (attempts < 1) return false;
-    
-    return true; // Succeed after 1 attempt
+    return true;
   }
 
-  // Array operations
   len(arr) { return Array.isArray(arr) || typeof arr === 'string' ? arr.length : 0; }
   push(arr, item) { arr.push(item); return arr; }
   pop(arr) { return arr.pop(); }
@@ -186,13 +183,11 @@ class StandardLibrary {
     return result;
   }
 
-  // Dictionary operations
   keys(obj) { return Object.keys(obj); }
   values(obj) { return Object.values(obj); }
   items(obj) { return Object.entries(obj); }
   get(obj, key, defaultVal = null) { return obj[key] !== undefined ? obj[key] : defaultVal; }
 
-  // String operations
   upper(str) { return str.toUpperCase(); }
   lower(str) { return str.toLowerCase(); }
   trim(str) { return str.trim(); }
@@ -200,7 +195,6 @@ class StandardLibrary {
   join(arr, sep) { return arr.join(sep); }
   contains(str, sub) { return str.includes(sub); }
 
-  // Utils
   type(val) { return typeof val; }
   exit(code = 0) { process.exit(code); }
 
@@ -260,6 +254,7 @@ class StandardLibrary {
           if (fs.existsSync(dbPath)) db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
           
           const rag = new RAGIntegration();
+          // v0.9: Real embedding vector generated per save()
           const embedding = await rag.embed(typeof data === 'string' ? data : JSON.stringify(data));
           
           db[key] = { data, embedding, timestamp: new Date().toISOString() };
@@ -281,6 +276,7 @@ class StandardLibrary {
           const rag = new RAGIntegration();
           const queryEmbedding = await rag.embed(query);
           
+          // v0.9: Cosine similarity on search()
           const results = Object.entries(db).map(([key, entry]) => ({
             key,
             data: entry.data,
@@ -301,50 +297,23 @@ class StandardLibrary {
     }
   }
 
-  // Sovereign Identity Rituals
-  gen_ritual_keypair(seed) {
-    return sovereign.generateIdentity(seed);
-  }
-
-  aes_gcm_encrypt(data, seed) {
-    return sovereign.encryptVault(data, seed);
-  }
-
-  async aes_gcm_decrypt(encrypted, seed) {
-    return sovereign.decryptVault(encrypted, seed);
-  }
-
-  ed25519_sign(data, privKey) {
-    return sovereign.sign(data, privKey);
-  }
-
-  ed25519_verify(sig, data, pubKey) {
-    return sovereign.verify(sig, data, pubKey);
-  }
-
-  derive_aes_key(seed) {
-    return seed; // Simple pass-through for mock
-  }
-
-  bipon39_entropyToMnemonic(entropy, bits) {
-    return sovereign.generateRitualPhrase(bits);
-  }
-
-  bipon39_mnemonicToSeed(phrase) {
-    return sovereign.deriveSeed(phrase);
-  }
+  gen_ritual_keypair(seed) { return sovereign.generateIdentity(seed); }
+  aes_gcm_encrypt(data, seed) { return sovereign.encryptVault(data, seed); }
+  async aes_gcm_decrypt(encrypted, seed) { return sovereign.decryptVault(encrypted, seed); }
+  ed25519_sign(data, privKey) { return sovereign.sign(data, privKey); }
+  ed25519_verify(sig, data, pubKey) { return sovereign.verify(sig, data, pubKey); }
+  derive_aes_key(seed) { return seed; }
+  bipon39_entropyToMnemonic(entropy, bits) { return sovereign.generateRitualPhrase(bits); }
+  bipon39_mnemonicToSeed(phrase) { return sovereign.deriveSeed(phrase); }
 }
 
 const sandbox = {
-  run: async (fn) => {
-    console.warn("Using deprecated global sandbox.run - use StandardLibrary instance instead");
-  }
+  run: async (fn) => { console.warn("Using deprecated global sandbox.run"); }
 };
 
 const mcp = {
   async call_tool(name, args) {
     console.log(`[MCP] Calling tool: ${name}`, JSON.stringify(args));
-    
     if (name === "coinbase_api") {
       try {
         const response = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot");
@@ -354,11 +323,7 @@ const mcp = {
         return JSON.stringify({ error: "Failed to fetch BTC price", details: err.message });
       }
     }
-    
-    if (name === "sui_rpc") {
-      return `0x${Math.random().toString(16).substring(2, 66)}`; // Mock tx digest
-    }
-
+    if (name === "sui_rpc") return `0x${Math.random().toString(16).substring(2, 66)}`;
     return `Result from ${name}`;
   }
 };
@@ -370,32 +335,22 @@ class SwarmPipeline {
   }
 
   async run(initialInput = '') {
-    console.log(`[SWARM] Starting pipeline with ${this.steps.length} steps`);
     let currentInput = initialInput;
-
     for (const step of this.steps) {
-      console.log(`[SWARM] Step: ${step.name}`);
       let agent;
-      
       if (step.role instanceof Agent) {
         agent = step.role;
       } else if (typeof step.role === 'object' && step.role.type === 'skill') {
         const context = {};
         await step.role.actions.call(context);
-        agent = new Agent({
-          name: step.name,
-          system_prompt: context.prompt,
-          tools: context.tools
-        });
+        agent = new Agent({ name: step.name, system_prompt: context.prompt, tools: context.tools });
       } else {
         agent = new Agent({ name: step.name, system_prompt: step.role });
       }
-      
       const result = await agent.run(currentInput);
       this.results[step.name] = result;
       currentInput = result;
     }
-    
     return this.results;
   }
 }
@@ -403,43 +358,30 @@ class SwarmPipeline {
 class MetaDigital {
   constructor(config) {
     this.name = config.name;
-    this.need = config.need;
     this.ethics = config.ethics;
     this.chain = config.chain || [];
     this.output = config.output;
   }
 
   async run(input = '', context = {}) {
-    console.log(`[META-DIGITAL] Running: ${this.name}`);
     let currentInput = input;
-
     for (const skill of this.chain) {
-      console.log(`[META-DIGITAL] Executing skill in chain`);
       if (typeof skill.actions === 'function') {
         const skillContext = { ...context };
         await skill.actions.call(skillContext);
-        const agent = new Agent({
-          name: this.name + '_chain_step',
-          system_prompt: skillContext.prompt,
-          tools: skillContext.tools
-        });
+        const agent = new Agent({ name: this.name + '_chain_step', system_prompt: skillContext.prompt, tools: skillContext.tools });
         currentInput = await agent.run(currentInput);
       } else if (skill instanceof Agent) {
         currentInput = await skill.run(currentInput);
       }
     }
-
     if (this.ethics) {
       const std = new StandardLibrary(); 
       await std.refuse_if(this.ethics);
     }
-
     const receiptContent = JSON.stringify({ input, output: this.output, chain: this.chain.length });
     const receipt = crypto.createHash('sha256').update(receiptContent).digest('hex');
     console.log(`[META-DIGITAL] Receipt Sealed: ${receipt}`);
-
-    console.log(`[META-DIGITAL] Logged to vault: ${this.name} (${receipt})`);
-
     return this.output;
   }
 }
