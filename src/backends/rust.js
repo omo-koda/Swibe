@@ -52,7 +52,8 @@ export function genRust(node, indent = "") {
       code += `fn aes_gcm_decrypt(enc: Encrypted, seed: Vec<u8>) -> String {\n`;
       code += `    let key = Key::<Aes256Gcm>::from_slice(&seed[..32]);\n`;
       code += `    let cipher = Aes256Gcm::new(key);\n`;
-      code += `    let nonce = Nonce::from_slice(&hex::decode(enc.iv).unwrap());\n`;
+      code += `    let iv_bytes = hex::decode(enc.iv).unwrap();\n`;
+      code += `    let nonce = Nonce::from_slice(&iv_bytes);\n`;
       code += `    let mut combined = hex::decode(enc.content).unwrap();\n`;
       code += `    combined.extend_from_slice(&hex::decode(enc.tag).unwrap());\n`;
       code += `    let plaintext = cipher.decrypt(nonce, combined.as_ref()).expect("decryption failure!");\n`;
@@ -206,6 +207,11 @@ export function genRust(node, indent = "") {
       let left = genRust(node.left, "");
       let right = genRust(node.right, "");
       if (node.op === '+') {
+          const lIsNum = node.left.type === 'Number' || (node.left.type === 'Identifier' && /^[a-z]$/.test(node.left.name));
+          const rIsNum = node.right.type === 'Number' || (node.right.type === 'Identifier' && /^[a-z]$/.test(node.right.name));
+          if (lIsNum && rIsNum) {
+              return `${left} + ${right}`;
+          }
           return `format!("{}{}", ${left}, ${right})`;
       }
       return `${left} ${node.op} ${right}`;
@@ -249,6 +255,10 @@ export function genCargoToml() {
 name = "swibe-agent"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "swibe-agent"
+path = "main.rs"
 
 [dependencies]
 ed25519-dalek = "2"

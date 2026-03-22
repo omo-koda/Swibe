@@ -83,7 +83,7 @@ export function genElixir(node, indent = "") {
 
     case 'FunctionCall':
       let fName = node.name;
-      if (fName === 'println') fName = 'IO.puts';
+      if (fName === 'println' || fName === 'print') fName = 'IO.puts';
       if (fName === 'think') {
           return `${indent}Swibe.AI.think(${node.args.map(a => genElixir(a, "")).join(', ')})`;
       }

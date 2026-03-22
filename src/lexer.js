@@ -55,8 +55,13 @@ const TokenType = {
   UNTIL: 'UNTIL',
   GOAL: 'GOAL',
   CALL_TOOL: 'CALL_TOOL',
+  MINT: 'MINT',
+  RECEIPT: 'RECEIPT',
+  SEAL: 'SEAL',
+  WALRUS: 'WALRUS',
   PROMPT: 'PROMPT', // %%
   VOICE: 'VOICE',   // [voice: ...]
+  AT_TARGET: 'AT_TARGET', // @target
 
   // Operators
   PLUS: 'PLUS',
@@ -92,6 +97,9 @@ const TokenType = {
   RBRACE: 'RBRACE',
   LBRACKET: 'LBRACKET',
   RBRACKET: 'RBRACKET',
+
+  // Target directive
+  AT_TARGET: 'AT_TARGET',
 
   // Special
   EOF: 'EOF',
@@ -290,7 +298,11 @@ class Lexer {
     'meta-digital': TokenType.META_DIGITAL,
     until: TokenType.UNTIL,
     goal: TokenType.GOAL,
-    call_tool: TokenType.CALL_TOOL
+    call_tool: TokenType.CALL_TOOL,
+    mint: TokenType.MINT,
+    receipt: TokenType.RECEIPT,
+    seal: TokenType.SEAL,
+    walrus: TokenType.WALRUS
   };
 
   addToken(type, value = null) {
@@ -482,6 +494,14 @@ class Lexer {
       } else if (char === ']') {
         this.addToken(TokenType.RBRACKET, ']');
         this.advance();
+      } else if (char === '@') {
+        this.advance();
+        if (this.current() && /[a-zA-Z_]/.test(this.current())) {
+          const ident = this.readIdentifier();
+          this.addToken(TokenType.AT_TARGET, ident);
+        } else {
+          this.addToken(TokenType.AT_TARGET, null);
+        }
       } else {
         throw new Error(`Unexpected character: ${char} at ${this.line}:${this.column}`);
       }

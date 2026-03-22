@@ -8,12 +8,6 @@ module omokoda::soul {
   }
 
   fun main() {
-    // [MOVE-GEN] Unhandled: FunctionCall
-    public entry fun swarm_execute(ctx: &mut TxContext) {
-    let iter = 1;
-    event::emit(BreathEvent { message: b"Thinker", iteration: iter });
-    event::emit(BreathEvent { message: b"Settler", iteration: iter });
-  }
-    // [MOVE-GEN] Unhandled: FunctionCall
+    mint
   }
 }

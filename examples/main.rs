@@ -38,7 +38,8 @@ fn aes_gcm_encrypt_vault(data: String, seed: Vec<u8>) -> Encrypted {
 fn aes_gcm_decrypt(enc: Encrypted, seed: Vec<u8>) -> String {
     let key = Key::<Aes256Gcm>::from_slice(&seed[..32]);
     let cipher = Aes256Gcm::new(key);
-    let nonce = Nonce::from_slice(&hex::decode(enc.iv).unwrap());
+    let iv_bytes = hex::decode(enc.iv).unwrap();
+    let nonce = Nonce::from_slice(&iv_bytes);
     let mut combined = hex::decode(enc.content).unwrap();
     combined.extend_from_slice(&hex::decode(enc.tag).unwrap());
     let plaintext = cipher.decrypt(nonce, combined.as_ref()).expect("decryption failure!");

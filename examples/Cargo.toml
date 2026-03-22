@@ -3,6 +3,10 @@ name = "swibe-agent"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "swibe-agent"
+path = "main.rs"
+
 [dependencies]
 ed25519-dalek = "2"
 aes-gcm = "0.10"

@@ -136,9 +136,15 @@ class Compiler {
       const moveNodes = { type: 'Program', statements: [] };
       
       node.statements.forEach(s => {
-        if (s.type === 'SwarmStatement') {
-          const elixirSteps = s.steps.filter(step => !step.role.text?.includes('@move'));
-          const moveSteps = s.steps.filter(step => step.role.text?.includes('@move'));
+        if (s.type === 'TargetDirective' && s.body) {
+          if (s.target === 'move') {
+            moveNodes.statements.push(...s.body.statements);
+          } else if (s.target === 'elixir' || s.target === 'beam') {
+            elixirNodes.statements.push(...s.body.statements);
+          }
+        } else if (s.type === 'SwarmStatement') {
+          const elixirSteps = s.steps.filter(step => step.target !== 'move' && !step.role?.text?.includes('@move'));
+          const moveSteps = s.steps.filter(step => step.target === 'move' || step.role?.text?.includes('@move'));
           
           if (elixirSteps.length > 0) {
             elixirNodes.statements.push({ ...s, steps: elixirSteps });
@@ -146,12 +152,18 @@ class Compiler {
           if (moveSteps.length > 0) {
             moveNodes.statements.push({ ...s, steps: moveSteps });
           }
-        } else {
-          // Non-swarm nodes go to both or default?
-          // Instructions say "split swarm agents", implying other nodes might be duplicated or ignored.
-          // For now, we'll put them in both to maintain context.
-          elixirNodes.statements.push(s);
+        } else if (s.type === 'MintStatement' || s.type === 'ReceiptStatement' || s.type === 'SealStatement' || s.type === 'WalrusStatement') {
+          // Blockchain-native statements go to Move
           moveNodes.statements.push(s);
+        } else {
+          // Default: send everything to Elixir (orchestrator)
+          // Some nodes might be relevant to both (like shared struct/fn)
+          elixirNodes.statements.push(s);
+          
+          // Only add to Move if it's a structural node needed there
+          if (s.type === 'FunctionDecl' || s.type === 'StructDecl' || s.type === 'EnumDecl') {
+            moveNodes.statements.push(s);
+          }
         }
       });
       
@@ -221,6 +233,8 @@ class Compiler {
         return `[${node.elements.map(e => this.genJavaScript(e)).join(', ')}]`;
       case 'DictLiteral':
         return `{ ${Object.entries(node.fields).map(([k, v]) => `${k}: ${this.genJavaScript(v)}`).join(', ')} }`;
+      case 'TargetDirective':
+        return `/* @target ${node.target} */`;
       default: return `/* Unhandled: ${node.type} */`;
     }
   }

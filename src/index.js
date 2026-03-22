@@ -66,6 +66,19 @@ async function main() {
         fs.writeFileSync(exFile, code);
         fs.writeFileSync(mixFile, mixExs);
         console.log(`[ELIXIR] Generated output.ex and mix.exs in ${outputDir}`);
+      } else if (target === 'move') {
+        const { genMoveToml } = await import('./backends/move.js');
+        const moveToml = genMoveToml();
+        
+        const path = await import('node:path');
+        const outputDir = path.dirname(file);
+        const moveFile = path.join(outputDir, 'sources', 'soul.move');
+        const tomlFile = path.join(outputDir, 'Move.toml');
+        
+        fs.mkdirSync(path.join(outputDir, 'sources'), { recursive: true });
+        fs.writeFileSync(moveFile, code);
+        fs.writeFileSync(tomlFile, moveToml);
+        console.log(`[MOVE] Generated sources/soul.move and Move.toml in ${outputDir}`);
       } else if (target === 'hybrid') {
         const path = await import('node:path');
         const outputDir = path.dirname(file);

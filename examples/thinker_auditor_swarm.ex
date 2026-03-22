@@ -56,12 +56,7 @@ defmodule SwibeAgent.Ritual do
 end
 
 def main() do
-  IO.puts("Initiating Hybrid Swarm...")
-  # Swarm Initiation: DynamicSupervisor (OTP)
-  DynamicSupervisor.start_child(Swibe.AgentSupervisor, {SwibeAgent.Worker, %{name: "Thinker"}})
-  DynamicSupervisor.start_child(Swibe.AgentSupervisor, {SwibeAgent.Worker, %{name: "Settler"}})
-  IO.puts("[ELIXIR] Swarm supervise tree active with 2 agents.")
-  IO.puts("Hybrid Swarm active.")
+mint
 end
 # Start Ritual
 SwibeAgent.Ritual.run()

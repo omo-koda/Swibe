@@ -132,6 +132,46 @@ describe('Swibe v0.4.0 Sovereign Birth', () => {
     });
   });
 
+  describe('@target First-Class Syntax', () => {
+    it('tokenizes @move to AT_TARGET', () => {
+      const lexer = new Lexer('@move');
+      const tokens = lexer.tokenize();
+      const at = tokens.find(t => t.type === 'AT_TARGET');
+      expect(at).toBeDefined();
+      expect(at.value).toBe('move');
+    });
+
+    it('tokenizes @elixir and @rust', () => {
+      const lexer = new Lexer('@elixir @rust');
+      const tokens = lexer.tokenize();
+      const targets = tokens.filter(t => t.type === 'AT_TARGET');
+      expect(targets).toHaveLength(2);
+      expect(targets[0].value).toBe('elixir');
+      expect(targets[1].value).toBe('rust');
+    });
+
+    it('parses @target in swarm steps', () => {
+      const source = 'swarm { Settler: Agent { name: "Settler" } @move }';
+      const lexer = new Lexer(source);
+      const tokens = lexer.tokenize();
+      const parser = new Parser(tokens);
+      const ast = parser.parse();
+      const swarm = ast.statements[0];
+      expect(swarm.type).toBe('SwarmStatement');
+      expect(swarm.steps[0].target).toBe('move');
+    });
+
+    it('parses @target as standalone directive', () => {
+      const source = '@rust';
+      const lexer = new Lexer(source);
+      const tokens = lexer.tokenize();
+      const parser = new Parser(tokens);
+      const ast = parser.parse();
+      expect(ast.statements[0].type).toBe('TargetDirective');
+      expect(ast.statements[0].target).toBe('rust');
+    });
+  });
+
   describe('Plugin System', () => {
     it('calls lifecycle hooks when a plugin is registered', async () => {
       const std = new StandardLibrary();

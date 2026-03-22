@@ -100,4 +100,22 @@ describe('Swibe v0.6.0 Tier 3 Backends Expansion', () => {
     expect(code).toContain('event::emit(BreathEvent { message: b"Genesis", iteration: iter });');
   });
 
+  it('compiles MetaDigital to Move entry function', async () => {
+    const metaSource = 'meta-digital "Genesis" { chain: birth, audit; ethics: "harm-none"; output: "Alive" }';
+    const compiler = new Compiler(metaSource, 'move');
+    const code = await compiler.compile();
+    expect(code).toContain('public entry fun meta_digital_genesis');
+    expect(code).toContain('Ethics guard: harm-none');
+    expect(code).toContain('event::emit(BreathEvent { message: b"birth"');
+  });
+
+  it('compiles NeuralLayer to Move struct + fire function', async () => {
+    const neuralSource = 'neural;';
+    const compiler = new Compiler(neuralSource, 'move');
+    const code = await compiler.compile();
+    expect(code).toContain('struct NeuralState has key, store');
+    expect(code).toContain('public entry fun neural_fire');
+    expect(code).toContain('state.synapses = state.synapses + 1');
+  });
+
 });

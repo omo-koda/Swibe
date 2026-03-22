@@ -36,7 +36,11 @@ class Parser {
     const current = this.current();
     if (current.type !== type) {
       // Special case: keywords as valid IDENTIFIER
-      const allowed = [TokenType.PRINTLN, TokenType.RAG, TokenType.AI, TokenType.EMBED, TokenType.GOAL, TokenType.ROLE];
+      const allowed = [
+        TokenType.PRINTLN, TokenType.RAG, TokenType.AI, TokenType.EMBED, 
+        TokenType.GOAL, TokenType.ROLE, TokenType.AGENT, TokenType.MINT,
+        TokenType.RECEIPT, TokenType.SEAL, TokenType.WALRUS
+      ];
       if (type === TokenType.IDENTIFIER && allowed.includes(current.type)) {
         this.advance();
         return current;
@@ -129,6 +133,44 @@ class Parser {
     // Loop until goal
     if (token.type === TokenType.LOOP) {
       return this.parseLoopUntil();
+    }
+
+    // Target directive (@target)
+    if (token.type === TokenType.AT_TARGET) {
+      this.advance();
+      let body = null;
+      if (this.current().type === TokenType.LBRACE) {
+        body = this.parseBlock();
+      }
+      return new ASTNode('TargetDirective', { target: token.value, body });
+    }
+
+    // New statements for sovereign blockchain integration
+    if (token.type === TokenType.MINT) {
+      this.advance();
+      const args = this.parseExpression();
+      this.match(TokenType.SEMICOLON);
+      return new ASTNode('MintStatement', { args });
+    }
+
+    if (token.type === TokenType.RECEIPT) {
+      this.advance();
+      const args = this.parseExpression();
+      this.match(TokenType.SEMICOLON);
+      return new ASTNode('ReceiptStatement', { args });
+    }
+
+    if (token.type === TokenType.SEAL) {
+      this.advance();
+      this.match(TokenType.SEMICOLON);
+      return new ASTNode('SealStatement', {});
+    }
+
+    if (token.type === TokenType.WALRUS) {
+      this.advance();
+      const args = this.parseExpression();
+      this.match(TokenType.SEMICOLON);
+      return new ASTNode('WalrusStatement', { args });
     }
 
     // Call tool statement
@@ -357,7 +399,13 @@ class Parser {
         role = this.parseExpression();
       }
       
-      steps.push({ name, role });
+      let target = null;
+      if (this.current().type === TokenType.AT_TARGET) {
+        target = this.current().value;
+        this.advance();
+      }
+
+      steps.push({ name, role, target });
 
       if (this.current().type === TokenType.FAT_ARROW) {
         this.advance();
