@@ -68,13 +68,15 @@ class LLMIntegration {
     let content;
     // Feature: "Think" primitive with SHA-256 receipt
     try {
-      if (this.provider === 'ollama') {
+      // Prioritize Ollama if it responds, otherwise use provider setting
+      try {
         content = await this.ollamaGenerate(prompt);
-      } else if (this.provider === 'claude') {
-        // Fallback or specific provider logic
-        content = await this.claudeGenerate(prompt);
-      } else {
-         content = this.mockGenerate(prompt);
+      } catch (e) {
+        if (this.provider === 'claude') {
+          content = await this.claudeGenerate(prompt);
+        } else {
+          throw e;
+        }
       }
     } catch (e) {
       console.warn(`[THINK] LLM failed, using mock: ${e.message}`);
@@ -88,8 +90,19 @@ class LLMIntegration {
   async generateCode(prompt, context = {}) {
     const enhancedPrompt = this.buildPrompt(prompt, context);
 
-    // Mock response - no actual API calls for now
-    return this.mockGenerate(enhancedPrompt);
+    try {
+      try {
+        return await this.ollamaGenerate(enhancedPrompt);
+      } catch (e) {
+        if (this.provider === 'claude') {
+          return await this.claudeGenerate(enhancedPrompt);
+        } else {
+          throw e;
+        }
+      }
+    } catch (e) {
+      return this.mockGenerate(enhancedPrompt);
+    }
   }
 
   async claudeGenerate(prompt) {
@@ -137,6 +150,29 @@ class LLMIntegration {
 
     const data = await response.json();
     return data.response;
+  }
+
+  async embed(text) {
+    try {
+      const response = await fetch(`${this.ollamaUrl}/api/embeddings`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          model: 'mxbai-embed-large',
+          prompt: text,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama embeddings error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.embedding;
+    } catch (e) {
+      console.warn(`[EMBED] Ollama failed, using mock embedding: ${e.message}`);
+      return new Array(1024).fill(0).map(() => Math.random());
+    }
   }
 
   async hfGenerate(prompt) {
@@ -349,9 +385,8 @@ class RAGIntegration {
   }
 
   async embed(text) {
-    // Use Claude embeddings API (simplified)
-    const embedding = new Array(1536).fill(0).map(() => Math.random());
-    return embedding;
+    const llm = new LLMIntegration();
+    return llm.embed(text);
   }
 }
 

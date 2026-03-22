@@ -5,7 +5,7 @@
 
 import vm from 'node:vm';
 import crypto from 'node:crypto';
-import { Agent, LLMIntegration } from './llm-integration.js';
+import { Agent, LLMIntegration, RAGIntegration } from './llm-integration.js';
 import { sovereign } from './sovereign-vault.js';
 import { NeuralLayer } from './neural.js';
 
@@ -14,6 +14,7 @@ class StandardLibrary {
     this.goalAttempts = new Map();
     this.neural = new NeuralLayer();
     this.llm = new LLMIntegration();
+    this.rag = new RAGIntegration();
     this.plugin = null;
     
     this.builtins = {
@@ -218,7 +219,11 @@ class StandardLibrary {
 
   async sandbox_run(fn) {
     console.log('[SANDBOX] Entering secure execution block...');
-    // Create a script that executes the function
+    
+    const path = await import('node:path');
+    const os = await import('node:os');
+    const fs = await import('node:fs');
+    
     const script = new vm.Script(`(${fn.toString()})()`);
     const context = vm.createContext({
       console: { log: (...args) => console.log('[SANDBOX-LOG]', ...args) },
@@ -229,18 +234,7 @@ class StandardLibrary {
       println: (...args) => console.log('[SANDBOX-LOG]', ...args),
       join: this.join.bind(this),
       trace: this.trace.bind(this),
-      rag: {
-        save: (name, data) => {
-          console.log(`[SANDBOX-LOG] [RAG] Saving: ${name}`);
-          return true;
-        },
-        load: (name) => {
-          console.log(`[SANDBOX-LOG] [RAG] Loading: ${name}`);
-          return null;
-        }
-      },
-      
-      // Sovereign Rituals exposed to sandbox
+      RAGIntegration,
       gen_ritual_keypair: this.gen_ritual_keypair.bind(this),
       aes_gcm_encrypt: this.aes_gcm_encrypt.bind(this),
       aes_gcm_decrypt: this.aes_gcm_decrypt.bind(this),
@@ -257,21 +251,50 @@ class StandardLibrary {
         parse: (str) => JSON.parse(str)
       },
       rag: {
-        save: (key, data) => {
-          console.log(`[SANDBOX-LOG] [RAG] Storing vault blob: ${key}`);
-          // In real implementation, this persists to disk/DB
+        save: async (key, data) => {
+          const dir = path.join(os.homedir(), '.swibe');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+          const dbPath = path.join(dir, 'vault.json');
+          
+          let db = {};
+          if (fs.existsSync(dbPath)) db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+          
+          const rag = new RAGIntegration();
+          const embedding = await rag.embed(typeof data === 'string' ? data : JSON.stringify(data));
+          
+          db[key] = { data, embedding, timestamp: new Date().toISOString() };
+          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+          console.log(`[SANDBOX-LOG] [RAG] Persistent store: ${key}`);
           return true;
         },
-        load: (key) => {
-          console.log(`[SANDBOX-LOG] [RAG] Loading vault blob: ${key}`);
-          return null; 
+        load: async (key) => {
+          const dbPath = path.join(os.homedir(), '.swibe', 'vault.json');
+          if (!fs.existsSync(dbPath)) return null;
+          const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+          return db[key] ? db[key].data : null;
+        },
+        search: async (query, topK = 5) => {
+          const dbPath = path.join(os.homedir(), '.swibe', 'vault.json');
+          if (!fs.existsSync(dbPath)) return [];
+          const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+          
+          const rag = new RAGIntegration();
+          const queryEmbedding = await rag.embed(query);
+          
+          const results = Object.entries(db).map(([key, entry]) => ({
+            key,
+            data: entry.data,
+            score: rag.cosineSimilarity(queryEmbedding, entry.embedding)
+          }));
+          
+          return results.sort((a, b) => b.score - a.score).slice(0, topK);
         }
       },
-
       process: { exit: () => { throw new Error('process.exit() is forbidden'); } }
     });
+    
     try {
-      return await script.runInContext(context, { timeout: 1000 });
+      return await script.runInContext(context, { timeout: 30000 });
     } catch (err) {
       console.error('[SANDBOX-ERROR]', err.message);
       throw err;
@@ -287,7 +310,7 @@ class StandardLibrary {
     return sovereign.encryptVault(data, seed);
   }
 
-  aes_gcm_decrypt(encrypted, seed) {
+  async aes_gcm_decrypt(encrypted, seed) {
     return sovereign.decryptVault(encrypted, seed);
   }
 
@@ -314,7 +337,6 @@ class StandardLibrary {
 
 const sandbox = {
   run: async (fn) => {
-    // This is a bridge for compatibility, but we should use the instance method
     console.warn("Using deprecated global sandbox.run - use StandardLibrary instance instead");
   }
 };
@@ -358,7 +380,6 @@ class SwarmPipeline {
       if (step.role instanceof Agent) {
         agent = step.role;
       } else if (typeof step.role === 'object' && step.role.type === 'skill') {
-        // Execute skill actions to populate config
         const context = {};
         await step.role.actions.call(context);
         agent = new Agent({
@@ -372,7 +393,7 @@ class SwarmPipeline {
       
       const result = await agent.run(currentInput);
       this.results[step.name] = result;
-      currentInput = result; // Pass output of one agent as input to the next
+      currentInput = result;
     }
     
     return this.results;
@@ -392,7 +413,6 @@ class MetaDigital {
     console.log(`[META-DIGITAL] Running: ${this.name}`);
     let currentInput = input;
 
-    // 1. Resolve and run chain sequentially
     for (const skill of this.chain) {
       console.log(`[META-DIGITAL] Executing skill in chain`);
       if (typeof skill.actions === 'function') {
@@ -409,20 +429,15 @@ class MetaDigital {
       }
     }
 
-    // 2. Apply ethics check (Real)
     if (this.ethics) {
-      // Use a temporary stdlib instance to access refuse_if logic
-      // In a real optimized runtime, this would be passed in context
       const std = new StandardLibrary(); 
       await std.refuse_if(this.ethics);
     }
 
-    // 3. Seal receipt (blake3 hash of inputs+output - using SHA256 as fallback)
     const receiptContent = JSON.stringify({ input, output: this.output, chain: this.chain.length });
     const receipt = crypto.createHash('sha256').update(receiptContent).digest('hex');
     console.log(`[META-DIGITAL] Receipt Sealed: ${receipt}`);
 
-    // 4. Log to vault (Simulated)
     console.log(`[META-DIGITAL] Logged to vault: ${this.name} (${receipt})`);
 
     return this.output;
