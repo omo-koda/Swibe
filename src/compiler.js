@@ -106,6 +106,7 @@ class Compiler {
       case 'ocaml': return genOCaml(node);
       case 'scala': return genScala(node);
       case 'elixir': return genElixir(node);
+      case 'hybrid': return this.genHybrid(node);
       case 'pony': return genPony(node);
       case 'mojo': return genMojo(node);
       case 'aether': return genAether(node);
@@ -122,6 +123,45 @@ class Compiler {
       case 'raku': return genRaku(node);
       default: return this.genJavaScript(node);
     }
+  }
+
+  genHybrid(node) {
+    if (!node) return '';
+    
+    // For hybrid target, we look for SwarmStatement and split by tags
+    // Returns a special object/string that the CLI can split
+    
+    if (node.type === 'Program') {
+      const elixirNodes = { type: 'Program', statements: [] };
+      const moveNodes = { type: 'Program', statements: [] };
+      
+      node.statements.forEach(s => {
+        if (s.type === 'SwarmStatement') {
+          const elixirSteps = s.steps.filter(step => !step.role.text?.includes('@move'));
+          const moveSteps = s.steps.filter(step => step.role.text?.includes('@move'));
+          
+          if (elixirSteps.length > 0) {
+            elixirNodes.statements.push({ ...s, steps: elixirSteps });
+          }
+          if (moveSteps.length > 0) {
+            moveNodes.statements.push({ ...s, steps: moveSteps });
+          }
+        } else {
+          // Non-swarm nodes go to both or default?
+          // Instructions say "split swarm agents", implying other nodes might be duplicated or ignored.
+          // For now, we'll put them in both to maintain context.
+          elixirNodes.statements.push(s);
+          moveNodes.statements.push(s);
+        }
+      });
+      
+      const elixirCode = genElixir(elixirNodes);
+      const moveCode = genMove(moveNodes);
+      
+      return `--- ELIXIR ---\n${elixirCode}\n--- MOVE ---\n${moveCode}`;
+    }
+    
+    return this.genJavaScript(node);
   }
 
   genJavaScript(node) {

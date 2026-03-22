@@ -1,0 +1,17 @@
+-- Tiny Hybrid Swarm (v1.1)
+
+fn main() {
+  println("Initiating Hybrid Swarm...")
+  
+  swarm {
+    Thinker: Agent {
+      role: "Analyzer @elixir",
+      goal: "Generate insights"
+    } => Settler: Agent {
+      role: "Broker @move",
+      goal: "Commit to chain"
+    }
+  }
+  
+  println("Hybrid Swarm active.")
+}

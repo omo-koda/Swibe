@@ -66,6 +66,24 @@ async function main() {
         fs.writeFileSync(exFile, code);
         fs.writeFileSync(mixFile, mixExs);
         console.log(`[ELIXIR] Generated output.ex and mix.exs in ${outputDir}`);
+      } else if (target === 'hybrid') {
+        const path = await import('node:path');
+        const outputDir = path.dirname(file);
+        
+        const sections = code.split('--- MOVE ---');
+        const elixirPart = sections[0].replace('--- ELIXIR ---\n', '');
+        const movePart = sections[1]?.trim() || '';
+        
+        const exFile = path.join(outputDir, 'thinker_auditor_swarm.ex');
+        const moveFile = path.join(outputDir, 'settler_mint.move');
+        
+        fs.writeFileSync(exFile, elixirPart);
+        fs.writeFileSync(moveFile, movePart);
+        
+        const { genMixExs } = await import('./backends/elixir.js');
+        fs.writeFileSync(path.join(outputDir, 'mix.exs'), genMixExs());
+        
+        console.log(`[HYBRID] Generated ${exFile} and ${moveFile}`);
       } else {
         console.log(code);
       }
