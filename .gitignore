@@ -11,3 +11,5 @@ coverage/
 *.swp
 *.swo
 *~
+examples/target/
+target/
