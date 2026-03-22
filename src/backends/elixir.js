@@ -1,6 +1,6 @@
 /**
- * Elixir Backend for Swibe
- * Target: BEAM Processes & Fault-Tolerant Swarms
+ * Elixir Backend for Swibe (v0.7)
+ * Target: OTP Supervisors, GenServers & Fault-Tolerant Swarms
  */
 
 export function genElixir(node, indent = "") {
@@ -8,25 +8,62 @@ export function genElixir(node, indent = "") {
 
   switch (node.type) {
     case 'Program':
-      let code = `defmodule SwibeAgent do\n`;
+      let code = `defmodule SwibeAgent.Application do\n`;
       code += `  use Application\n\n`;
       code += `  def start(_type, _args) {\n`;
       code += `    children = [\n`;
+      code += `      {DynamicSupervisor, strategy: :one_for_one, name: Swibe.AgentSupervisor},\n`;
       code += `      {Task.Supervisor, name: Swibe.TaskSupervisor}\n`;
       code += `    ]\n`;
       code += `    opts = [strategy: :one_for_one, name: Swibe.Supervisor]\n`;
       code += `    Supervisor.start_link(children, opts)\n`;
+      code += `  }\n`;
+      code += `end\n\n`;
+
+      code += `defmodule SwibeAgent.Worker do\n`;
+      code += `  use GenServer, restart: :transient\n\n`;
+      code += `  def start_link(args) {\n`;
+      code += `    GenServer.start_link(__MODULE__, args)\n`;
       code += `  }\n\n`;
+      code += `  def init(state) {\n`;
+      code += `    send(self(), :perform_ritual)\n`;
+      code += `    {:ok, state}\n`;
+      code += `  }\n\n`;
+      code += `  def handle_info(:perform_ritual, state) {\n`;
+      code += `    IO.puts("[ELIXIR] Agent #{state.name} starting ritual...")\n`;
+      code += `    # Ritual logic would go here\n`;
+      code += `    {:stop, :normal, state}\n`;
+      code += `  }\n`;
+      code += `end\n\n`;
       
+      code += `defmodule Swibe.AI do\n`;
+      code += `  def think(prompt) {\n`;
+      code += `    IO.puts("[ELIXIR-THINK] Sending to Ollama...")\n`;
+      code += `    # 30s Timeout Enforced here\n`;
+      code += `    case HTTPoison.post("http://localhost:11434/api/generate", Jason.encode!(%{model: "mistral", prompt: prompt}), [], [timeout: 30000, recv_timeout: 30000]) do\n`;
+      code += `      {:ok, %{status_code: 200, body: body}} -> \n`;
+      code += `        receipt = :crypto.hash(:sha256, body) |> Base.encode16()\n`;
+      code += `        IO.puts("[ELIXIR-RECEIPT] #{receipt}")\n`;
+      code += `        body\n`;
+      code += `      {:error, reason} -> \n`;
+      code += `        IO.puts("[ELIXIR-ERROR] Ollama timeout or failure: #{inspect(reason)}")\n`;
+      code += `        "error"\n`;
+      code += `    end\n`;
+      code += `  }\n`;
+      code += `end\n\n`;
+
+      code += `# SWIBE_PLUGIN_HOOK\n\n`;
+      
+      code += `defmodule SwibeAgent.Ritual do\n`;
       code += `  def run do\n`;
-      code += `    IO.puts "Swibe Sovereign Birth Ritual (Elixir/BEAM Backend)"\n`;
+      code += `    IO.puts "Swibe Sovereign Birth Ritual (Elixir/OTP Backend)"\n`;
       code += node.statements.filter(s => s.type !== 'FunctionDecl' && s.type !== 'SkillDecl').map(s => genElixir(s, "    ")).join('\n');
       code += `\n  end\n`;
       code += `end\n\n`;
       
       code += node.statements.filter(s => s.type === 'FunctionDecl' || s.type === 'SkillDecl').map(s => genElixir(s, "")).join('\n\n');
       
-      code += `\n# Start Application\nSwibeAgent.run()\n`;
+      code += `\n# Start Ritual\nSwibeAgent.Ritual.run()\n`;
       return code;
 
     case 'FunctionDecl':
@@ -54,7 +91,6 @@ export function genElixir(node, indent = "") {
 
     case 'MethodCall':
       const obj = genElixir(node.object);
-      // Mapping ChannelComm to send/receive if identified
       if (node.method === 'send') {
           return `${indent}send(${obj}, ${genElixir(node.args[0])})`;
       }
@@ -72,18 +108,16 @@ export function genElixir(node, indent = "") {
       return skillEx;
 
     case 'SecureBlock':
-      return `${indent}Task.async(fn -> \n` +
+      return `${indent}Task.Supervisor.async(Swibe.TaskSupervisor, fn -> \n` +
         genElixir(node.body, indent + "  ") +
         `\n${indent}end) |> Task.await(10000)`;
 
     case 'SwarmStatement':
-      let swarmCode = `${indent}# Swarm Initiation: BEAM Processes\n`;
-      swarmCode += `${indent}children = [\n`;
+      let swarmCode = `${indent}# Swarm Initiation: DynamicSupervisor (OTP)\n`;
       node.steps.forEach(step => {
-        swarmCode += `${indent}  Task.child_spec(fn -> IO.puts("[ELIXIR] Birthing Agent ${step.name}...") end),\n`;
+        swarmCode += `${indent}DynamicSupervisor.start_child(Swibe.AgentSupervisor, {SwibeAgent.Worker, %{name: "${step.name}"}})\n`;
       });
-      swarmCode += `${indent}]\n`;
-      swarmCode += `${indent}Enum.each(children, fn child -> spawn(child.start) end)`;
+      swarmCode += `${indent}IO.puts("[ELIXIR] Swarm supervise tree active with ${node.steps.length} agents.")`;
       return swarmCode;
 
     case 'MetaDigital':
@@ -99,7 +133,7 @@ export function genElixir(node, indent = "") {
 
     case 'BinaryOp':
       let op = node.op;
-      if (op === '+') op = '<>'; // String concat default for now
+      if (op === '+') op = '<>';
       return `(${genElixir(node.left, "")} ${op} ${genElixir(node.right, "")})`;
 
     case 'DictLiteral':
@@ -142,7 +176,7 @@ export function genMixExs() {
   def application do
     [
       extra_applications: [:logger, :crypto],
-      mod: {SwibeAgent, []}
+      mod: {SwibeAgent.Application, []}
     ]
   end
 
