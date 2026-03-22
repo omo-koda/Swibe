@@ -41,7 +41,34 @@ async function main() {
 
       const compiler = new Compiler(source, target);
       const code = await compiler.compile();
-      console.log(code);
+      
+      if (target === 'rust') {
+        const { genCargoToml } = await import('./backends/rust.js');
+        const cargoToml = genCargoToml();
+        
+        const path = await import('node:path');
+        const outputDir = path.dirname(file);
+        const rustFile = path.join(outputDir, 'main.rs');
+        const cargoFile = path.join(outputDir, 'Cargo.toml');
+        
+        fs.writeFileSync(rustFile, code);
+        fs.writeFileSync(cargoFile, cargoToml);
+        console.log(`[RUST] Generated main.rs and Cargo.toml in ${outputDir}`);
+      } else if (target === 'elixir') {
+        const { genMixExs } = await import('./backends/elixir.js');
+        const mixExs = genMixExs();
+        
+        const path = await import('node:path');
+        const outputDir = path.dirname(file);
+        const exFile = path.join(outputDir, 'output.ex');
+        const mixFile = path.join(outputDir, 'mix.exs');
+        
+        fs.writeFileSync(exFile, code);
+        fs.writeFileSync(mixFile, mixExs);
+        console.log(`[ELIXIR] Generated output.ex and mix.exs in ${outputDir}`);
+      } else {
+        console.log(code);
+      }
       break;
     }
 

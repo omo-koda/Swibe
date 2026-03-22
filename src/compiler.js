@@ -143,16 +143,45 @@ class Compiler {
         return `${node.isMut ? 'let' : 'const'} ${node.name} = ${this.genJavaScript(node.value)};`;
       case 'Return':
         return `return ${this.genJavaScript(node.value)};`;
+      case 'FunctionCall':
+        return `await ${node.name}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
+      case 'Call':
+        return `await ${this.genJavaScript(node.callee)}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
+      case 'MethodCall':
+        return `await ${this.genJavaScript(node.object)}.${node.method}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
+      case 'FieldAccess':
+        return `${this.genJavaScript(node.object)}.${node.field}`;
+      case 'If':
+        let ifCode = `if (${this.genJavaScript(node.condition)}) ${this.genJavaScript(node.thenBranch)}`;
+        if (node.elseBranch) {
+          ifCode += ` else ${this.genJavaScript(node.elseBranch)}`;
+        }
+        return ifCode;
+      case 'SkillDecl':
+        return `const ${node.name} = {\n  actions: async function() {\n${node.body.map(s => '    ' + this.genJavaScript(s)).join(';\n')}\n  }\n};`;
+      case 'SecureBlock':
+        return `await sandbox_run(async () => ${this.genJavaScript(node.body)})`;
+      case 'MetaDigital':
+        const metaConfig = { ...node.config };
+        // Convert AST nodes in config to JS values/code if needed
+        return `const ${node.name.replace(/\s+/g, '_')} = new MetaDigital({ name: "${node.name}", ethics: ${this.genJavaScript(node.config.ethics)}, output: ${this.genJavaScript(node.config.output)} });\nawait ${node.name.replace(/\s+/g, '_')}.run();`;
       case 'Number': return String(node.value);
-      case 'String': return `"${node.value.replace(/"/g, '\\"')}"`;
+      case 'String': return `"${node.value.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
       case 'Identifier': return node.name;
+      case 'Boolean': return String(node.value);
+      case 'Nil': return 'null';
+      case 'BinaryOp':
+        return `(${this.genJavaScript(node.left)} ${node.op} ${this.genJavaScript(node.right)})`;
       case 'SwarmStatement':
-        return `const __swarm = new SwarmPipeline([\n${node.steps.map(s => `  { name: "${s.name}" }`).join(',\n')}\n]);\nawait __swarm.run();`;
+        // Elixir is the default target for swarm{} blocks at v0.6
+        return `/* SWARM-TARGET: ELIXIR */\n${genElixir(node, "")}`;
       case 'NeuralLayer':
         return `/* Neural Layer: 86B neurons activated */`;
-      case 'BinaryOp':
-        return `${this.genJavaScript(node.left)} ${node.op} ${this.genJavaScript(node.right)}`;
-      default: return '';
+      case 'ArrayLiteral':
+        return `[${node.elements.map(e => this.genJavaScript(e)).join(', ')}]`;
+      case 'DictLiteral':
+        return `{ ${Object.entries(node.fields).map(([k, v]) => `${k}: ${this.genJavaScript(v)}`).join(', ')} }`;
+      default: return `/* Unhandled: ${node.type} */`;
     }
   }
 

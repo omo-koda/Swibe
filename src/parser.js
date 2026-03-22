@@ -36,7 +36,7 @@ class Parser {
     const current = this.current();
     if (current.type !== type) {
       // Special case: keywords as valid IDENTIFIER
-      const allowed = [TokenType.PRINTLN, TokenType.RAG, TokenType.AI, TokenType.EMBED];
+      const allowed = [TokenType.PRINTLN, TokenType.RAG, TokenType.AI, TokenType.EMBED, TokenType.GOAL, TokenType.ROLE];
       if (type === TokenType.IDENTIFIER && allowed.includes(current.type)) {
         this.advance();
         return current;

@@ -1,0 +1,17 @@
+-- Swarm Test (v0.6)
+
+fn main() {
+  println("Initiating Swarm...")
+  
+  swarm {
+    Alpha: Agent {
+      role: "Coordinator",
+      goal: "Organize the ritual"
+    } => Beta: Agent {
+      role: "Worker",
+      goal: "Execute identity birth"
+    }
+  }
+  
+  println("Swarm active.")
+}
