@@ -1,0 +1,7 @@
+-- Think Test for v1.0 Plugin Verification
+
+fn main() {
+  println("Testing think hooks...")
+  let thought = think("What is the nature of sovereignty?")
+  println("Thought received.")
+}

@@ -1,31 +1,26 @@
 /**
  * Swibe Plugin Interface
- * Defines the standard contract for ecosystem integrations.
- * Swibe Core remains universal; Technosis or other ecosystems implement this.
+ * Base class for all Swibe extensions
  */
 
 export class SwibePlugin {
   /**
-   * Called when an agent is born (instantiated).
-   * @param {Object} agent - The agent instance.
+   * Called after a new agent identity (keypair) is born
    */
-  onBirth(agent) {}
+  onBirth(keypair) {}
 
   /**
-   * Called on every 'think' primitive execution.
-   * @param {string} prompt - The prompt being processed.
+   * Called after an LLM thought is generated
    */
-  onThink(prompt) {}
+  onThink(prompt, response) {}
 
   /**
-   * Called after execution to seal the receipt.
-   * @param {Object} receipt - The SHA-256 receipt and metadata.
+   * Called after a cryptographic receipt is sealed
    */
   onReceipt(receipt) {}
 
   /**
-   * Called at the end of an execution cycle or 'settle' primitive.
-   * @param {Object} result - The final result of the execution.
+   * Called after a successful RAG save or final settlement
    */
   onSettle(result) {}
 }
