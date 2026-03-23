@@ -163,21 +163,43 @@ class StandardLibrary {
   }
 
   async sandbox_run(fn) {
+    console.warn('[SWIBE] secure{} sandbox: Node.js vm isolation. Not for untrusted code.');
+
     const path = await import('node:path');
     const os = await import('node:os');
     const fs = await import('node:fs');
-    
+
+    const ragApi = Object.freeze({
+      save: async (key, data) => {
+        const dir = path.join(os.homedir(), '.swibe');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+        const dbPath = path.join(dir, 'vault.json');
+        let db = {};
+        if (fs.existsSync(dbPath)) db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+        const embedding = await this.rag.embed(typeof data === 'string' ? data : JSON.stringify(data));
+        db[key] = { data, embedding, timestamp: new Date().toISOString() };
+        fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
+
+        if (this.plugin && typeof this.plugin.onSettle === 'function') {
+          this.plugin.onSettle({ key: key || 'unknown', status: 'saved' });
+        }
+
+        console.log(`[SANDBOX-LOG] [RAG] Persistent store: ${key}`);
+        return true;
+      },
+      search: async (query, n = 5) => {
+        return this.rag.search(query, n);
+      }
+    });
+
     const script = new vm.Script(`(${fn.toString()})()`);
-    const context = vm.createContext({
-      console: { log: (...args) => console.log('[SANDBOX-LOG]', ...args) },
-      setTimeout,
-      clearTimeout,
+    const context = vm.createContext(Object.freeze({
+      console: Object.freeze({ log: (...args) => console.log('[SANDBOX-LOG]', ...args) }),
       encrypt_storage: this.encrypt_storage.bind(this),
       no_external_upload: this.no_external_upload.bind(this),
       println: (...args) => console.log('[SANDBOX-LOG]', ...args),
       join: this.join.bind(this),
       trace: this.trace.bind(this),
-      RAGIntegration,
       gen_ritual_keypair: this.gen_ritual_keypair.bind(this),
       aes_gcm_encrypt: this.aes_gcm_encrypt.bind(this),
       aes_gcm_decrypt: this.aes_gcm_decrypt.bind(this),
@@ -186,40 +208,14 @@ class StandardLibrary {
       derive_aes_key: this.derive_aes_key.bind(this),
       bipon39_entropyToMnemonic: this.bipon39_entropyToMnemonic.bind(this),
       bipon39_mnemonicToSeed: this.bipon39_mnemonicToSeed.bind(this),
-      crypto: { randomBytes: (n) => crypto.randomBytes(n) },
-      json: { stringify: (obj) => JSON.stringify(obj), parse: (str) => JSON.parse(str) },
-      rag: {
-        save: async (key, data) => {
-          const dir = path.join(os.homedir(), '.swibe');
-          if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-          const dbPath = path.join(dir, 'vault.json');
-          let db = {};
-          if (fs.existsSync(dbPath)) db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-          const rag = new RAGIntegration();
-          const embedding = await rag.embed(typeof data === 'string' ? data : JSON.stringify(data));
-          db[key] = { data, embedding, timestamp: new Date().toISOString() };
-          fs.writeFileSync(dbPath, JSON.stringify(db, null, 2));
-          
-          // Wire Hook: after rag.save() → call onSettle(result)
-          if (this.plugin && typeof this.plugin.onSettle === 'function') {
-            this.plugin.onSettle({ key: key || 'unknown', status: 'saved' });
-          }
-          
-          console.log(`[SANDBOX-LOG] [RAG] Persistent store: ${key}`);
-          return true;
-        },
-        load: async (key) => {
-          const dbPath = path.join(os.homedir(), '.swibe', 'vault.json');
-          if (!fs.existsSync(dbPath)) return null;
-          const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-          return db[key] ? db[key].data : null;
-        }
-      },
-      process: { exit: () => { throw new Error('process.exit() is forbidden'); } }
-    });
-    
+      crypto: Object.freeze({ randomBytes: (n) => crypto.randomBytes(n) }),
+      json: Object.freeze({ stringify: (obj) => JSON.stringify(obj), parse: (str) => JSON.parse(str) }),
+      rag: ragApi,
+      process: Object.freeze({ exit: () => { throw new Error('process.exit() is forbidden'); } })
+    }));
+
     try {
-      return await script.runInContext(context, { timeout: 30000 });
+      return await script.runInContext(context, { timeout: 5000 });
     } catch (err) {
       console.error('[SANDBOX-ERROR]', err.message);
       throw err;
@@ -236,7 +232,7 @@ class StandardLibrary {
   }
 
   aes_gcm_encrypt(data, seed) { return sovereign.encryptVault(data, seed); }
-  async aes_gcm_decrypt(encrypted, seed) { return sovereign.decryptVault(encrypted, seed); }
+  aes_gcm_decrypt(encrypted, seed) { return sovereign.decryptVault(encrypted, seed); }
   ed25519_sign(data, privKey) { return sovereign.sign(data, privKey); }
   ed25519_verify(sig, data, pubKey) { return sovereign.verify(sig, data, pubKey); }
   derive_aes_key(seed) { return seed; }
