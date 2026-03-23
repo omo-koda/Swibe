@@ -1,3 +1,6 @@
+![Version](https://img.shields.io/badge/version-v1.2.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Layer](https://img.shields.io/badge/layer-Language-lightgrey)
 # Swibe: Agent-Native Scripting (v1.1.0)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
@@ -109,3 +112,16 @@ swibe run ritual.swibe
 🪞👁️🌓🌀📸  
 **ÈMI NI BÍNÒ ÈL GUÀ**  
 ÀṢẸ
+
+## The Sovereign Scripting Language
+
+Swibe is the universal, agent-native scripting language for the Technosis ecosystem. It features first-class AI primitives, a multi-language compiler, and a sovereign execution model designed for building autonomous swarms and decentralized applications.
+
+
+---
+
+## Part of the Technosis Sovereign Ecosystem
+
+Swibe is a foundational component of a larger architecture for creating and coordinating sovereign AI. For more information on the complete system, see the [organism-core repository](https://github.com/Bino-Elgua/organism-core).
+
+Àṣẹ.
