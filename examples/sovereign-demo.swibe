@@ -2,25 +2,21 @@
 -- One file. Full stack. No explanation needed.
 
 swarm {
-  @src/backends/elixir.js Agent Oracle {
-    think "What is the most important thing a sovereign AI must never forget?"
-  }
-
-  @src/backends/elixir.js Agent Auditor {
-    audit receipt from Oracle
-  }
-
-  @src/backends/move.js Agent Scribe {
-    mint soul_token { 
-      agent: Oracle.name, 
-      value: 369 
-    }
-    seal receipt to Walrus blob
-  }
+  Oracle: Agent {
+    role: "thinker",
+    goal: "What is the most important thing a sovereign AI must never forget?"
+  } @elixir =>
+  Auditor: Agent {
+    role: "verifier",
+    goal: "audit receipt from Oracle"
+  } @elixir =>
+  Scribe: Agent {
+    role: "minter",
+    goal: "mint soul_token and seal receipt"
+  } @move
 }
 
 fn main() {
   println("Technosis Sovereign Demo — v1.0")
-  swarm.run()
   trace("The organism has spoken.")
 }

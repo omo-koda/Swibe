@@ -26,13 +26,19 @@ export function genGo(node, indent = "") {
       code += `var crypto_struct = struct {\n  RandomBytes func(int) []byte\n}{\n  RandomBytes: func(n int) []byte { b := make([]byte, n); rand.Read(b); return b },\n}\n\n`;
       code += `var rag = struct {\n  Save func(string, interface{}) \n}{\n  Save: func(k string, v interface{}) {},\n}\n\n`;
       code += `func Think(prompt string) string {\n  fmt.Printf("[GO-THINK] %s...\\n", prompt[:10])\n  return "Àṣẹ"\n}\n\n`;
-      code += `func main() {\n`;
-      code += `    fmt.Println("Swibe Sovereign Birth Ritual (Go Backend)")\n`;
-      code += `    var wg sync.WaitGroup\n`;
-      code += node.statements.filter(s => s.type !== 'FunctionDecl' && s.type !== 'SkillDecl').map(s => genGo(s, "    ")).join('\n');
-      code += `    wg.Wait()\n`;
-      code += `}\n\n`;
-      code += node.statements.filter(s => s.type === 'FunctionDecl' || s.type === 'SkillDecl').map(s => genGo(s, "")).join('\n\n');
+
+      const functionDecls = node.statements.filter(s => s.type === 'FunctionDecl' || s.type === 'SkillDecl');
+      code += functionDecls.map(s => genGo(s, "")).join('\n\n');
+
+      const hasMain = node.statements.some(s => s.type === 'FunctionDecl' && s.name === 'main');
+      if (!hasMain) {
+        code += `\nfunc main() {\n`;
+        code += `    fmt.Println("Swibe Sovereign Birth Ritual (Go Backend)")\n`;
+        code += `    var wg sync.WaitGroup\n`;
+        code += node.statements.filter(s => s.type !== 'FunctionDecl' && s.type !== 'SkillDecl').map(s => genGo(s, "    ")).join('\n');
+        code += `    wg.Wait()\n`;
+        code += `}\n`;
+      }
       return code;
 
     case 'FunctionDecl':

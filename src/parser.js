@@ -379,6 +379,14 @@ class Parser {
 
     const steps = [];
     while (this.current().type !== TokenType.RBRACE) {
+      let target = null;
+
+      // Handle @target shorthand before agent name: @elixir Agent Name { ... }
+      if (this.current().type === TokenType.AT_TARGET) {
+        target = this.current().value;
+        this.advance();
+      }
+
       const name = this.expect(TokenType.IDENTIFIER).value;
       this.expect(TokenType.COLON);
       
@@ -399,8 +407,8 @@ class Parser {
         role = this.parseExpression();
       }
       
-      let target = null;
-      if (this.current().type === TokenType.AT_TARGET) {
+      // Also support trailing @target syntax
+      if (!target && this.current().type === TokenType.AT_TARGET) {
         target = this.current().value;
         this.advance();
       }
