@@ -235,6 +235,24 @@ class Compiler {
         return `[${node.elements.map(e => this.genJavaScript(e)).join(', ')}]`;
       case 'DictLiteral':
         return `{ ${Object.entries(node.fields).map(([k, v]) => `${k}: ${this.genJavaScript(v)}`).join(', ')} }`;
+      case 'StructDecl': {
+        const fieldNames = node.fields.map(f => f.name);
+        return `class ${node.name} {\n  constructor(${fieldNames.join(', ')}) {\n${fieldNames.map(f => `    this.${f} = ${f};`).join('\n')}\n  }\n}`;
+      }
+      case 'EnumDecl':
+        return `const ${node.name} = Object.freeze({\n${node.variants.map((v, i) => `  ${v}: ${i}`).join(',\n')}\n});`;
+      case 'Match': {
+        const arms = node.arms.map(a => `  case ${this.genJavaScript(a.pattern)}: ${this.genJavaScript(a.body)}; break;`).join('\n');
+        return `switch (${this.genJavaScript(node.expr)}) {\n${arms}\n}`;
+      }
+      case 'LoopUntil':
+        return `while (!(await checkGoal(${this.genJavaScript(node.goal)}))) ${this.genJavaScript(node.body)}`;
+      case 'AppDecl': {
+        const configEntries = Object.entries(node.config).map(([k, v]) => `  const ${k} = ${this.genJavaScript(v)};`).join('\n');
+        return `(async () => {\n${configEntries}\n  await deploy_app({ ${Object.keys(node.config).join(', ')} });\n})();`;
+      }
+      case 'SkillProperty':
+        return `this.${node.name} = ${this.genJavaScript(node.value)}`;
       case 'TargetDirective':
         return `/* @target ${node.target} */`;
       default: return `/* Unhandled: ${node.type} */`;
