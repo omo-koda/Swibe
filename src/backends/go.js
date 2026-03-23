@@ -7,7 +7,7 @@ export function genGo(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `package main\n\n`;
       code += `import (\n  "context"\n  "crypto/aes"\n  "crypto/cipher"\n  "crypto/ed25519"\n  "crypto/rand"\n  "crypto/sha256"\n  "encoding/hex"\n  "fmt"\n  "strings"\n  "sync"\n  "time"\n)\n\n`;
       code += `type Keypair struct { Pub string; Priv string }\n`;
@@ -41,12 +41,14 @@ export function genGo(node, indent = "") {
       }
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name} interface{}`).join(', ');
       return `${indent}func ${node.name}(${params}) {\n` +
         genGo(node.body, indent + "    ") +
         `\n${indent}}`;
 
+    }
     case 'Block':
       return node.statements.map(s => {
           const g = genGo(s, indent);
@@ -62,13 +64,14 @@ export function genGo(node, indent = "") {
     case 'Return':
       return `${indent}return ${genGo(node.value, "")}`;
 
-    case 'FunctionCall':
-      let fName = node.name;
+    case 'FunctionCall': {
+      const fName = node.name;
       if (fName === 'think') return `${indent}Think(${node.args.map(a => genGo(a, "")).join(', ')})`;
       if (fName === 'println') return `${indent}fmt.Println(${node.args.map(a => genGo(a, "")).join(', ')})`;
       return `${indent}${fName}(${node.args.map(a => genGo(a, "")).join(', ')})`;
 
-    case 'MethodCall':
+    }
+    case 'MethodCall': {
       const obj = genGo(node.object);
       if (obj === 'crypto' && node.method === 'randomBytes') {
           return `${indent}crypto_struct.RandomBytes(${node.args.map(a => genGo(a, "")).join(', ')})`;
@@ -81,13 +84,15 @@ export function genGo(node, indent = "") {
       }
       return `${indent}${obj}.${node.method.charAt(0).toUpperCase() + node.method.slice(1)}(${node.args.map(a => genGo(a, "")).join(', ')})`;
 
-    case 'SkillDecl':
+    }
+    case 'SkillDecl': {
       let skillGo = `${indent}type ${node.name} struct {}\n`;
       skillGo += `${indent}func (s ${node.name}) Actions() {\n`;
       skillGo += node.body.map(s => genGo(s, indent + "    ")).join('\n');
       skillGo += `\n${indent}}`;
       return skillGo;
 
+    }
     case 'SecureBlock':
       return `${indent}go func() {\n${indent}    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)\n${indent}    defer cancel()\n${indent}    _ = ctx\n` +
         genGo(node.body, indent + "    ") +
@@ -103,17 +108,18 @@ export function genGo(node, indent = "") {
       // Very basic map literal for Go
       return `map[string]interface{}{${Object.entries(node.fields).map(([k, v]) => `"${k}": ${genGo(v, "")}`).join(', ')}}`;
 
-    case 'If':
+    case 'If': {
       let ifGo = `${indent}if ${genGo(node.condition)} {\n${genGo(node.thenBranch, indent + "    ")}\n${indent}}`;
       if (node.elseBranch) {
         ifGo += ` else {\n${genGo(node.elseBranch, indent + "    ")}\n${indent}}`;
       }
       return ifGo;
 
+    }
     case 'BinaryOp':
       return `(${genGo(node.left, "")} ${node.op} ${genGo(node.right, "")})`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       let swarmCode = `${indent}// Swarm Initiation: Goroutines\n`;
       node.steps.forEach(step => {
         swarmCode += `${indent}wg.Add(1)\n`;
@@ -124,6 +130,7 @@ export function genGo(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Boolean':
       return node.value ? 'true' : 'false';
 

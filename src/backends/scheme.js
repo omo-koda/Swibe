@@ -7,17 +7,19 @@ export function genScheme(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `(display "Swibe Sovereign Birth Ritual (Scheme Backend)")\n(newline)\n\n`;
       code += node.statements.map(s => genScheme(s, "")).join('\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name).join(' ');
       return `${indent}(define (${node.name} ${params})\n` +
         genScheme(node.body, indent + "  ") +
         `\n${indent})`;
 
+    }
     case 'Block':
       return `${indent}(begin\n` +
         node.statements.map(s => genScheme(s, indent + "  ")).join('\n') +
@@ -32,7 +34,7 @@ export function genScheme(node, indent = "") {
     case 'FunctionCall':
       return `${indent}(${node.name} ${node.args.map(a => genScheme(a, "")).join(' ')})`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to Scheme fibers/tasks
       let swarmCode = `${indent}; Swarm Initiation: Lambda/Fibers\n`;
       node.steps.forEach(step => {
@@ -40,6 +42,7 @@ export function genScheme(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

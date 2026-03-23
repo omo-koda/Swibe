@@ -52,7 +52,7 @@ class IRGenerator {
    */
   generateBlocks(body) {
     const blocks = [];
-    let currentBlock = { label: 'entry', instructions: [] };
+    const currentBlock = { label: 'entry', instructions: [] };
 
     if (Array.isArray(body)) {
       body.forEach(stmt => {

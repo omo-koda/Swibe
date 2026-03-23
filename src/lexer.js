@@ -98,9 +98,6 @@ const TokenType = {
   LBRACKET: 'LBRACKET',
   RBRACKET: 'RBRACKET',
 
-  // Target directive
-  AT_TARGET: 'AT_TARGET',
-
   // Special
   EOF: 'EOF',
   NEWLINE: 'NEWLINE',

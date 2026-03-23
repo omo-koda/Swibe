@@ -7,7 +7,7 @@ export function genHaskell(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `import Control.Concurrent\n\n`;
       code += `main :: IO ()\n`;
       code += `main = do\n`;
@@ -17,11 +17,13 @@ export function genHaskell(node, indent = "") {
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genHaskell(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name).join(' ');
       return `${indent}${node.name} ${params} = do\n` +
         genHaskell(node.body, indent + "    ");
 
+    }
     case 'Block':
       return node.statements.map(s => genHaskell(s, indent)).join('\n');
 
@@ -31,7 +33,7 @@ export function genHaskell(node, indent = "") {
     case 'Return':
       return `${indent}return ${genHaskell(node.value, "")}`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to forkIO
       let swarmCode = `${indent}-- Swarm Initiation: forkIO\n`;
       node.steps.forEach(step => {
@@ -39,6 +41,7 @@ export function genHaskell(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

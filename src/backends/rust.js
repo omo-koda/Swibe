@@ -9,7 +9,7 @@ export function genRust(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `use std::thread;\n`;
       code += `use std::sync::mpsc;\n`;
       code += `use std::collections::HashMap;\n`;
@@ -89,16 +89,18 @@ export function genRust(node, indent = "") {
       }
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name}: i32`).join(', ');
       const retType = node.returnType ? ` -> ${node.returnType}` : '';
       return `${indent}fn ${node.name}(${params})${retType} {\n` +
         genRust(node.body, indent + "    ") +
         `\n${indent}}`;
 
+    }
     case 'Block':
       return node.statements.map((s, i) => {
-        let scode = genRust(s, indent);
+        const scode = genRust(s, indent);
         if (s.type === 'BinaryOp' || s.type === 'Number' || s.type === 'Identifier' || s.type === 'FieldAccess' || s.type === 'FunctionCall' || s.type === 'MethodCall') {
            if (i === node.statements.length - 1) return scode;
            if (!scode.trim().endsWith(';')) return scode + ";";
@@ -106,14 +108,15 @@ export function genRust(node, indent = "") {
         return scode;
       }).join('\n');
 
-    case 'VariableDecl':
+    case 'VariableDecl': {
       const varName = node.name === 'pub' ? 'r#pub' : (node.name === 'priv' ? 'r#priv' : node.name);
       return `${indent}${node.isMut ? 'let mut' : 'let'} ${varName} = ${genRust(node.value, "")};`;
 
+    }
     case 'Return':
       return `${indent}${genRust(node.value, "")}`;
 
-    case 'FunctionCall':
+    case 'FunctionCall': {
       let fnName = node.name;
       if (fnName === 'aes_gcm_encrypt') fnName = 'aes_gcm_encrypt_vault';
       if (fnName === 'println') {
@@ -125,7 +128,7 @@ export function genRust(node, indent = "") {
       }
 
       return `${indent}${fnName}(${node.args.map(a => {
-        let argCode = genRust(a, "");
+        const argCode = genRust(a, "");
         if (a.type === 'String') {
             if (['join', 'trace', 'bipon39_entropyToMnemonic'].includes(fnName)) return `"${a.value}"`;
             return `"${a.value}".to_string()`;
@@ -136,15 +139,16 @@ export function genRust(node, indent = "") {
         return argCode;
       }).join(', ')})`;
 
-    case 'MethodCall':
+    }
+    case 'MethodCall': {
       const objName = genRust(node.object);
       if (objName === 'crypto' || objName === 'json' || objName === 'rag') {
-          let mName = node.method;
+          const mName = node.method;
           if (mName === 'save') {
               return `${indent}rag::save(${genRust(node.args[0])}, ${genRust(node.args[1])})`;
           }
           return `${indent}${objName}::${mName}(${node.args.map(a => {
-              let ac = genRust(a, "");
+              const ac = genRust(a, "");
               if (a.type === 'Identifier') return `${ac}.clone()`;
               return ac;
           }).join(', ')})`;
@@ -155,7 +159,8 @@ export function genRust(node, indent = "") {
       }
       return `${indent}${objName}.${node.method}(${node.args.map(a => genRust(a, "")).join(', ')})`;
 
-    case 'SkillDecl':
+    }
+    case 'SkillDecl': {
       let skillCode = `${indent}struct ${node.name};\n`;
       skillCode += `${indent}impl ${node.name} {\n`;
       skillCode += `${indent}    fn actions() {\n`;
@@ -164,6 +169,7 @@ export function genRust(node, indent = "") {
       skillCode += `${indent}}`;
       return skillCode;
 
+    }
     case 'SecureBlock':
       return `${indent}// Secure Sandbox Block\n${indent}{\n` +
         genRust(node.body, indent + "    ") +
@@ -172,7 +178,7 @@ export function genRust(node, indent = "") {
     case 'MetaDigital':
       return `${indent}// Meta-Digital Chain: ${node.name}\n${indent}println!("[RUST] Running Meta-Digital: ${node.name}");`;
 
-    case 'FieldAccess':
+    case 'FieldAccess': {
       const o = genRust(node.object);
       const f = node.field === 'pub' ? 'pub_' : (node.field === 'priv' ? 'priv_' : node.field);
       
@@ -181,6 +187,7 @@ export function genRust(node, indent = "") {
       }
       return `${o}.${f}`;
 
+    }
     case 'DictLiteral':
       return `HashMap::from([${
         Object.entries(node.fields)
@@ -196,16 +203,17 @@ export function genRust(node, indent = "") {
           .join(', ')
       }])`;
 
-    case 'If':
+    case 'If': {
       let ifRust = `${indent}if ${genRust(node.condition)} {\n${genRust(node.thenBranch, indent + "    ")}\n${indent}}`;
       if (node.elseBranch) {
         ifRust += ` else {\n${genRust(node.elseBranch, indent + "    ")}\n${indent}}`;
       }
       return ifRust;
 
-    case 'BinaryOp':
-      let left = genRust(node.left, "");
-      let right = genRust(node.right, "");
+    }
+    case 'BinaryOp': {
+      const left = genRust(node.left, "");
+      const right = genRust(node.right, "");
       if (node.op === '+') {
           const lIsNum = node.left.type === 'Number' || (node.left.type === 'Identifier' && /^[a-z]$/.test(node.left.name));
           const rIsNum = node.right.type === 'Number' || (node.right.type === 'Identifier' && /^[a-z]$/.test(node.right.name));
@@ -216,6 +224,7 @@ export function genRust(node, indent = "") {
       }
       return `${left} ${node.op} ${right}`;
 
+    }
     case 'Number':
       return String(node.value);
 
@@ -233,7 +242,7 @@ export function genRust(node, indent = "") {
       if (node.name === 'priv') return 'r#priv';
       return node.name;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       let swarmCode = `${indent}// Swarm Initiation: Rust Threads\n`;
       for (const step of node.steps) {
           swarmCode += `${indent}thread::spawn(move || {\n`;
@@ -242,6 +251,7 @@ export function genRust(node, indent = "") {
       }
       return swarmCode;
 
+    }
     case 'EmptyStatement':
       return '';
 

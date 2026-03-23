@@ -7,7 +7,7 @@ export function genV(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `module main\n\n`;
       code += `fn main() {\n`;
       code += `    println('Swibe Sovereign Birth Ritual (V Backend)')\n`;
@@ -16,12 +16,14 @@ export function genV(node, indent = "") {
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genV(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name} string`).join(', ');
       return `${indent}fn ${node.name}(${params}) {\n` +
         genV(node.body, indent + "    ") +
         `\n${indent}}`;
 
+    }
     case 'Block':
       return node.statements.map(s => genV(s, indent)).join('\n');
 
@@ -31,7 +33,7 @@ export function genV(node, indent = "") {
     case 'Return':
       return `${indent}return ${genV(node.value, "")}`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to V's threads
       let swarmCode = `${indent}// Swarm Initiation: V Threads\n`;
       node.steps.forEach(step => {
@@ -41,6 +43,7 @@ export function genV(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

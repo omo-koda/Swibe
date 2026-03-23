@@ -7,11 +7,12 @@ export function genJ(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `NB. Swibe Sovereign Birth Ritual (J Backend)\n`;
       code += node.statements.map(s => genJ(s)).join('\n');
       return code;
 
+    }
     case 'FunctionDecl':
       return `${node.name} =: 3 : 0\n  ${genJ(node.body)}\n)`;
 

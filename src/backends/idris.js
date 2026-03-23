@@ -7,18 +7,20 @@ export function genIdris(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `module Main\n\n`;
       code += `main : IO ()\n`;
       code += `main = putStrLn "Swibe Sovereign Birth Ritual (Idris Backend)"\n\n`;
       code += node.statements.map(s => genIdris(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `(${p.name} : Any)`).join(' ');
       return `${indent}${node.name} : ${params} -> Any\n` +
         `${indent}${node.name} ${node.params.map(p => p.name).join(' ')} = ${genIdris(node.body, indent + "  ")}`;
 
+    }
     case 'Block':
       return node.statements.map(s => genIdris(s, indent)).join('\n');
 

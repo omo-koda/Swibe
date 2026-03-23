@@ -7,7 +7,7 @@ export function genMove(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = 'module omokoda::soul {\n';
       code += '  use sui::event;\n';
       code += '  use sui::object::{Self, UID};\n';
@@ -45,6 +45,7 @@ export function genMove(node, indent = "") {
       code += '\n}';
       return code;
 
+    }
     case 'FunctionDecl':
       return `fun ${node.name}(${node.params.map(p => `${p.name}: u64`).join(', ')}) ${genMove(node.body)}`;
 
@@ -67,7 +68,7 @@ export function genMove(node, indent = "") {
     case 'Identifier':
       return node.name;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       let swarmCode = `public entry fun swarm_execute(ctx: &mut TxContext) {\n`;
       swarmCode += `    let iter = 1;\n`;
       node.steps.forEach(step => {
@@ -76,6 +77,7 @@ export function genMove(node, indent = "") {
       swarmCode += `  }`;
       return swarmCode;
 
+    }
     case 'MetaDigital': {
       const safeName = node.name.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
       let mdCode = `${indent}// Meta-Digital Chain: ${node.name}\n`;

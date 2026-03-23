@@ -7,7 +7,7 @@ export function genCOBOL(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `       IDENTIFICATION DIVISION.\n`;
       code += `       PROGRAM-ID. SWIBE-APP.\n`;
       code += `       PROCEDURE DIVISION.\n`;
@@ -16,6 +16,7 @@ export function genCOBOL(node, indent = "") {
       code += `\n           STOP RUN.`;
       return code;
 
+    }
     case 'VariableDecl':
       return `${indent}MOVE ${genCOBOL(node.value, "")} TO ${node.name.toUpperCase()}.`;
 

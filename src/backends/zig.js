@@ -7,7 +7,7 @@ export function genZig(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `const std = @import("std");\n\n`;
       code += `pub fn main() !void {\n`;
       code += `    const stdout = std.io.getStdOut().writer();\n`;
@@ -17,12 +17,14 @@ export function genZig(node, indent = "") {
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genZig(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name}: anytype`).join(', ');
       return `${indent}fn ${node.name}(${params}) !void {\n` +
         genZig(node.body, indent + "    ") +
         `\n${indent}}`;
 
+    }
     case 'Block':
       return node.statements.map(s => genZig(s, indent)).join('\n');
 
@@ -35,7 +37,7 @@ export function genZig(node, indent = "") {
       }
       return `${indent}try ${node.name}(${node.args.map(a => genZig(a, "")).join(', ')});`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to Zig threads (simplified for bridge)
       let swarmCode = `${indent}// Swarm Initiation: Native Threads\n`;
       node.steps.forEach(step => {
@@ -44,6 +46,7 @@ export function genZig(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

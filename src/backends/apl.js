@@ -7,11 +7,12 @@ export function genAPL(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `⍝ Swibe Sovereign Birth Ritual (APL Backend)\n`;
       code += node.statements.map(s => genAPL(s)).join('\n');
       return code;
 
+    }
     case 'FunctionDecl':
       return `${node.name} ← { ${genAPL(node.body)} }`;
 

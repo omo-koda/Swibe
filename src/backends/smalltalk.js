@@ -7,13 +7,14 @@ export function genSmalltalk(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `"Swibe Sovereign Birth Ritual (Smalltalk Backend)"\n`;
       code += `Transcript show: 'Swibe Sovereign Birth Ritual'; cr.\n`;
       code += node.statements.map(s => genSmalltalk(s)).join('.\n');
       code += `.\n`;
       return code;
 
+    }
     case 'VariableDecl':
       return `${node.name} := ${genSmalltalk(node.value)}`;
 
@@ -29,7 +30,7 @@ export function genSmalltalk(node, indent = "") {
     case 'Identifier':
       return node.name;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to object messages
       let swarmCode = `"Swarm Initiation: Live Objects"\n`;
       node.steps.forEach(step => {
@@ -37,6 +38,7 @@ export function genSmalltalk(node, indent = "") {
       });
       return swarmCode;
 
+    }
     default:
       return `${indent}"[SMALLTALK-GEN] Unhandled: ${node.type}"`;
   }

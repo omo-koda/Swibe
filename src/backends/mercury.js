@@ -7,7 +7,7 @@ export function genMercury(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `:- module swibe_app.\n`;
       code += `:- interface.\n:- import_module io.\n`;
       code += `:- pred main(io::di, io::uo) is det.\n`;
@@ -19,6 +19,7 @@ export function genMercury(node, indent = "") {
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genMercury(s, "")).join('\n\n');
       return code;
 
+    }
     case 'FunctionDecl':
       return `${indent}:- pred ${node.name}(string::in, io::di, io::uo) is det.\n` +
         `${indent}${node.name}(_, !IO) :-\n` +

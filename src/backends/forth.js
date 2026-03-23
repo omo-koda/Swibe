@@ -7,11 +7,12 @@ export function genForth(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `( Swibe Sovereign Birth Ritual - Forth Backend )\n`;
       code += node.statements.map(s => genForth(s)).join('\n');
       return code;
 
+    }
     case 'FunctionDecl':
       return `: ${node.name} ( params ) ${genForth(node.body)} ;`;
 

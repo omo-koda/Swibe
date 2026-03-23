@@ -7,17 +7,19 @@ export function genJanet(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `(print "Swibe Sovereign Birth Ritual (Janet Backend)")\n\n`;
       code += node.statements.map(s => genJanet(s, "")).join('\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name).join(' ');
       return `${indent}(defn ${node.name} [${params}]\n` +
         genJanet(node.body, indent + "  ") +
         `\n${indent})`;
 
+    }
     case 'Block':
       return `${indent}(do\n` +
         node.statements.map(s => genJanet(s, indent + "  ")).join('\n') +
@@ -32,7 +34,7 @@ export function genJanet(node, indent = "") {
     case 'FunctionCall':
       return `${indent}(${node.name} ${node.args.map(a => genJanet(a, "")).join(' ')})`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to Janet fibers/channels
       let swarmCode = `${indent}# Swarm Initiation: Janet Fibers\n`;
       node.steps.forEach(step => {
@@ -40,6 +42,7 @@ export function genJanet(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 
@@ -49,10 +52,11 @@ export function genJanet(node, indent = "") {
     case 'Identifier':
       return node.name;
 
-    case 'BinaryOp':
+    case 'BinaryOp': {
       const op = node.op === '==' ? '=' : node.op;
       return `(${op} ${genJanet(node.left, "")} ${genJanet(node.right, "")})`;
 
+    }
     default:
       return `${indent}# [JANET-GEN] Unhandled: ${node.type}`;
   }

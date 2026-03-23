@@ -7,7 +7,7 @@ export function genElixir(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `defmodule SwibeAgent.Application do\n`;
       code += `  use Application\n\n`;
       code += `  def start(_type, _args) {\n`;
@@ -66,12 +66,14 @@ export function genElixir(node, indent = "") {
       code += `\n# Start Ritual\nSwibeAgent.Ritual.run()\n`;
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name).join(', ');
       return `${indent}def ${node.name}(${params}) do\n` +
         genElixir(node.body, indent + "  ") +
         `\n${indent}end`;
 
+    }
     case 'Block':
       return node.statements.map(s => genElixir(s, indent)).join('\n');
 
@@ -81,7 +83,7 @@ export function genElixir(node, indent = "") {
     case 'Return':
       return `${indent}${genElixir(node.value, "")}`;
 
-    case 'FunctionCall':
+    case 'FunctionCall': {
       let fName = node.name;
       if (fName === 'println' || fName === 'print') fName = 'IO.puts';
       if (fName === 'think') {
@@ -89,7 +91,8 @@ export function genElixir(node, indent = "") {
       }
       return `${indent}${fName}(${node.args.map(a => genElixir(a, "")).join(', ')})`;
 
-    case 'MethodCall':
+    }
+    case 'MethodCall': {
       const obj = genElixir(node.object);
       if (node.method === 'send') {
           return `${indent}send(${obj}, ${genElixir(node.args[0])})`;
@@ -99,7 +102,8 @@ export function genElixir(node, indent = "") {
       }
       return `${indent}${obj}.${node.method}(${node.args.map(a => genElixir(a, "")).join(', ')})`;
 
-    case 'SkillDecl':
+    }
+    case 'SkillDecl': {
       let skillEx = `${indent}defmodule ${node.name} do\n`;
       skillEx += `${indent}  def actions do\n`;
       skillEx += genElixir(new ASTNode('Block', { statements: node.body }), indent + "    ");
@@ -107,12 +111,13 @@ export function genElixir(node, indent = "") {
       skillEx += `${indent}end`;
       return skillEx;
 
+    }
     case 'SecureBlock':
       return `${indent}Task.Supervisor.async(Swibe.TaskSupervisor, fn -> \n` +
         genElixir(node.body, indent + "  ") +
         `\n${indent}end) |> Task.await(10000)`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       let swarmCode = `${indent}# Swarm Initiation: DynamicSupervisor (OTP)\n`;
       node.steps.forEach(step => {
         swarmCode += `${indent}DynamicSupervisor.start_child(Swibe.AgentSupervisor, {SwibeAgent.Worker, %{name: "${step.name}"}})\n`;
@@ -120,10 +125,11 @@ export function genElixir(node, indent = "") {
       swarmCode += `${indent}IO.puts("[ELIXIR] Swarm supervise tree active with ${node.steps.length} agents.")`;
       return swarmCode;
 
+    }
     case 'MetaDigital':
       return `${indent}IO.puts "[ELIXIR] Running Meta-Digital: ${node.name}"`;
 
-    case 'If':
+    case 'If': {
       let ifEx = `${indent}if ${genElixir(node.condition)} do\n${genElixir(node.thenBranch, indent + "  ")}\n${indent}`;
       if (node.elseBranch) {
         ifEx += `else\n${genElixir(node.elseBranch, indent + "  ")}\n${indent}`;
@@ -131,11 +137,13 @@ export function genElixir(node, indent = "") {
       ifEx += `end`;
       return ifEx;
 
-    case 'BinaryOp':
+    }
+    case 'BinaryOp': {
       let op = node.op;
       if (op === '+') op = '<>';
       return `(${genElixir(node.left, "")} ${op} ${genElixir(node.right, "")})`;
 
+    }
     case 'DictLiteral':
       return `%{${Object.entries(node.fields).map(([k, v]) => `"${k}" => ${genElixir(v, "")}`).join(', ')}}`;
 

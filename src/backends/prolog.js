@@ -10,10 +10,11 @@ export function genProlog(node, indent = "") {
     case 'Program':
       return node.statements.map(s => genProlog(s)).join('.\n') + '.';
 
-    case 'FunctionDecl':
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name.toUpperCase()).join(', ');
       return `${node.name}(${params}) :- ${genProlog(node.body)}`;
 
+    }
     case 'VariableDecl':
       return `${node.name.toUpperCase()} = ${genProlog(node.value)}`;
 

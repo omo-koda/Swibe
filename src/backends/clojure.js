@@ -7,17 +7,19 @@ export function genClojure(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `(println "Swibe Sovereign Birth Ritual (Clojure Backend)")\n\n`;
       code += node.statements.map(s => genClojure(s, "")).join('\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name).join(' ');
       return `${indent}(defn ${node.name} [${params}]\n` +
         genClojure(node.body, indent + "  ") +
         `\n${indent})`;
 
+    }
     case 'Block':
       return `${indent}(do\n` +
         node.statements.map(s => genClojure(s, indent + "  ")).join('\n') +
@@ -29,7 +31,7 @@ export function genClojure(node, indent = "") {
     case 'Return':
       return genClojure(node.value, "");
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to futures/agents
       let swarmCode = `${indent}; Swarm Initiation: Futures/Atoms\n`;
       node.steps.forEach(step => {
@@ -37,6 +39,7 @@ export function genClojure(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

@@ -7,7 +7,7 @@ export function genD(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `import std.stdio;\nimport core.thread;\n\n`;
       code += `void main() {\n`;
       code += `    writeln("Swibe Sovereign Birth Ritual (D Backend)");\n`;
@@ -16,6 +16,7 @@ export function genD(node, indent = "") {
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genD(s, "")).join('\n\n');
       return code;
 
+    }
     case 'FunctionDecl':
       return `${indent}void ${node.name}(${node.params.map(p => `auto ${p.name}`).join(', ')}) {\n` +
         genD(node.body, indent + "    ") +
@@ -27,7 +28,7 @@ export function genD(node, indent = "") {
     case 'VariableDecl':
       return `${indent}auto ${node.name} = ${genD(node.value, "")};`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to D fibers or threads
       let swarmCode = `${indent}// Swarm Initiation: Coroutines\n`;
       node.steps.forEach(step => {
@@ -35,6 +36,7 @@ export function genD(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

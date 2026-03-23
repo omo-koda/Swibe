@@ -202,7 +202,7 @@ class StandardLibrary {
           
           // Wire Hook: after rag.save() → call onSettle(result)
           if (this.plugin && typeof this.plugin.onSettle === 'function') {
-            this.plugin.onSettle({ key, status: 'saved' });
+            this.plugin.onSettle({ key: key || 'unknown', status: 'saved' });
           }
           
           console.log(`[SANDBOX-LOG] [RAG] Persistent store: ${key}`);
@@ -260,7 +260,7 @@ class SwarmPipeline {
   async run(initialInput = '') {
     let currentInput = initialInput;
     for (const step of this.steps) {
-      let agent = new Agent({ name: step.name, system_prompt: step.role });
+      const agent = new Agent({ name: step.name, system_prompt: step.role });
       const result = await agent.run(currentInput);
       this.results[step.name] = result;
       currentInput = result;
@@ -278,7 +278,7 @@ class MetaDigital {
   }
 
   async run(input = '', context = {}) {
-    let currentInput = input;
+    const currentInput = input;
     const receiptContent = JSON.stringify({ input, output: this.output, chain: this.chain.length });
     const receipt = crypto.createHash('sha256').update(receiptContent).digest('hex');
     console.log(`[META-DIGITAL] Receipt Sealed: ${receipt}`);

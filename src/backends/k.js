@@ -7,11 +7,12 @@ export function genK(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `/ Swibe Sovereign Birth Ritual (K Backend)\n`;
       code += node.statements.map(s => genK(s)).join('\n');
       return code;
 
+    }
     case 'FunctionDecl':
       return `${node.name}:{[${node.params.map(p => p.name).join(';')}] ${genK(node.body)} }`;
 

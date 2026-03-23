@@ -7,7 +7,7 @@ export function genMojo(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `from tensor import Tensor\n`;
       code += `from math import sin\n\n`;
       code += `fn main():\n`;
@@ -15,11 +15,13 @@ export function genMojo(node, indent = "") {
       code += node.statements.map(s => genMojo(s, "    ")).join('\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name}: Int`).join(', ');
       return `${indent}fn ${node.name}(${params}):\n` +
         genMojo(node.body, indent + "    ");
 
+    }
     case 'Block':
       return node.statements.map(s => genMojo(s, indent)).join('\n');
 

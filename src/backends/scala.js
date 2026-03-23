@@ -7,7 +7,7 @@ export function genScala(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `import scala.concurrent.Future\n`;
       code += `import scala.concurrent.ExecutionContext.Implicits.global\n\n`;
       code += `object SwibeApp extends App {\n`;
@@ -17,6 +17,7 @@ export function genScala(node, indent = "") {
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genScala(s, "")).join('\n\n');
       return code;
 
+    }
     case 'FunctionDecl':
       return `${indent}def ${node.name}(${node.params.map(p => `${p.name}: Any`).join(', ')}): Any = {\n` +
         genScala(node.body, indent + "  ") +
@@ -31,7 +32,7 @@ export function genScala(node, indent = "") {
     case 'Return':
       return genScala(node.value, "");
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to Futures
       let swarmCode = `${indent}// Swarm Initiation: Akka-style Futures\n`;
       node.steps.forEach(step => {
@@ -39,6 +40,7 @@ export function genScala(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

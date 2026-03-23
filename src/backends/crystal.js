@@ -7,19 +7,21 @@ export function genCrystal(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `require "json"\n`;
       code += `require "crypto"\n\n`;
       code += `puts "Swibe Sovereign Birth Ritual (Crystal Backend)"\n\n`;
       code += node.statements.map(s => genCrystal(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name} : JSON::Any`).join(', ');
       return `${indent}def ${node.name}(${params})\n` +
         genCrystal(node.body, indent + "  ") +
         `\n${indent}end`;
 
+    }
     case 'Block':
       return node.statements.map(s => genCrystal(s, indent)).join('\n');
 
@@ -32,7 +34,7 @@ export function genCrystal(node, indent = "") {
     case 'FunctionCall':
       return `${indent}${node.name}(${node.args.map(a => genCrystal(a, "")).join(', ')})`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to native fibers
       let swarmCode = `${indent}# Swarm Initiation: Fibers/Channels\n`;
       node.steps.forEach(step => {
@@ -42,6 +44,7 @@ export function genCrystal(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

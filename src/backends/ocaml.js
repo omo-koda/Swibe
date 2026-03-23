@@ -7,16 +7,18 @@ export function genOCaml(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `print_endline "Swibe Sovereign Birth Ritual (OCaml Backend)";;\n\n`;
       code += node.statements.map(s => genOCaml(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name).join(' ');
       return `${indent}let ${node.name} ${params} =\n` +
         genOCaml(node.body, indent + "  ");
 
+    }
     case 'Block':
       return node.statements.map(s => genOCaml(s, indent)).join('\n');
 
@@ -26,7 +28,7 @@ export function genOCaml(node, indent = "") {
     case 'Return':
       return genOCaml(node.value, "");
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to OCaml threads or Lwt/Async
       let swarmCode = `${indent}(* Swarm Initiation: OCaml Threads *)\n`;
       node.steps.forEach(step => {
@@ -34,6 +36,7 @@ export function genOCaml(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

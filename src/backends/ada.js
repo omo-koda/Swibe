@@ -7,7 +7,7 @@ export function genAda(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `with Ada.Text_IO; use Ada.Text_IO;\n\n`;
       code += `procedure Swibe_App is\n`;
       code += `begin\n`;
@@ -16,10 +16,11 @@ export function genAda(node, indent = "") {
       code += `\nend Swibe_App;`;
       return code;
 
+    }
     case 'VariableDecl':
       return `${indent}${node.name} : Integer := ${genAda(node.value, "")};`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to Ada tasks
       let swarmCode = `${indent}-- Swarm Initiation: Ada Tasks\n`;
       node.steps.forEach(step => {
@@ -27,6 +28,7 @@ export function genAda(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

@@ -7,16 +7,18 @@ export function genFSharp(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `printfn "Swibe Sovereign Birth Ritual (F# Backend)"\n\n`;
       code += node.statements.map(s => genFSharp(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name).join(' ');
       return `${indent}let ${node.name} ${params} =\n` +
         genFSharp(node.body, indent + "    ");
 
+    }
     case 'Block':
       return node.statements.map(s => genFSharp(s, indent)).join('\n');
 
@@ -26,7 +28,7 @@ export function genFSharp(node, indent = "") {
     case 'Return':
       return genFSharp(node.value, "");
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to Async workflows
       let swarmCode = `${indent}// Swarm Initiation: Async Workflows\n`;
       node.steps.forEach(step => {
@@ -34,6 +36,7 @@ export function genFSharp(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

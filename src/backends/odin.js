@@ -7,7 +7,7 @@ export function genOdin(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `package main\n\n`;
       code += `import "core:fmt"\n`;
       code += `import "core:thread"\n\n`;
@@ -18,12 +18,14 @@ export function genOdin(node, indent = "") {
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genOdin(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name}: any`).join(', ');
       return `${indent}${node.name} :: proc(${params}) {\n` +
         genOdin(node.body, indent + "    ") +
         `\n${indent}}`;
 
+    }
     case 'Block':
       return node.statements.map(s => genOdin(s, indent)).join('\n');
 
@@ -33,7 +35,7 @@ export function genOdin(node, indent = "") {
     case 'Return':
       return `${indent}return ${genOdin(node.value, "")}`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to Odin's threads
       let swarmCode = `${indent}// Swarm Initiation: Odin Threads\n`;
       node.steps.forEach(step => {
@@ -41,6 +43,7 @@ export function genOdin(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

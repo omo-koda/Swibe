@@ -61,7 +61,7 @@ class Compiler {
   async processPrompts(node, depth = 0) {
     if (!node || depth > 5) return;
     if (node.type === 'Prompt' || node.type === 'Voice') {
-      let promptText = node.type === 'Prompt' ? node.text : node.text.match(/voice:\s*"([^"]*)"/)?.[1];
+      const promptText = node.type === 'Prompt' ? node.text : node.text.match(/voice:\s*"([^"]*)"/)?.[1];
       if (promptText) {
         const generated = await this.llm.generateCode(promptText, { targetLanguage: this.targetLanguage });
         const generatedAst = new Parser(new Lexer(generated).tokenize()).parse();
@@ -203,20 +203,22 @@ class Compiler {
         return `await ${this.genJavaScript(node.object)}.${node.method}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
       case 'FieldAccess':
         return `${this.genJavaScript(node.object)}.${node.field}`;
-      case 'If':
+      case 'If': {
         let ifCode = `if (${this.genJavaScript(node.condition)}) ${this.genJavaScript(node.thenBranch)}`;
         if (node.elseBranch) {
           ifCode += ` else ${this.genJavaScript(node.elseBranch)}`;
         }
         return ifCode;
+      }
       case 'SkillDecl':
         return `const ${node.name} = {\n  actions: async function() {\n${node.body.map(s => '    ' + this.genJavaScript(s)).join(';\n')}\n  }\n};`;
       case 'SecureBlock':
         return `await sandbox_run(async () => ${this.genJavaScript(node.body)})`;
-      case 'MetaDigital':
+      case 'MetaDigital': {
         const metaConfig = { ...node.config };
         // Convert AST nodes in config to JS values/code if needed
         return `const ${node.name.replace(/\s+/g, '_')} = new MetaDigital({ name: "${node.name}", ethics: ${this.genJavaScript(node.config.ethics)}, output: ${this.genJavaScript(node.config.output)} });\nawait ${node.name.replace(/\s+/g, '_')}.run();`;
+      }
       case 'Number': return String(node.value);
       case 'String': return `"${node.value.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
       case 'Identifier': return node.name;

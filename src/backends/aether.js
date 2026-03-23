@@ -7,7 +7,7 @@ export function genAether(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `#include <aether/core.h>\n`;
       code += `#include <stdio.h>\n\n`;
       code += `int main() {\n`;
@@ -16,10 +16,11 @@ export function genAether(node, indent = "") {
       code += `\n  return 0;\n}`;
       return code;
 
+    }
     case 'VariableDecl':
       return `${indent}auto ${node.name} = ${genAether(node.value, "")};`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
       // Map swarm to Aether tasks
       let swarmCode = `${indent}// Swarm Initiation: Zero-copy Work-stealing Queues\n`;
       node.steps.forEach(step => {
@@ -27,6 +28,7 @@ export function genAether(node, indent = "") {
       });
       return swarmCode;
 
+    }
     case 'Number':
       return String(node.value);
 

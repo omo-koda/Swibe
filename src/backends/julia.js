@@ -7,18 +7,20 @@ export function genJulia(node, indent = "") {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       let code = `# Swibe Sovereign Birth Ritual (Julia/Osovm Bridge)\n`;
       code += `using LinearAlgebra\n\n`;
       code += node.statements.map(s => genJulia(s, "")).join('\n\n');
       return code;
 
-    case 'FunctionDecl':
+    }
+    case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name}::Any`).join(', ');
       return `${indent}function ${node.name}(${params})\n` +
         genJulia(node.body, indent + "    ") +
         `\n${indent}end`;
 
+    }
     case 'Block':
       return node.statements.map(s => genJulia(s, indent)).join('\n');
 
@@ -31,7 +33,7 @@ export function genJulia(node, indent = "") {
              `${indent}neurons = rand(Float64, 86000, 86000)\n` +
              `${indent}synapses = neurons * neurons'`;
 
-    case 'SwarmStatement':
+    case 'SwarmStatement': {
         // Map swarm to Julia Tasks
         let swarmCode = `${indent}# Swarm Initiation: Julia Tasks\n`;
         node.steps.forEach(step => {
@@ -39,6 +41,7 @@ export function genJulia(node, indent = "") {
         });
         return swarmCode;
 
+    }
     case 'FunctionCall':
       return `${indent}${node.name}(${node.args.map(a => genJulia(a, "")).join(', ')})`;
 
