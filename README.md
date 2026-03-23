@@ -1,4 +1,4 @@
-![Version](https://img.shields.io/badge/version-v1.2.0-blue)
+![Version](https://img.shields.io/badge/version-v1.1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Layer](https://img.shields.io/badge/layer-Language-lightgrey)
 # Swibe: Agent-Native Scripting (v1.1.0)
