@@ -3,3 +3,4 @@ examples/
 test/
 *.log
 README.md
+tests/
