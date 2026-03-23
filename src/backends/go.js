@@ -19,7 +19,7 @@ export function genGo(node, indent = "") {
       code += `func aes_gcm_encrypt(d string, s []byte) Encrypted {\n  block, _ := aes.NewCipher(s[:32])\n  gcm, _ := cipher.NewGCM(block)\n  iv := make([]byte, gcm.NonceSize())\n  rand.Read(iv)\n  sealed := gcm.Seal(nil, iv, []byte(d), nil)\n  return Encrypted{hex.EncodeToString(iv), hex.EncodeToString(sealed[:len(sealed)-gcm.Overhead()]), hex.EncodeToString(sealed[len(sealed)-gcm.Overhead():])}\n}\n`;
       code += `func aes_gcm_decrypt(e Encrypted, s []byte) string { return "{}" }\n`;
       code += `func ed25519_sign(p string, k string) string { return "sig" }\n`;
-      code += `func ed25519_verify(sig string, payload string, pub string) bool { return true }\n`;
+      code += `func ed25519_verify(sig string, payload string, pub string) bool {\n  // TODO: SECURITY — always returns true\n  // Replace before production deployment\n  panic("ed25519_verify stub — not for production")\n}\n`;
       code += `func join(v []string, s string) string { return strings.Join(v, s) }\n`;
       code += `func trace(m string) { fmt.Printf("[TRACE] %s\\n", m) }\n\n`;
       code += `var json = struct {\n  Stringify func(interface{}) string\n  Parse func(string) Vault\n}{\n  Stringify: func(v interface{}) string { return "{}" },\n  Parse: func(s string) Vault { return Vault{} },\n}\n\n`;

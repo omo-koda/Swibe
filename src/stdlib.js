@@ -5,6 +5,9 @@
 
 import vm from 'node:vm';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs';
 import { Agent, LLMIntegration, RAGIntegration } from './llm-integration.js';
 import { sovereign } from './sovereign-vault.js';
 import { NeuralLayer } from './neural.js';
@@ -164,10 +167,6 @@ class StandardLibrary {
 
   async sandbox_run(fn) {
     console.warn('[SWIBE] secure{} sandbox: Node.js vm isolation. Not for untrusted code.');
-
-    const path = await import('node:path');
-    const os = await import('node:os');
-    const fs = await import('node:fs');
 
     const ragApi = Object.freeze({
       save: async (key, data) => {

@@ -1,5 +1,5 @@
 /**
- * Vibe Language Lexer
+ * Swibe Language Lexer
  * Tokenizes Vibe source code
  */
 

@@ -1,5 +1,5 @@
 /**
- * BrowserOS Support for Vibe Language
+ * BrowserOS Support for Swibe Language
  * Provides Vibe syntax and macros for BrowserOS integration
  * Includes #[app], #[widget], #[sync] macros
  * Lines: 350+

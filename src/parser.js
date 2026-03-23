@@ -1,5 +1,5 @@
 /**
- * Vibe Language Parser
+ * Swibe Language Parser
  * Builds AST from tokens
  */
 
