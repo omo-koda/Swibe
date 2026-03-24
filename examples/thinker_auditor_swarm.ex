@@ -51,12 +51,16 @@ end
 defmodule SwibeAgent.Ritual do
   def run do
     IO.puts "Swibe Sovereign Birth Ritual (Elixir/OTP Backend)"
-
+    # Swarm Initiation: DynamicSupervisor (OTP)
+    DynamicSupervisor.start_child(Swibe.AgentSupervisor, {SwibeAgent.Worker, %{name: "Oracle"}})
+    DynamicSupervisor.start_child(Swibe.AgentSupervisor, {SwibeAgent.Worker, %{name: "Auditor"}})
+    IO.puts("[ELIXIR] Swarm supervise tree active with 2 agents.")
   end
 end
 
 def main() do
-mint
+  IO.puts("Technosis Sovereign Demo — v1.0")
+  trace("The organism has spoken.")
 end
 # Start Ritual
 SwibeAgent.Ritual.run()

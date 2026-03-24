@@ -1,0 +1,149 @@
+(* Swibe Language EBNF Specification (v1.2) *)
+
+program = { statement } ;
+
+statement = function_decl
+          | struct_decl
+          | enum_decl
+          | trait_decl
+          | impl_block
+          | let_statement
+          | if_statement
+          | match_statement
+          | loop_until
+          | swarm_statement
+          | meta_digital_decl
+          | neural_statement
+          | app_statement
+          | secure_block
+          | target_directive
+          | mint_statement
+          | receipt_statement
+          | seal_statement
+          | walrus_statement
+          | expression_statement
+          | return_statement ;
+
+(* Declarations *)
+
+function_decl = [ "async" ] "fn" identifier [ type_params ] "(" [ parameters ] ")" [ "->" type ] block ;
+
+parameters = parameter { "," parameters } ;
+parameter = identifier ":" type ;
+
+struct_decl = "struct" identifier [ type_params ] "{" { struct_field } "}" ;
+struct_field = identifier ":" type [ "," ] ;
+
+enum_decl = "enum" identifier "{" { identifier [ "," ] } "}" ;
+
+trait_decl = ( "trait" | "protocol" ) identifier "{" { function_sig } "}" ;
+function_sig = "fn" identifier "(" [ parameters ] ")" [ "->" type ] ";" ;
+
+impl_block = "impl" identifier [ "for" identifier ] "{" { function_decl } "}" ;
+
+(* Statements *)
+
+let_statement = ( "let" | "const" ) [ "mut" ] identifier [ ":" type ] "=" expression ";" ;
+
+if_statement = "if" expression block [ "else" ( if_statement | block ) ] ;
+
+match_statement = "match" expression "{" { match_arm } "}" ;
+match_arrow = "=>" ;
+match_arm = expression match_arrow ( expression | block ) [ "," ] ;
+
+loop_until = "loop" "until" "goal" ":" string block ;
+
+expression_statement = expression ";" ;
+
+return_statement = "return" expression ";" ;
+
+secure_block = "secure" block ;
+
+target_directive = "@" identifier [ block ] ;
+
+(* AI-Native Primitives *)
+
+swarm_statement = "swarm" "{" { swarm_step } "}" ;
+swarm_step = identifier [ ":" expression ] [ "@" identifier ] [ match_arrow expression ] [ "," ] ;
+
+meta_digital_decl = "meta-digital" string "{" meta_digital_body "}" ;
+meta_digital_body = { meta_digital_field } ;
+meta_digital_field = ( "chain" | "ethics" | "output" ) ":" ( expression | "[" { expression [ "," ] } "]" ) [ ";" ] ;
+
+neural_statement = "neural" [ expression ] ";" ;
+
+app_statement = "app" "{" { app_field } "}" ;
+app_field = identifier ":" expression [ "," ] ;
+
+mint_statement = "mint" [ expression ] ";" ;
+receipt_statement = "receipt" [ expression ] ";" ;
+seal_statement = "seal" ";" ;
+walrus_statement = "walrus" [ expression ] ";" ;
+
+(* Expressions *)
+
+expression = assignment ;
+
+assignment = [ identifier "=" ] logical_or ;
+
+logical_or = logical_and { "||" logical_and } ;
+logical_and = equality { "&&" equality } ;
+equality = relational { ( "==" | "!=" ) relational } ;
+relational = additive { ( "<" | "<=" | ">" | ">=" ) additive } ;
+additive = multiplicative { ( "+" | "-" ) multiplicative } ;
+multiplicative = unary { ( "*" | "/" | "%" ) unary } ;
+
+unary = [ "!" | "-" | "await" | "<-" | "&" ] postfix ;
+
+postfix = primary { call | field_access | method_call | pipe } ;
+
+call = "(" [ arguments ] ")" ;
+field_access = "." identifier ;
+method_call = "." identifier "(" [ arguments ] ")" ;
+pipe = "|>" identifier [ "(" [ arguments ] ")" ] ;
+
+arguments = expression { "," expression } ;
+
+primary = identifier
+        | number
+        | string
+        | boolean
+        | nil_literal
+        | prompt_literal
+        | voice_literal
+        | dict_literal
+        | list_literal
+        | "(" expression ")"
+        | block ;
+
+dict_literal = "{" [ dict_fields ] "}" ;
+dict_fields = identifier ":" expression { "," dict_fields } ;
+
+list_literal = "[" [ arguments ] "]" ;
+
+prompt_literal = "%%" { any_character_except_newline_or_double_percent } [ "%%" ] ;
+voice_literal = "[voice:" string "]" ;
+
+boolean = "true" | "false" ;
+nil_literal = "nil" | "none" ;
+
+(* Types *)
+
+type = identifier [ type_params ]
+     | "[" type "]"
+     | "Option" "<" type ">"
+     | "Result" "<" type "," type ">" ;
+
+type_params = "<" identifier { "," identifier } ">" ;
+
+(* Lexical components *)
+
+block = "{" { statement } "}" ;
+
+identifier = letter { letter | digit | "_" } ;
+number = digit { digit } [ "." { digit } ] ;
+string = '"' { any_character_except_quote } '"'
+       | "'" { any_character_except_single_quote } "'" ;
+
+letter = "a" | ... | "z" | "A" | ... | "Z" ;
+digit = "0" | ... | "9" ;
