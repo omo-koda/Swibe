@@ -196,3 +196,38 @@ describe('Swibe v0.4.0 Sovereign Birth', () => {
     });
   });
 });
+
+import { SovereignNeuralLayer } from '../src/neural.js';
+
+describe('SovereignNeuralLayer — 86B Pool', () => {
+  it('requires exactly 86 parameters', () => {
+    expect(() => new SovereignNeuralLayer([]))
+      .toThrow('86 birth parameters');
+  });
+
+  it('creates 8 cortical regions', () => {
+    const a = SovereignNeuralLayer.random();
+    expect(a.cortex.prefrontal.length).toBe(12);
+    expect(a.cortex.hippocampus.length).toBe(18);
+    expect(a.cortex.amygdala.length).toBe(8);
+  });
+
+  it('produces unique fingerprints', () => {
+    const a = SovereignNeuralLayer.random();
+    const b = SovereignNeuralLayer.random();
+    expect(a.fingerprint).not.toBe(b.fingerprint);
+  });
+
+  it('measures divergence between agents', () => {
+    const a = SovereignNeuralLayer.random();
+    const b = SovereignNeuralLayer.random();
+    const d = SovereignNeuralLayer.divergence(a, b);
+    expect(d).toBeGreaterThan(0);
+    expect(d).toBeLessThanOrEqual(1);
+  });
+
+  it('reports 86B neuron pool', () => {
+    const a = SovereignNeuralLayer.random();
+    expect(a.neuronPool).toBe(86_000_000_000n);
+  });
+});

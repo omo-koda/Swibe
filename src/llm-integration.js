@@ -169,8 +169,31 @@ class Agent {
 
   async run(goal) {
     this.memory.push({ role: 'user', content: goal });
-    return "Complete";
+    try {
+      const result = await this.llm.think(goal, { system: this.systemPrompt });
+      const response = result.content || result;
+      this.memory.push({ role: 'assistant', content: response });
+      return response;
+    } catch(err) {
+      return `Agent ${this.name} error: ${err.message}`;
+    }
   }
 }
+
+
+  async search(query, topK = 5) {
+    try {
+      const { default: path } = await import('node:path');
+      const { default: os } = await import('node:os');
+      const { default: fs } = await import('node:fs');
+      const vaultPath = path.join(os.homedir(), '.swibe', 'vault.json');
+      if (!fs.existsSync(vaultPath)) return [];
+      const vault = JSON.parse(fs.readFileSync(vaultPath, 'utf-8'));
+      return Object.entries(vault)
+        .filter(([k]) => k.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, topK)
+        .map(([key, v]) => ({ key, data: v.data, score: 1 }));
+    } catch { return []; }
+  }
 
 export { LLMIntegration, RAGIntegration, Agent };
