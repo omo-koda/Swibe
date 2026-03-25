@@ -35,12 +35,28 @@ class AgentGenerator {
    */
   parseConfig(configStr) {
     const config = {};
-    const pairs = configStr.split(',');
+    let current = '';
+    let inQuotes = false;
+    const parts = [];
+    
+    for (let i = 0; i < configStr.length; i++) {
+      const char = configStr[i];
+      if (char === '"') inQuotes = !inQuotes;
+      if (char === ',' && !inQuotes) {
+        parts.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    parts.push(current);
 
-    for (const pair of pairs) {
-      const [key, value] = pair.split('=').map(s => s.trim());
-      if (key && value) {
-        config[key] = value.replace(/["[\]]/g, '');
+    for (const part of parts) {
+      const eqIndex = part.indexOf('=');
+      if (eqIndex !== -1) {
+        const key = part.substring(0, eqIndex).trim();
+        const value = part.substring(eqIndex + 1).trim();
+        config[key] = value.replace(/^"(.*)"$/, '$1').replace(/[\[\]]/g, '');
       }
     }
 

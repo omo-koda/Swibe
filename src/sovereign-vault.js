@@ -173,6 +173,18 @@ class SovereignVault {
     }
     return counts;
   }
+
+  /**
+   * Full agent birth ritual — returns identity, neuralLayer params, and seed
+   */
+  createAgentAtBirth() {
+    const phrase = this.generateRitualPhrase(256);
+    const seed = this.deriveSeed(phrase);
+    const identity = this.generateIdentity(seed);
+    // Derive 86 neural birth params from the seed bytes
+    const neuralParams = Array.from({ length: 86 }, (_, i) => (seed[i % seed.length] || 0) / 255);
+    return { identity, neuralParams, seed, phrase };
+  }
 }
 
 export const sovereign = new SovereignVault();

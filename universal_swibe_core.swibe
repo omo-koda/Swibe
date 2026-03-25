@@ -1,0 +1,31 @@
+// Universal Swibe Core
+// The detached, universal agent logic
+
+load adapter "seemplify"
+load adapter "oso"
+
+fn main() {
+  println("Swibe Agent Core v1.1.0 Online")
+  println("[ENV] Adapters loaded: seemplify, oso")
+  
+  loop {
+    let thought = think "What should I do? (Options: submit pilot, mint impact, check status)"
+    speak thought
+
+    // Dynamic dispatch examples
+    if contains(thought, "pilot") {
+       let result = call "submit_pilot" "DeFi Daily" "trends" "casual"
+       speak result
+    }
+
+    if contains(thought, "mint") {
+       let result = call "mint_impact" 2.0 "pilot aired"
+       speak result
+    }
+
+    if contains(thought, "sabbath") {
+       let result = call "check_sabbath"
+       speak "Is it Sabbath? " + result
+    }
+  }
+}

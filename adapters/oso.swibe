@@ -1,0 +1,15 @@
+// OSO Adapter for Swibe
+// Spiritual bridge to ÀṣẹVault and Technosis rituals
+
+adapter oso {
+  mint_impact(ase: number, reason: string) {
+    // Call vault subprocess
+    let result = exec("../ase-vault/ÀṣẹVault_COMPLETE.py", ["run_vm", "0x11 " + ase + " " + reason])
+    return result || "Àṣẹ sealed in OSO"
+  }
+
+  check_sabbath() {
+    let result = exec("../ase-vault/ÀṣẹVault_COMPLETE.py", ["is_sabbath"])
+    return result.trim() == "true"
+  }
+}

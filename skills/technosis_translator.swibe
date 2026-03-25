@@ -1,0 +1,30 @@
+skill technosis_translator {
+  ritual(code: string) -> string {
+    // Simple opcode map — expand for full 155
+    let op_map = {
+      "@impact": "0x11",
+      "@tithe": "0x27",
+      "@receipt": "0x1f",
+      "@ase_invocation": "0xac",
+      "@ifa_divination": "0xa8"
+    }
+
+    // Grab first word as op (e.g. "@impact(ase=5.0)")
+    let op_key = code.split("(")[0].trim()
+    let bytecode = op_map[op_key] || "0x01"  // NOOP fallback
+
+    if bytecode == "0x01" {
+      return " @noop"
+    }
+
+    // Sabbath check — call vault's is_sabbath()
+    let is_sabbath_str = exec("../ase-vault/ÀṣẹVault_COMPLETE.py", ["is_sabbath"])
+    let is_sabbath = is_sabbath_str.trim() == "true"
+    
+    let final_cmd = is_sabbath ? bytecode + " HALT" : bytecode
+
+    // Call vault — subprocess bridge
+    let result = exec("../ase-vault/ÀṣẹVault_COMPLETE.py", ["run_vm", final_cmd])
+    return result || "Àṣẹ sealed"
+  }
+}

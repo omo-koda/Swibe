@@ -1,0 +1,13 @@
+skill twilio_call {
+  outbound(phone: string, msg: string) -> string {
+    // Calls vault's new twilio_outbound() func
+    let payload = json.encode({ "phone": phone, "msg": msg })
+    let result = exec("../ase-vault/twilio_bridge.py", ["--call", payload])
+    return result || "Call queued — Àṣẹ spoke"
+  }
+
+  inbound() -> string {
+    // For future: listen for calls, mint on "mint" voice command
+    return "Inbound bridge not yet live"
+  }
+}

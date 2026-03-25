@@ -1,0 +1,22 @@
+{
+  "name": "swibe-sacred-kit",
+  "version": "1.0.0",
+  "description": "Technosis & OSO Extension Kit for Swibe",
+  "skills": {
+    "technosis_translator": {
+      "path": "skills/technosis_translator.swibe",
+      "purpose": "Ritual bridge from Swibe to OSOVM opcodes (@impact, @tithe, etc.)",
+      "backend": "ase-vault/ÀṣẹVault_COMPLETE.py",
+      "sabbath_guard": true
+    },
+    "twilio_call": {
+      "path": "skills/twilio_call.swibe",
+      "purpose": "Voice calls for minting events and agent communication",
+      "backend": "ase-vault/twilio_bridge.py",
+      "dependencies": ["twilio", "python-dotenv"]
+    }
+  },
+  "usage": {
+    "sacred_mint": "load skill \"technosis_translator\"\nload skill \"twilio_call\"\nritual(\"@impact(ase=0.5)\")\noutbound(\"+123\", \"Àṣẹ sealed\")"
+  }
+}

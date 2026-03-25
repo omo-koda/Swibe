@@ -121,20 +121,21 @@ class Compiler {
       case 'smalltalk': return genSmalltalk(node);
       case 'd': return genD(node);
       case 'raku': return genRaku(node);
+      case 'python': return this.genPython(node);
+      case 'r': return this.genR(node);
+      case 'lisp': return this.genLisp(node);
+      case 'matlab': return this.genMatlab(node);
+      case 'wolfram': return this.genWolfram(node);
+      case 'agent-skills': return this.genAgentSkills(node);
       default: return this.genJavaScript(node);
     }
   }
 
   genHybrid(node) {
     if (!node) return '';
-    
-    // For hybrid target, we look for SwarmStatement and split by tags
-    // Returns a special object/string that the CLI can split
-    
     if (node.type === 'Program') {
       const elixirNodes = { type: 'Program', statements: [] };
       const moveNodes = { type: 'Program', statements: [] };
-      
       node.statements.forEach(s => {
         if (s.type === 'TargetDirective' && s.body) {
           if (s.target === 'move') {
@@ -145,34 +146,19 @@ class Compiler {
         } else if (s.type === 'SwarmStatement') {
           const elixirSteps = s.steps.filter(step => step.target !== 'move' && !step.role?.text?.includes('@move'));
           const moveSteps = s.steps.filter(step => step.target === 'move' || step.role?.text?.includes('@move'));
-          
-          if (elixirSteps.length > 0) {
-            elixirNodes.statements.push({ ...s, steps: elixirSteps });
-          }
-          if (moveSteps.length > 0) {
-            moveNodes.statements.push({ ...s, steps: moveSteps });
-          }
+          if (elixirSteps.length > 0) elixirNodes.statements.push({ ...s, steps: elixirSteps });
+          if (moveSteps.length > 0) moveNodes.statements.push({ ...s, steps: moveSteps });
         } else if (s.type === 'MintStatement' || s.type === 'ReceiptStatement' || s.type === 'SealStatement' || s.type === 'WalrusStatement') {
-          // Blockchain-native statements go to Move
           moveNodes.statements.push(s);
         } else {
-          // Default: send everything to Elixir (orchestrator)
-          // Some nodes might be relevant to both (like shared struct/fn)
           elixirNodes.statements.push(s);
-          
-          // Only add to Move if it's a structural node needed there
-          if (s.type === 'FunctionDecl' || s.type === 'StructDecl' || s.type === 'EnumDecl') {
-            moveNodes.statements.push(s);
-          }
+          if (s.type === 'FunctionDecl' || s.type === 'StructDecl' || s.type === 'EnumDecl') moveNodes.statements.push(s);
         }
       });
-      
       const elixirCode = genElixir(elixirNodes);
       const moveCode = genMove(moveNodes);
-      
       return `--- ELIXIR ---\n${elixirCode}\n--- MOVE ---\n${moveCode}`;
     }
-    
     return this.genJavaScript(node);
   }
 
@@ -205,9 +191,7 @@ class Compiler {
         return `${this.genJavaScript(node.object)}.${node.field}`;
       case 'If': {
         let ifCode = `if (${this.genJavaScript(node.condition)}) ${this.genJavaScript(node.thenBranch)}`;
-        if (node.elseBranch) {
-          ifCode += ` else ${this.genJavaScript(node.elseBranch)}`;
-        }
+        if (node.elseBranch) ifCode += ` else ${this.genJavaScript(node.elseBranch)}`;
         return ifCode;
       }
       case 'SkillDecl':
@@ -215,19 +199,17 @@ class Compiler {
       case 'SecureBlock':
         return `await sandbox_run(async () => ${this.genJavaScript(node.body)})`;
       case 'MetaDigital': {
-        const metaConfig = { ...node.config };
-        // Convert AST nodes in config to JS values/code if needed
         return `const ${node.name.replace(/\s+/g, '_')} = new MetaDigital({ name: "${node.name}", ethics: ${this.genJavaScript(node.config.ethics)}, output: ${this.genJavaScript(node.config.output)} });\nawait ${node.name.replace(/\s+/g, '_')}.run();`;
       }
       case 'Number': return String(node.value);
       case 'String': return `"${node.value.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
       case 'Identifier': return node.name;
+      case 'IdentifierPattern': return node.name;
       case 'Boolean': return String(node.value);
       case 'Nil': return 'null';
       case 'BinaryOp':
         return `(${this.genJavaScript(node.left)} ${node.op} ${this.genJavaScript(node.right)})`;
       case 'SwarmStatement':
-        // Elixir is the default target for swarm{} blocks at v0.6
         return `/* SWARM-TARGET: ELIXIR */\n${genElixir(node, "")}`;
       case 'NeuralLayer':
         return `/* Neural Layer: 86B neurons activated */`;
@@ -257,6 +239,118 @@ class Compiler {
         return `/* @target ${node.target} */`;
       default: return `/* Unhandled: ${node.type} */`;
     }
+  }
+
+  genPython(node) {
+    if (!node) return '';
+    switch (node.type) {
+      case 'Program': return node.statements.map(s => this.genPython(s)).join('\n\n');
+      case 'FunctionDecl': return `def ${node.name}(${node.params.map(p => p.name).join(', ')}):\n` + this.indentCode(this.genPython(node.body), 2);
+      case 'Block': return node.statements.map(s => this.genPython(s)).join('\n');
+      case 'VariableDecl': return `${node.name} = ${this.genPython(node.value)}`;
+      case 'Return': return `return ${this.genPython(node.value)}`;
+      case 'FunctionCall': return `${node.name}(${node.args.map(a => this.genPython(a)).join(', ')})`;
+      case 'Number': return String(node.value);
+      case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
+      case 'Boolean': return node.value ? 'True' : 'False';
+      case 'Nil': return 'None';
+      case 'Identifier': return node.name;
+      case 'ArrayLiteral': return `[${node.elements.map(e => this.genPython(e)).join(', ')}]`;
+      default: return '';
+    }
+  }
+
+  genR(node) {
+    if (!node) return '';
+    switch (node.type) {
+      case 'Program': return node.statements.map(s => this.genR(s)).join('\n\n');
+      case 'FunctionDecl': return `${node.name} <- function(${node.params.map(p => p.name).join(', ')}) {\n` + this.indentCode(this.genR(node.body), 2) + '\n}';
+      case 'VariableDecl': return `${node.name} <- ${this.genR(node.value)}`;
+      case 'Block': return node.statements.map(s => this.genR(s)).join('\n');
+      case 'Return': return this.genR(node.value);
+      case 'FunctionCall': return `${node.name}(${node.args.map(a => this.genR(a)).join(', ')})`;
+      case 'Number': return String(node.value);
+      case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
+      case 'Boolean': return String(node.value);
+      case 'Identifier': return node.name;
+      case 'ArrayLiteral': return `c(${node.elements.map(e => this.genR(e)).join(', ')})`;
+      case 'BinaryOp': return `${this.genR(node.left)} ${node.op} ${this.genR(node.right)}`;
+      default: return '';
+    }
+  }
+
+  genLisp(node) {
+    if (!node) return '';
+    switch (node.type) {
+      case 'Program': return node.statements.map(s => this.genLisp(s)).join('\n');
+      case 'FunctionDecl': return `(defun ${node.name} (${node.params.map(p => p.name).join(' ')})\n  ${this.genLisp(node.body)}\n)`;
+      case 'VariableDecl': return `(setq ${node.name} ${this.genLisp(node.value)})`;
+      case 'Block': return `(progn\n  ${node.statements.map(s => this.genLisp(s)).join('\n  ')}\n)`;
+      case 'FunctionCall': return `(${node.name} ${node.args.map(a => this.genLisp(a)).join(' ')})`;
+      case 'Number': return String(node.value);
+      case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
+      case 'Boolean': return node.value ? 't' : 'nil';
+      case 'Identifier': return node.name;
+      case 'ArrayLiteral': return `'(${node.elements.map(e => this.genLisp(e)).join(' ')})`;
+      case 'BinaryOp': return `(${node.op} ${this.genLisp(node.left)} ${this.genLisp(node.right)})`;
+      default: return '';
+    }
+  }
+
+  genMatlab(node) {
+    if (!node) return '';
+    switch (node.type) {
+      case 'Program': return node.statements.map(s => this.genMatlab(s)).join('\n\n');
+      case 'FunctionDecl': return `function varargout = ${node.name}(${node.params.map(p => p.name).join(', ')})\n` + this.indentCode(this.genMatlab(node.body), 4) + '\nend';
+      case 'VariableDecl': return `${node.name} = ${this.genMatlab(node.value)};`;
+      case 'Block': return node.statements.map(s => this.genMatlab(s)).join('\n');
+      case 'Return': return this.genMatlab(node.value);
+      case 'FunctionCall': return `${node.name}(${node.args.map(a => this.genMatlab(a)).join(', ')})`;
+      case 'Number': return String(node.value);
+      case 'String': return `'${node.value.replace(/\n/g, '\\n')}'`;
+      case 'Boolean': return node.value ? 'true' : 'false';
+      case 'Identifier': return node.name;
+      case 'ArrayLiteral': return `[${node.elements.map(e => this.genMatlab(e)).join(', ')}]`;
+      case 'BinaryOp': return `${this.genMatlab(node.left)} ${node.op} ${this.genMatlab(node.right)}`;
+      default: return '';
+    }
+  }
+
+  genWolfram(node) {
+    if (!node) return '';
+    switch (node.type) {
+      case 'Program': return node.statements.map(s => this.genWolfram(s)).join('\n');
+      case 'FunctionDecl': return `${node.name}[${node.params.map(p => p.name).join(', ')}] := ` + this.genWolfram(node.body);
+      case 'VariableDecl': return `${node.name} = ${this.genWolfram(node.value)}`;
+      case 'Block': return `Block[{}, ${node.statements.map(s => this.genWolfram(s)).join('; ')}]`;
+      case 'Return': return this.genWolfram(node.value);
+      case 'FunctionCall': return `${node.name}[${node.args.map(a => this.genWolfram(a)).join(', ')}]`;
+      case 'Number': return String(node.value);
+      case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
+      case 'Boolean': return String(node.value);
+      case 'Identifier': return node.name;
+      case 'ArrayLiteral': return `{${node.elements.map(e => this.genWolfram(e)).join(', ')}}`;
+      case 'BinaryOp': return `${this.genWolfram(node.left)} ${node.op} ${this.genWolfram(node.right)}`;
+      default: return '';
+    }
+  }
+
+  genAgentSkills(node) {
+    if (node.type === 'SkillDecl') {
+      const instructions = node.body.filter(item => item.type === 'SkillProperty' && item.name === 'prompt').map(item => this.genJavaScript(item.value))[0] || "";
+      const tools = node.body.filter(item => item.type === 'SkillProperty' && item.name === 'tools').flatMap(item => item.value.elements ? item.value.elements.map(e => e.value) : []) || [];
+      return JSON.stringify({ version: "2026.1", name: node.name, type: "skill", instructions, tools, resources: [] }, null, 2);
+    }
+    if (node.type === 'SwarmStatement') {
+      return JSON.stringify({ version: "2026.1", type: "swarm", agents: node.steps.map(s => s.name), pipeline: node.steps.map(s => s.name).join(" => "), memory: "rag.last_iteration" }, null, 2);
+    }
+    if (node.type === 'LoopUntil') {
+      return JSON.stringify({ version: "2026.1", type: "loop", until: this.genJavaScript(node.goal), trace: true }, null, 2);
+    }
+    if (node.type === 'Program') {
+      return node.statements.map(s => this.genAgentSkills(s)).filter(s => s !== "").join('\n---\n');
+    }
+    return '';
   }
 
   indentCode(code, spaces) {
