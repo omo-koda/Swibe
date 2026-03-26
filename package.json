@@ -1,6 +1,6 @@
 {
   "name": "@bino-elgua/swibe",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Agent-native scripting language. 39+ compile targets. Sovereign by design.",
   "main": "src/index.js",
   "bin": {
