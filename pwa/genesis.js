@@ -1,3 +1,6 @@
+// Note: Ollama must have CORS enabled
+// Run: OLLAMA_ORIGINS=* ollama serve
+// Or set: ollama config set CORS_ORIGINS "*"
 // Swibe Genesis Engine — Main Orchestrator
 // Wires canvas, audio, agents, and UI together
 

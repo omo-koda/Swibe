@@ -39,6 +39,8 @@ import { genCOBOL } from './backends/cobol.js';
 import { genSmalltalk } from './backends/smalltalk.js';
 import { genD } from './backends/d.js';
 import { genRaku } from './backends/raku.js';
+import { IRGenerator } from './ir-generator.js';
+import { TypeInference } from './type-inference.js';
 
 class Compiler {
   constructor(source, targetLanguage = 'javascript') {
@@ -52,7 +54,21 @@ class Compiler {
     const lexer = new Lexer(this.source);
     const tokens = lexer.tokenize();
     const parser = new Parser(tokens);
-    this.ast = parser.parse();
+    let ast = parser.parse();
+
+    try {
+      const ir = new IRGenerator();
+      const irAst = ir.generate(ast);
+      // Wire IR generator in a non-destructive way for compatibility
+      ast = (irAst && irAst.type) ? irAst : ast;
+    } catch (_) {}
+
+    try {
+      const typeInference = new TypeInference();
+      typeInference.infer(ast);
+    } catch (_) {}
+
+    this.ast = ast;
     await this.processPrompts(this.ast);
     const code = this.generateCode(this.ast);
     return code;
@@ -246,8 +262,10 @@ class Compiler {
         const arms = node.arms.map(a => `  case ${this.genJavaScript(a.pattern)}: ${this.genJavaScript(a.body)}; break;`).join('\n');
         return `switch (${this.genJavaScript(node.expr)}) {\n${arms}\n}`;
       }
-      case 'LoopUntil':
-        return `while (!(await checkGoal(${this.genJavaScript(node.goal)}))) ${this.genJavaScript(node.body)}`;
+      case 'LoopUntil': {
+        const maxAttemptsArg = node.maxAttempts ? this.genJavaScript(node.maxAttempts) : 'undefined';
+        return `while (!(await checkGoal(${this.genJavaScript(node.goal)}, ${maxAttemptsArg}))) ${this.genJavaScript(node.body)}`;
+      }
       case 'AppDecl': {
         const configEntries = Object.entries(node.config).map(([k, v]) => `  const ${k} = ${this.genJavaScript(v)};`).join('\n');
         return `(async () => {\n${configEntries}\n  await deploy_app({ ${Object.keys(node.config).join(', ')} });\n})();`;

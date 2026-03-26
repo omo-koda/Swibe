@@ -15,3 +15,4 @@ examples/target/
 target/
 web-playground-legacy/
 .claude/
+\n# Ignore cargo artifacts\nexamples/Cargo.lock\nexamples/Cargo.toml\nexamples/main.rs\nexamples/mix.exs\nexamples/thinker_auditor_swarm.ex\nexamples/settler_mint.move

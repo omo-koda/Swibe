@@ -123,10 +123,17 @@ class StandardLibrary {
   deploy_app(config) { return "https://swibe-app.vercel.app"; }
   async sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
-  async checkGoal(goal) {
+  async checkGoal(goal, maxAttemptsInput) {
+    const maxAttempts = 
+      maxAttemptsInput || 
+      parseInt(process.env.SWIBE_LOOP_MAX) || 
+      10;
+
     const attempts = this.goalAttempts.get(goal) || 0;
-    this.goalAttempts.set(goal, attempts + 1);
-    return attempts >= 1;
+    const nextAttempts = attempts + 1;
+    this.goalAttempts.set(goal, nextAttempts);
+
+    return nextAttempts >= maxAttempts;
   }
 
   len(arr) { return Array.isArray(arr) || typeof arr === 'string' ? arr.length : 0; }
