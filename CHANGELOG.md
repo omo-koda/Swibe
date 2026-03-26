@@ -7,6 +7,38 @@
 - chore: Cargo artifacts removed from git
 - fix: PWA CORS documentation added
 
+## v1.3.2 (2026-03-26)
+- fix: bin entry corrected — swibe CLI works globally
+- fix: isolated-vm moved to optionalDependencies
+- fix: description corrected to "39+ compile targets"
+
+## v1.3.1 (2026-03-26)
+- feat: VSCode LSP server TypeScript source added
+- feat: PWA genesis connected to real Ollama LLM
+- feat: README updated to v1.3.0 with roadmap
+
+## v1.3.0 (2026-03-26)
+- feat: think as real LLM primitive
+- feat: OpenRouter free tier integration
+- feat: Neural model routing via birth params
+- feat: Parser error recovery via synchronize()
+- fix: Go ed25519_verify real implementation
+- test: 9 tests restored (53/53 passing)
+
+## v1.2.3 (2026-03-26)
+- fix: SwarmStatement JS codegen no longer emits Elixir
+- fix: RAGIntegration.save() method added
+- fix: REPL data shape r.content → r.data
+
+## v1.2.2 (2026-03-26)
+- fix: isolated-vm moved to optionalDependencies
+- fix: npm package size reduced from 130MB to 108KB
+- fix: description corrected
+
+## v1.2.1 (2026-03-26)
+- chore: .npmignore created
+- fix: examples/target/ excluded from npm publish
+
 ## v1.3.3 (2026-03-26)
 - feat: VSCode LSP server compiled to out/
 - feat: VSCode extension TypeScript source

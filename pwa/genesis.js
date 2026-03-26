@@ -198,7 +198,11 @@ class GenesisEngine {
  * @returns {Promise<{swibeSource: string, category: string, ollamaAvailable: boolean}>}
  */
 export async function processWish(wish) {
-  const OLLAMA_URL = 'http://localhost:11434';
+  const OLLAMA_URL = window.OLLAMA_URL || 'http://localhost:11434';
+
+  // CORS note: if running as PWA, start Ollama with:
+  // OLLAMA_ORIGINS=* ollama serve
+  // Or use a CORS proxy for production deployments
 
   try {
     const res = await fetch(`${OLLAMA_URL}/api/generate`, {

@@ -16,8 +16,8 @@ Swibe is a sovereign programming language where agents, prompts, neural layers, 
 | v1.0 | ✅ Complete | Agent runtime, sovereign vault, RAG |
 | v1.1 | ✅ Complete | Hybrid compiler, swarm OTP, plugin system |
 | v1.2 | ✅ Complete | Python/R/Lisp/Matlab/Wolfram backends, vitest 44/44 |
-| **v1.3** | ✅ **Current** | `think` real LLM primitive, OpenRouter free tier, neural routing, parser error recovery, 53 tests |
-| v1.4 | 🔜 Next | VSCode LSP server, PWA real LLM pipeline |
+| **v1.3 ✅** | ✅ **Current** | VSCode LSP server, PWA real LLM, think real primitive |
+| **v1.4** | 🔜 Next | Documentation site, VSCode marketplace, registry.swibe.dev |
 | v2.0 | 🌐 Horizon | Sovereign agent economy, on-chain receipts |
 
 ## 🌀 Major Primitives (v1.1)

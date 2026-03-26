@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 class PackageManager {
-  constructor(registryUrl = 'https://registry.swibe.dev') {
+  constructor(registryUrl = process.env.SWIBE_REGISTRY || 'https://registry.npmjs.org') {
     this.registryUrl = registryUrl;
     this.cache = new Map();
     this.packages = new Map();
@@ -97,21 +97,23 @@ class PackageManager {
       return this.cache.get(cacheKey);
     }
 
-    const _url = `${this.registryUrl}/${name}/${version}`;
+    const registryUrl = process.env.SWIBE_REGISTRY || 'https://registry.npmjs.org';
 
     try {
-      // Simulate fetch (in real app would use fetch API)
-      const pkg = {
-        name,
-        version,
-        description: `Package: ${name}`,
-        dependencies: {}
-      };
+      const res = await fetch(`${registryUrl}/${name}`);
+      if (!res.ok) throw new Error('Registry unavailable');
 
+      const pkg = await res.json();
       this.cache.set(cacheKey, pkg);
       return pkg;
     } catch (err) {
-      throw new Error(`Cannot fetch ${name}@${version}`);
+      // Fallback to npm if custom registry fails
+      const npmRes = await fetch(`https://registry.npmjs.org/${name}`);
+      if (!npmRes.ok) throw new Error('NPM registry unavailable');
+
+      const pkg = await npmRes.json();
+      this.cache.set(cacheKey, pkg);
+      return pkg;
     }
   }
 
