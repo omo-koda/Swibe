@@ -1,7 +1,7 @@
 {
   "name": "@bino-elgua/swibe",
-  "version": "1.2.1",
-  "description": "Agent-native scripting language. 53 compile targets. Sovereign by design.",
+  "version": "1.2.2",
+  "description": "Agent-native scripting language. 39+ compile targets. Sovereign by design.",
   "main": "src/index.js",
   "bin": {
     "swibe": "./src/index.js"
@@ -36,7 +36,6 @@
   "homepage": "https://github.com/Bino-Elgua/Swibe",
   "dependencies": {
     "dotenv": "^17.3.1",
-    "isolated-vm": "^6.1.2",
     "tweetnacl": "^1.0.3",
     "yaml": "^2.3.0"
   },
@@ -44,5 +43,8 @@
     "eslint": "^8.50.0",
     "prettier": "^3.0.0",
     "vitest": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "isolated-vm": "^6.1.2"
   }
 }
