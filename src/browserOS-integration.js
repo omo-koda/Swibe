@@ -154,7 +154,7 @@ class BrowserOSIntegration {
    */
   updateManifestWidgets() {
     if (this.manifest) {
-      this.manifest.shortcuts = this.widgets.map((w, idx) => ({
+      this.manifest.shortcuts = this.widgets.map((w, _idx) => ({
         name: w.name,
         short_name: w.short_name,
         description: w.description,

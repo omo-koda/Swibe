@@ -40,7 +40,7 @@ export class TechnosisConductor {
   /**
    * think: route prompt to best model via prefrontal weights, return content + signed receipt
    */
-  async think(prompt, opts = {}) {
+  async think(prompt, _opts = {}) {
     const routing = await this.neural.route(prompt, MODEL_ROSTER);
     const best = routing[0]?.model ?? 'claude';
 

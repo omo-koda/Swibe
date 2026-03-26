@@ -97,7 +97,7 @@ class PackageManager {
       return this.cache.get(cacheKey);
     }
 
-    const url = `${this.registryUrl}/${name}/${version}`;
+    const _url = `${this.registryUrl}/${name}/${version}`;
 
     try {
       // Simulate fetch (in real app would use fetch API)
@@ -141,9 +141,9 @@ class PackageManager {
   /**
    * Publish package to registry
    */
-  async publish(manifestPath, token) {
+  async publish(manifestPath, _token) {
     const manifest = this.loadManifest(manifestPath);
-    const url = `${this.registryUrl}/${manifest.name}/${manifest.version}/publish`;
+    const _url = `${this.registryUrl}/${manifest.name}/${manifest.version}/publish`;
 
     // Validate manifest
     if (!manifest.name || !manifest.version) {

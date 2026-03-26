@@ -287,7 +287,7 @@ class Parser {
   parseThinkStatement() {
     this.advance(); // consume THINK token
     const prompt = this.parseExpression();
-    let config = {};
+    const config = {};
     if (this.current().type === TokenType.LBRACE) {
       this.advance(); // consume {
       while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
@@ -863,13 +863,22 @@ class Parser {
       return new ASTNode('Voice', { text: token.value });
     }
 
+    // call_tool expression is used both as statement and value expression
+    if (token.type === TokenType.CALL_TOOL) {
+      return this.parseCallToolStatement();
+    }
+
     // Identifier or AI keywords as identifiers (includes THINK for think(...) call syntax)
     if (token.type === TokenType.IDENTIFIER ||
         token.type === TokenType.PRINTLN ||
         token.type === TokenType.RAG ||
         token.type === TokenType.AI ||
         token.type === TokenType.EMBED ||
-        token.type === TokenType.THINK) {
+        token.type === TokenType.THINK ||
+        token.type === TokenType.SEAL ||
+        token.type === TokenType.MINT ||
+        token.type === TokenType.RECEIPT ||
+        token.type === TokenType.WALRUS) {
       this.advance();
       return new ASTNode('Identifier', { name: token.value });
     }

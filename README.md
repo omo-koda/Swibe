@@ -1,8 +1,8 @@
-![Version](https://img.shields.io/badge/version-v1.3.0-blue)
+![Version](https://img.shields.io/badge/version-v1.3.4-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Layer](https://img.shields.io/badge/layer-Language-lightgrey)
-[![npm](https://img.shields.io/npm/v/@bino-elgua/swibe)](https://www.npmjs.com/package/@bino-elgua/swibe)
-# Swibe: Agent-Native Scripting (v1.3.0)
+[![npm](https://img.shields.io/badge/npm-v1.3.4-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
+# Swibe: Agent-Native Scripting (v1.3.4)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
@@ -43,6 +43,13 @@ Swibe now supports a hybrid compiler that can split a single source into multipl
 
 ## 🛡️ Sovereign Identity
 v1.1 introduces persistent RAG storage and bip-39 ritual phrases for every agent. Every `think` command produces a verifiable SHA-256 receipt, and every `swarm` is monitored by an OTP Supervisor tree.
+
+## 🧠 LLM Providers
+Swibe supports multiple LLM backends using a provider chain.
+- Ollama (free, local, default): runs in-process, no API key required for local deployment.
+- OpenRouter (free tier available): set `OPENROUTER_API_KEY` to use OpenRouter endpoints.
+- Any provider with `OPENROUTER_API_KEY`: for third-party LLMs, set `OPENROUTER_API_KEY` and optionally `OPENROUTER_MODEL`.
+
 
 Swibe backends are "Pure Codegen" emitters, mapping agentic primitives to the most efficient native constructs.
 

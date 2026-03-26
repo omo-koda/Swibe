@@ -64,7 +64,7 @@ class BrowserOSVibeSupport {
    * #[offline]
    * fn fetch_user(id: str) -> User { ... }
    */
-  static processOfflineMacro(attributes) {
+  static processOfflineMacro(_attributes) {
     return {
       type: 'offline-support',
       caching: true,
@@ -228,7 +228,7 @@ const ${macro.variable}Storage = new SyncStorage(
   /**
    * Generate code for offline macro
    */
-  static generateOfflineCode(macro) {
+  static generateOfflineCode(_macro) {
     return `
 // Register offline support
 if ('serviceWorker' in navigator) {
@@ -379,7 +379,7 @@ fn create_desktop_app() {
   /**
    * Generate Dockerfile for containerization
    */
-  static generateDockerfile(config) {
+  static generateDockerfile(_config) {
     return `
 FROM node:18-alpine
 
@@ -402,7 +402,7 @@ CMD ["npm", "start"]
   /**
    * Generate GitHub Actions workflow
    */
-  static generateGitHubActions(config) {
+  static generateGitHubActions(_config) {
     return `
 name: Deploy Vibe App to BrowserOS
 

@@ -241,7 +241,7 @@ async function main() {
         case 'manifest':
           console.log(pkgManager.generateManifest('my-package'));
           break;
-        case 'install':
+        case 'install': {
           if (args.length < 3) {
             console.error('Usage: swibe pkg install <manifest-file>');
             process.exit(1);
@@ -250,6 +250,7 @@ async function main() {
           const lockfile = await pkgManager.install(manifestPath);
           console.log('Installed packages:', JSON.stringify(lockfile, null, 2));
           break;
+        }
         case 'publish':
           console.log('Publish command not fully implemented (mock)');
           break;
@@ -294,13 +295,14 @@ async function main() {
       const dockerCommand = args[1];
       const dockerGen = new DockerGenerator();
       switch (dockerCommand) {
-        case 'dockerfile':
+        case 'dockerfile': {
           let lang = 'javascript';
           if (args.includes('--lang')) {
             lang = args[args.indexOf('--lang') + 1];
           }
           console.log(dockerGen.generateDockerfile(lang));
           break;
+        }
         case 'compose':
           console.log(JSON.stringify(dockerGen.generateDockerCompose(), null, 2));
           break;

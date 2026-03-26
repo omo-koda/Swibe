@@ -17,7 +17,7 @@ class DockerGenerator {
 
     const base = images[language] || images.javascript;
 
-    return `FROM ${base}
+    return `FROM ${base}:${version}
 
 WORKDIR /app
 
@@ -77,7 +77,7 @@ ${language === 'go' ? 'CMD ["./app"]' : ''}
   /**
    * Generate AWS Lambda handler
    */
-  generateLambda(runtime = 'nodejs18.x') {
+  generateLambda(_runtime = 'nodejs18.x') {
     return `exports.handler = async (event) => {
   try {
     console.log('Event:', event);

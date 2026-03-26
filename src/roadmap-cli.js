@@ -6,10 +6,8 @@
  */
 
 import fs from 'fs';
-import path from 'path';
 
 const ROADMAP_FILE = '.roadmap.json';
-const ROADMAP_MD = 'INTEGRATION_ROADMAP.md';
 
 class RoadmapCLI {
   constructor() {
@@ -50,7 +48,6 @@ class RoadmapCLI {
 
       phase.features.forEach(feature => {
         const icon = this.getStatusIcon(feature.status);
-        const priorityColor = this.getPriorityColor(feature.priority || 'LOW');
         console.log(
           `  ${icon} #${feature.id}: ${feature.name} (${feature.priority || 'N/A'})`
         );
@@ -175,7 +172,7 @@ class RoadmapCLI {
   }
 
   show(featureId) {
-    for (const [phaseKey, phase] of Object.entries(this.roadmap.phases)) {
+    for (const [_phaseKey, phase] of Object.entries(this.roadmap.phases)) {
       const feature = phase.features.find(f => f.id === parseInt(featureId));
       if (feature) {
         console.log(`\n📋 Feature #${feature.id}: ${feature.name}\n`);

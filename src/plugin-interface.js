@@ -7,20 +7,20 @@ export class SwibePlugin {
   /**
    * Called after a new agent identity (keypair) is born
    */
-  onBirth(keypair) {}
+  onBirth(_keypair) {}
 
   /**
    * Called after an LLM thought is generated
    */
-  onThink(prompt, response) {}
+  onThink(_prompt, _response) {}
 
   /**
    * Called after a cryptographic receipt is sealed
    */
-  onReceipt(receipt) {}
+  onReceipt(_receipt) {}
 
   /**
    * Called after a successful RAG save or final settlement
    */
-  onSettle(result) {}
+  onSettle(_result) {}
 }

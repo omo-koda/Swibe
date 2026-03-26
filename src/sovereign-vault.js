@@ -78,7 +78,7 @@ class SovereignVault {
   /**
    * Generate an Ed25519 keypair from a seed
    */
-  generateIdentity(seed) {
+  generateIdentity(_seed) {
     const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
       privateKeyEncoding: { format: 'der', type: 'pkcs8' },
       publicKeyEncoding: { format: 'der', type: 'spki' }

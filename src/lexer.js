@@ -219,7 +219,7 @@ class Lexer {
     this.advance(); // skip %
     this.advance(); // skip %
     
-    const start = this.pos;
+    const _start = this.pos;
     let endOfLine = this.pos;
     while (this.source[endOfLine] && this.source[endOfLine] !== '\n') {
       endOfLine++;
@@ -475,6 +475,18 @@ class Lexer {
       } else if (char === '?') {
         this.addToken(TokenType.QUESTION, '?');
         this.advance();
+      } else if (char === '#') {
+        if (this.peek() === '[') {
+          // Attribute macro or decorator syntax, ignore for now
+          this.advance(); // '#'
+          this.advance(); // '['
+          while (this.current() && this.current() !== ']') {
+            this.advance();
+          }
+          if (this.current() === ']') this.advance();
+          continue;
+        }
+        throw new Error(`Unexpected character: ${char} at ${this.line}:${this.column}`);
       } else if (char === '(') {
         this.addToken(TokenType.LPAREN, '(');
         this.advance();

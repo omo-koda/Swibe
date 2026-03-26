@@ -61,12 +61,16 @@ class Compiler {
       const irAst = ir.generate(ast);
       // Wire IR generator in a non-destructive way for compatibility
       ast = (irAst && irAst.type) ? irAst : ast;
-    } catch (_) {}
+    } catch (_e) {
+      // silently catch IR generation errors
+    }
 
     try {
       const typeInference = new TypeInference();
       typeInference.infer(ast);
-    } catch (_) {}
+    } catch (_e) {
+      // silently catch type inference errors
+    }
 
     this.ast = ast;
     await this.processPrompts(this.ast);
@@ -252,6 +256,10 @@ class Compiler {
         return `[${node.elements.map(e => this.genJavaScript(e)).join(', ')}]`;
       case 'DictLiteral':
         return `{ ${Object.entries(node.fields).map(([k, v]) => `${k}: ${this.genJavaScript(v)}`).join(', ')} }`;
+      case 'Index':
+        return `${this.genJavaScript(node.object)}[${this.genJavaScript(node.index)}]`;
+      case 'CallToolStatement':
+        return `await mcp.call_tool("${node.name}", ${this.genJavaScript(node.args)})`;
       case 'StructDecl': {
         const fieldNames = node.fields.map(f => f.name);
         return `class ${node.name} {\n  constructor(${fieldNames.join(', ')}) {\n${fieldNames.map(f => `    this.${f} = ${f};`).join('\n')}\n  }\n}`;

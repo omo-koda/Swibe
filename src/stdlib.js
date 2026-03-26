@@ -119,8 +119,8 @@ class StandardLibrary {
   elemental_signature(phrase) { return sovereign.elementalSignature(phrase); }
   encrypt_storage() { return true; }
   no_external_upload() { return true; }
-  search_tags(query) { return ["photo1.jpg", "photo2.jpg"]; }
-  deploy_app(config) { return "https://swibe-app.vercel.app"; }
+  search_tags(_query) { return ["photo1.jpg", "photo2.jpg"]; }
+  deploy_app(_config) { return "https://swibe-app.vercel.app"; }
   async sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
   async checkGoal(goal, maxAttemptsInput) {
@@ -247,11 +247,11 @@ class StandardLibrary {
 }
 
 const sandbox = {
-  run: async (fn) => { console.warn("Using deprecated global sandbox.run"); }
+  run: async (_fn) => { console.warn("Using deprecated global sandbox.run"); }
 };
 
 const mcp = {
-  async call_tool(name, args) {
+  async call_tool(name, _args) {
     if (name === "coinbase_api") return JSON.stringify({ price: "67000" });
     return `Result from ${name}`;
   }
@@ -279,8 +279,7 @@ class MetaDigital {
     this.output = config.output;
   }
 
-  async run(input = '', context = {}) {
-    const currentInput = input;
+  async run(input = '', _context = {}) {
     const receiptContent = JSON.stringify({ input, output: this.output, chain: this.chain.length });
     const receipt = crypto.createHash('sha256').update(receiptContent).digest('hex');
     console.log(`[META-DIGITAL] Receipt Sealed: ${receipt}`);

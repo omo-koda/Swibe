@@ -9,9 +9,10 @@ export function genLisp(node) {
     case 'Program':
       return node.statements.map(s => genLisp(s)).join('\n');
 
-    case 'FunctionDecl':
+    case 'FunctionDecl': {
       const params = node.params.map(p => p.name).join(' ');
       return `(defun ${node.name} (${params})\n  ${genLisp(node.body)}\n)`;
+    }
 
     case 'VariableDecl':
       return `(setq ${node.name} ${genLisp(node.value)})`;

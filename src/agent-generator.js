@@ -56,7 +56,7 @@ class AgentGenerator {
       if (eqIndex !== -1) {
         const key = part.substring(0, eqIndex).trim();
         const value = part.substring(eqIndex + 1).trim();
-        config[key] = value.replace(/^"(.*)"$/, '$1').replace(/[\[\]]/g, '');
+        config[key] = value.replace(/^"(.*)"$/, '$1').replace(/[[\]]/g, '');
       }
     }
 

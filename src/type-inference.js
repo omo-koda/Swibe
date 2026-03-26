@@ -62,7 +62,7 @@ class TypeInference {
   /**
    * Infer type of binary operation
    */
-  inferBinop(expr, expectedType) {
+  inferBinop(expr) {
     const { left, op, right } = expr;
     const leftType = this.infer(left);
     const rightType = this.infer(right);
@@ -93,7 +93,7 @@ class TypeInference {
   /**
    * Infer type of function call
    */
-  inferCall(expr, expectedType) {
+  inferCall(expr) {
     const { fn, args } = expr;
     const fnType = this.lookupFunction(fn);
     
@@ -115,7 +115,7 @@ class TypeInference {
   /**
    * Infer type of if expression
    */
-  inferIf(expr, expectedType) {
+  inferIf(expr) {
     const { condition, consequent, alternate } = expr;
     
     // Condition must be bool

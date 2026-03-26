@@ -222,6 +222,18 @@ class RAGIntegration {
       return { key, saved: true };
     } catch { return { key, saved: false }; }
   }
+
+  async load(key) {
+    try {
+      const { default: path } = await import('node:path');
+      const { default: os } = await import('node:os');
+      const { default: fs } = await import('node:fs');
+      const vaultPath = path.join(os.homedir(), '.swibe', 'vault.json');
+      if (!fs.existsSync(vaultPath)) return null;
+      const vault = JSON.parse(fs.readFileSync(vaultPath, 'utf-8'));
+      return vault[key] ? vault[key].data : null;
+    } catch { return null; }
+  }
 }
 
 // Agent system

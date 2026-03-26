@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.3.4 (2026-03-26)
+- feat: IRGenerator wired into compiler
+- feat: TypeInference wired into compiler
+- feat: loop until cap configurable via SWIBE_LOOP_MAX
+- chore: Cargo artifacts removed from git
+- fix: PWA CORS documentation added
+
+## v1.3.3 (2026-03-26)
+- feat: VSCode LSP server compiled to out/
+- feat: VSCode extension TypeScript source
+- feat: swibe-compiler integration module
+
 ## v1.2.0 (2026-03-23)
 - `@target` first-class parser syntax (leading and trailing in swarm blocks)
 - Hybrid compiler target (Elixir + Move split)

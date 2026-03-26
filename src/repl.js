@@ -7,7 +7,7 @@ import readline from 'readline';
 import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
 import { Compiler } from './compiler.js';
-import { LLMIntegration, RAGIntegration, Agent } from './llm-integration.js';
+import { LLMIntegration, RAGIntegration } from './llm-integration.js';
 
 class SwibeREPL {
   constructor() {
