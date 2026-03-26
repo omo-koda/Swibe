@@ -187,6 +187,39 @@ class GenesisEngine {
   }
 }
 
+/**
+ * processWish — Real LLM pipeline via Ollama HTTP API (browser-safe).
+ * Falls back gracefully if Ollama is not running.
+ *
+ * @param {string} wish
+ * @returns {Promise<{swibeSource: string, category: string, ollamaAvailable: boolean}>}
+ */
+export async function processWish(wish) {
+  const OLLAMA_URL = 'http://localhost:11434';
+
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama3',
+        prompt: `You are a Swibe code generator. Convert this wish into valid Swibe code with skill, fn main, and app blocks. Return ONLY the Swibe source code, no explanations.\n\nWish: "${wish}"`,
+        stream: false
+      }),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    if (!res.ok) throw new Error(`Ollama HTTP ${res.status}`);
+    const data = await res.json();
+    const swibeSource = data.response || '';
+
+    return { swibeSource, category: 'llm-generated', ollamaAvailable: true };
+  } catch (_err) {
+    // Ollama not running — fall back to regex detection
+    return { swibeSource: '', category: null, ollamaAvailable: false };
+  }
+}
+
 // Boot
 document.addEventListener('DOMContentLoaded', () => {
   new GenesisEngine();
