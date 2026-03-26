@@ -133,6 +133,26 @@ class SovereignNeuralLayer {
     return dot / (magA * magB);
   }
 
+  getTopModel(availableModels = []) {
+    const FREE_MODELS = [
+      'meta-llama/llama-3.3-70b-instruct:free',
+      'mistralai/mistral-7b-instruct:free',
+      'google/gemma-2-9b-it:free',
+      'ollama:llama3'
+    ];
+    const pool = availableModels.length ? availableModels : FREE_MODELS;
+    const topIndex = this.cortex.prefrontal
+      .indexOf(Math.max(...this.cortex.prefrontal));
+    return pool[topIndex % pool.length];
+  }
+
+  getEthicsModel() {
+    if (this.ethicsThreshold > 0.7) {
+      return 'meta-llama/llama-guard-2-8b';
+    }
+    return this.getTopModel();
+  }
+
   // Summary for logging
   summary() {
     return {

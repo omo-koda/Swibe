@@ -98,3 +98,70 @@ describe('SovereignNeuralLayer', () => {
     expect(a.neuronPool).toBe(86_000_000_000n);
   });
 });
+
+describe('Swibe v0.5.0 Extensions', () => {
+  it('think compiles to real LLM call', async () => {
+    const source = `fn test() {
+      think "Who am I?" { model: "ollama:llama3" };
+    }`;
+    const compiler = new Compiler(source, 'javascript');
+    const code = await compiler.compile();
+    expect(code).toContain('await std.think');
+    expect(code).toContain('Who am I?');
+  });
+
+  it('meta-digital compiles correctly', async () => {
+    const source = `
+      meta-digital "Task" {
+        refuse_if: true,
+        chain: SafeSkill
+      }
+    `;
+    const compiler = new Compiler(source, 'javascript');
+    const code = await compiler.compile();
+    expect(code).toContain('MetaDigital');
+    expect(code).toContain('Task');
+  });
+
+  it('NeuralLayer has 86B neurons', () => {
+    const layer = new NeuralLayer();
+    const state = layer.getState();
+    expect(state.neurons).toBe('86000000000');
+    expect(state.synapses).toBe('86000000');
+  });
+
+  it('NeuralLayer fires and forms synapses', () => {
+    const layer = new NeuralLayer();
+    layer.fire('hello');
+    layer.connect('new-pathway');
+    expect(layer.getState().synapses).toBe('86000001');
+  });
+
+  it('Ed25519 generates valid keypair', () => {
+    const identity = sovereign.generateIdentity(Buffer.alloc(64));
+    expect(identity.pub).toBeDefined();
+    expect(identity.priv).toBeDefined();
+    expect(identity.pub.length).toBeGreaterThan(0);
+  });
+
+  it('SovereignNeuralLayer requires 86 params', () => {
+    expect(() => new SovereignNeuralLayer([])).toThrow('86 birth parameters');
+  });
+
+  it('SovereignNeuralLayer cortical regions', () => {
+    const a = SovereignNeuralLayer.random();
+    expect(a.cortex.prefrontal.length).toBe(12);
+    expect(a.cortex.amygdala.length).toBe(8);
+  });
+
+  it('SovereignNeuralLayer unique fingerprints', () => {
+    const a = SovereignNeuralLayer.random();
+    const b = SovereignNeuralLayer.random();
+    expect(a.fingerprint).not.toBe(b.fingerprint);
+  });
+
+  it('SovereignNeuralLayer 86B neuron pool', () => {
+    const a = SovereignNeuralLayer.random();
+    expect(a.neuronPool).toBe(86_000_000_000n);
+  });
+});

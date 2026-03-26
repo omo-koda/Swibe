@@ -59,6 +59,7 @@ const TokenType = {
   RECEIPT: 'RECEIPT',
   SEAL: 'SEAL',
   WALRUS: 'WALRUS',
+  THINK: 'THINK',
   PROMPT: 'PROMPT', // %%
   VOICE: 'VOICE',   // [voice: ...]
   AT_TARGET: 'AT_TARGET', // @target
@@ -299,7 +300,8 @@ class Lexer {
     mint: TokenType.MINT,
     receipt: TokenType.RECEIPT,
     seal: TokenType.SEAL,
-    walrus: TokenType.WALRUS
+    walrus: TokenType.WALRUS,
+    think: TokenType.THINK
   };
 
   addToken(type, value = null) {

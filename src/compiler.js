@@ -220,6 +220,16 @@ class Compiler {
           `const swarm = await Promise.all([${agents}]\n` +
           `.map(name => ({ name, status: 'running' })));\n`;
       }
+      case 'ThinkStatement': {
+        const prompt = this.genJavaScript(node.prompt);
+        const model = node.config?.model
+          ? (typeof node.config.model === 'string' ? node.config.model : this.genJavaScript(node.config.model))
+          : 'ollama:llama3';
+        const maxTokens = node.config?.max_tokens
+          ? (typeof node.config.max_tokens === 'number' ? node.config.max_tokens : this.genJavaScript(node.config.max_tokens))
+          : 512;
+        return `await std.think(${prompt}, { model: "${model}", max_tokens: ${maxTokens} })`;
+      }
       case 'NeuralLayer':
         return `/* Neural Layer: 86B neurons activated */`;
       case 'ArrayLiteral':

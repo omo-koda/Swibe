@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Language Playground</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎵 Vibe Language Playground</h1>
+      <p>Write, compile, and share Vibe code</p>
+    </header>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select id="targetSelect" class="select">
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="rust">Rust</option>
+          <option value="go">Go</option>
+          <option value="java">Java</option>
+        </select>
+        <button id="compileBtn" class="button button-primary">Compile</button>
+        <button id="shareBtn" class="button">Share</button>
+      </div>
+      <div class="toolbar-right">
+        <button id="clearBtn" class="button">Clear</button>
+        <button id="themeBtn" class="button">Dark Mode</button>
+      </div>
+    </div>
+
+    <div class="editor-container">
+      <div class="panel">
+        <h3>Vibe Code</h3>
+        <div id="editor"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Compiled Output</h3>
+        <pre id="output" class="output"></pre>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span id="status">Ready</span>
+      <span id="stats"></span>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+  </script>
+</body>
+</html>

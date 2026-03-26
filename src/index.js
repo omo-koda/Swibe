@@ -154,6 +154,7 @@ async function main() {
       const vm = await import('node:vm');
       const context = vm.createContext({
         ...std.builtins,
+        std,
         SwarmPipeline,
         Agent,
         RAGIntegration,

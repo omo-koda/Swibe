@@ -16,6 +16,7 @@ class Parser {
   constructor(tokens) {
     this.tokens = tokens;
     this.pos = 0;
+    this.errors = [];
   }
 
   current() {
@@ -30,6 +31,28 @@ class Parser {
 
   advance() {
     this.pos++;
+  }
+
+  isAtEnd() {
+    return this.current().type === TokenType.EOF;
+  }
+
+  previous() {
+    return this.tokens[this.pos - 1] || this.tokens[0];
+  }
+
+  synchronize() {
+    this.advance();
+    const syncTokens = [
+      TokenType.FN, TokenType.SKILL,
+      TokenType.STRUCT, TokenType.ENUM,
+      TokenType.APP, TokenType.SWARM
+    ];
+    while (!this.isAtEnd()) {
+      if (this.previous().type === TokenType.SEMICOLON) return;
+      if (syncTokens.includes(this.current().type)) return;
+      this.advance();
+    }
   }
 
   expect(type) {
@@ -65,7 +88,13 @@ class Parser {
   parse() {
     const statements = [];
     while (this.current().type !== TokenType.EOF) {
-      statements.push(this.parseStatement());
+      try {
+        const stmt = this.parseStatement();
+        if (stmt !== null) statements.push(stmt);
+      } catch (error) {
+        this.errors.push(error.message);
+        this.synchronize();
+      }
     }
     return new ASTNode('Program', { statements });
   }
@@ -178,6 +207,12 @@ class Parser {
       return this.parseCallToolStatement();
     }
 
+    // Think statement (keyword syntax: think "prompt" { config })
+    // Falls through to expression parser if followed by ( for backward compat
+    if (token.type === TokenType.THINK && this.peek().type !== TokenType.LPAREN) {
+      return this.parseThinkStatement();
+    }
+
     // Return statement
     if (token.type === TokenType.RETURN) {
       this.advance();
@@ -247,6 +282,25 @@ class Parser {
       body,
       typeParams,
     });
+  }
+
+  parseThinkStatement() {
+    this.advance(); // consume THINK token
+    const prompt = this.parseExpression();
+    let config = {};
+    if (this.current().type === TokenType.LBRACE) {
+      this.advance(); // consume {
+      while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+        const key = this.expect(TokenType.IDENTIFIER).value;
+        this.expect(TokenType.COLON);
+        const val = this.parseExpression();
+        config[key] = val;
+        if (this.current().type === TokenType.COMMA) this.advance();
+      }
+      this.expect(TokenType.RBRACE);
+    }
+    this.match(TokenType.SEMICOLON);
+    return new ASTNode('ThinkStatement', { prompt, config });
   }
 
   parseParamList() {
@@ -576,8 +630,15 @@ class Parser {
     this.expect(TokenType.LBRACE);
     const statements = [];
 
-    while (this.current().type !== TokenType.RBRACE) {
-      statements.push(this.parseStatement());
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      try {
+        const stmt = this.parseStatement();
+        if (stmt !== null) statements.push(stmt);
+      } catch (error) {
+        this.errors.push(error.message);
+        this.synchronize();
+        if (this.current().type === TokenType.RBRACE || this.isAtEnd()) break;
+      }
     }
 
     this.expect(TokenType.RBRACE);
@@ -802,12 +863,13 @@ class Parser {
       return new ASTNode('Voice', { text: token.value });
     }
 
-    // Identifier or AI keywords as identifiers
-    if (token.type === TokenType.IDENTIFIER || 
+    // Identifier or AI keywords as identifiers (includes THINK for think(...) call syntax)
+    if (token.type === TokenType.IDENTIFIER ||
         token.type === TokenType.PRINTLN ||
         token.type === TokenType.RAG ||
         token.type === TokenType.AI ||
-        token.type === TokenType.EMBED) {
+        token.type === TokenType.EMBED ||
+        token.type === TokenType.THINK) {
       this.advance();
       return new ASTNode('Identifier', { name: token.value });
     }
