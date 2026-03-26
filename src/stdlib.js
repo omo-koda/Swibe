@@ -4,7 +4,6 @@
  */
 
 import vm from 'node:vm';
-import ivm from 'isolated-vm';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
