@@ -60,7 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (!editor) return;
 
       const swibeModule = await import('./swibe-compiler');
-      const output = swibeModule.compile(editor.document.getText());
+      const output = await swibeModule.compile(editor.document.getText());
       
       const channel = vscode.window.createOutputChannel('Swibe Compiler');
       channel.appendLine(output);
@@ -75,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (!editor) return;
 
       const swibeModule = await import('./swibe-compiler');
-      const formatted = swibeModule.format(editor.document.getText());
+      const formatted = await swibeModule.format(editor.document.getText());
       
       editor.edit(editBuilder => {
         const fullRange = new vscode.Range(
