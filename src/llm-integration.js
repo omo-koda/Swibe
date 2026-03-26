@@ -170,6 +170,22 @@ class RAGIntegration {
         .map(([key, v]) => ({ key, data: v.data, score: 1 }));
     } catch { return []; }
   }
+
+  async save(key, data) {
+    try {
+      const { default: path } = await import('node:path');
+      const { default: os } = await import('node:os');
+      const { default: fs } = await import('node:fs');
+      const vaultPath = path.join(os.homedir(), '.swibe', 'vault.json');
+      const vault = fs.existsSync(vaultPath)
+        ? JSON.parse(fs.readFileSync(vaultPath, 'utf-8'))
+        : {};
+      vault[key] = { data, timestamp: Date.now() };
+      fs.mkdirSync(path.dirname(vaultPath), { recursive: true });
+      fs.writeFileSync(vaultPath, JSON.stringify(vault, null, 2));
+      return { key, saved: true };
+    } catch { return { key, saved: false }; }
+  }
 }
 
 // Agent system

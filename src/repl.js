@@ -136,7 +136,7 @@ class SwibeREPL {
       console.log(`Found ${results.length} results:`);
       results.forEach((r, i) => {
         console.log(`${i + 1}. Score: ${r.score.toFixed(2)}`);
-        console.log(`   ${r.content.substring(0, 100)}...`);
+        console.log(`   ${(r.data || r.key || '').toString().substring(0, 100)}...`);
       });
     } catch (error) {
       console.error(`RAG error: ${error.message}`);
