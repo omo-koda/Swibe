@@ -1,5 +1,5 @@
 {
-  "name": "swibeuage",
+  "name": "swibe",
   "displayName": "Swibe Language",
   "description": "AI-native programming language support for VSCode",
   "version": "0.1.0",
@@ -80,6 +80,8 @@
     "vscode-test": "^1.6.1"
   },
   "dependencies": {
-    "vscode-languageclient": "^8.0.0"
+    "vscode-languageclient": "^8.0.0",
+    "vscode-languageserver": "^9.0.0",
+    "vscode-languageserver-textdocument": "^1.0.0"
   }
 }

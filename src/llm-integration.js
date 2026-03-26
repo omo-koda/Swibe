@@ -43,8 +43,14 @@ class LLMIntegration {
         }
       }
     } catch (e) {
-      console.warn(`[THINK] LLM failed, using mock: ${e.message}`);
-      content = this.mockGenerate(prompt);
+      try {
+        const orResult = await this.callOpenRouter(prompt);
+        if (orResult) { content = orResult; }
+        else throw new Error('OpenRouter returned null');
+      } catch (e2) {
+        console.warn(`[THINK] LLM failed, using mock: ${e.message}`);
+        content = this.mockGenerate(prompt);
+      }
     }
 
     const receipt = crypto.createHash('sha256').update(content).digest('hex');
@@ -65,8 +71,38 @@ class LLMIntegration {
         }
       }
     } catch (e) {
+      const orResult = await this.callOpenRouter(enhancedPrompt);
+      if (orResult) return orResult;
       return this.mockGenerate(enhancedPrompt);
     }
+  }
+
+  async callOpenRouter(prompt, config = {}) {
+    const key = process.env.OPENROUTER_API_KEY;
+    if (!key) return null;
+    const model = config.model
+      || process.env.OPENROUTER_DEFAULT_MODEL
+      || 'meta-llama/llama-3.3-70b-instruct:free';
+    try {
+      const res = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://github.com/Bino-Elgua/Swibe'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: config.max_tokens || 512
+          })
+        }
+      );
+      const data = await res.json();
+      return data.choices?.[0]?.message?.content || null;
+    } catch { return null; }
   }
 
   async ollamaGenerate(prompt) {
@@ -169,6 +205,22 @@ class RAGIntegration {
         .slice(0, topK)
         .map(([key, v]) => ({ key, data: v.data, score: 1 }));
     } catch { return []; }
+  }
+
+  async save(key, data) {
+    try {
+      const { default: path } = await import('node:path');
+      const { default: os } = await import('node:os');
+      const { default: fs } = await import('node:fs');
+      const vaultPath = path.join(os.homedir(), '.swibe', 'vault.json');
+      const vault = fs.existsSync(vaultPath)
+        ? JSON.parse(fs.readFileSync(vaultPath, 'utf-8'))
+        : {};
+      vault[key] = { data, timestamp: Date.now() };
+      fs.mkdirSync(path.dirname(vaultPath), { recursive: true });
+      fs.writeFileSync(vaultPath, JSON.stringify(vault, null, 2));
+      return { key, saved: true };
+    } catch { return { key, saved: false }; }
   }
 }
 

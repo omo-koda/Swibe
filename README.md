@@ -1,11 +1,24 @@
-![Version](https://img.shields.io/badge/version-v1.2.0-blue)
+![Version](https://img.shields.io/badge/version-v1.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Layer](https://img.shields.io/badge/layer-Language-lightgrey)
-# Swibe: Agent-Native Scripting (v1.2.0)
+[![npm](https://img.shields.io/npm/v/@bino-elgua/swibe)](https://www.npmjs.com/package/@bino-elgua/swibe)
+# Swibe: Agent-Native Scripting (v1.3.0)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
 Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 33+ targets (including Elixir/OTP), runs self-repairing swarms, and persists state via a BIP-39 ritual vault.
+
+## 🗺️ Roadmap
+
+| Version | Status | Highlights |
+|---------|--------|------------|
+| v0.1–v0.4 | ✅ Complete | Lexer, parser, 39+ backends, neural layer |
+| v1.0 | ✅ Complete | Agent runtime, sovereign vault, RAG |
+| v1.1 | ✅ Complete | Hybrid compiler, swarm OTP, plugin system |
+| v1.2 | ✅ Complete | Python/R/Lisp/Matlab/Wolfram backends, vitest 44/44 |
+| **v1.3** | ✅ **Current** | `think` real LLM primitive, OpenRouter free tier, neural routing, parser error recovery, 53 tests |
+| v1.4 | 🔜 Next | VSCode LSP server, PWA real LLM pipeline |
+| v2.0 | 🌐 Horizon | Sovereign agent economy, on-chain receipts |
 
 ## 🌀 Major Primitives (v1.1)
 
@@ -119,6 +132,39 @@ Swibe is the universal, agent-native scripting language for the Technosis ecosys
 
 
 ---
+
+## 🆓 OpenRouter Free Tier
+
+Swibe integrates with [OpenRouter](https://openrouter.ai) for free LLM access — no billing required:
+
+```bash
+# .env
+OPENROUTER_API_KEY=your_key_here
+OPENROUTER_DEFAULT_MODEL=meta-llama/llama-3.3-70b-instruct:free
+```
+
+**Free models available:**
+- `meta-llama/llama-3.3-70b-instruct:free`
+- `mistralai/mistral-7b-instruct:free`
+- `google/gemma-2-9b-it:free`
+
+The fallback chain: **Ollama → Claude → OpenRouter → mock**
+
+## 🧠 Neural Model Routing
+
+`SovereignNeuralLayer` uses cortical birth parameters to select LLM models:
+
+```
+prefrontal  [12 weights] → reasoning model selection
+hippocampus [18 weights] → memory capacity
+amygdala    [ 8 weights] → ethics threshold (>0.7 → safety model)
+```
+
+```javascript
+const layer = SovereignNeuralLayer.random();
+const model = layer.getTopModel();      // prefrontal-weighted selection
+const safe  = layer.getEthicsModel();   // amygdala-gated safety model
+```
 
 ## Part of the Technosis Sovereign Ecosystem
 

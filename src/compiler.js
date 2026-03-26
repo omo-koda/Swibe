@@ -170,8 +170,13 @@ class Compiler {
           const code = this.genJavaScript(s);
           return code.endsWith(';') || code.endsWith('}') ? code : code + ';';
         }).join('\n\n');
-      case 'FunctionDecl':
-        return `async function ${node.name}(${node.params.map(p => p.name).join(', ')}) ${this.genJavaScript(node.body)}`;
+      case 'FunctionDecl': {
+        // Strip type annotations: 'a: i32' -> 'a', handles both {name,type} objects and 'a: i32' strings
+        const jsParams = node.params.map(p =>
+          typeof p === 'string' ? p.split(':')[0].trim() : p.name
+        ).join(', ');
+        return `async function ${node.name}(${jsParams}) ${this.genJavaScript(node.body)}`;
+      }
       case 'Block':
         return '{\n' + node.statements.map(s => {
           const code = this.genJavaScript(s);
@@ -209,8 +214,22 @@ class Compiler {
       case 'Nil': return 'null';
       case 'BinaryOp':
         return `(${this.genJavaScript(node.left)} ${node.op} ${this.genJavaScript(node.right)})`;
-      case 'SwarmStatement':
-        return `/* SWARM-TARGET: ELIXIR */\n${genElixir(node, "")}`;
+      case 'SwarmStatement': {
+        const agents = node.agents?.map(a => `"${a.name || 'agent'}"`).join(', ') || '';
+        return `// Swarm: ${node.name || 'anonymous'}\n` +
+          `const swarm = await Promise.all([${agents}]\n` +
+          `.map(name => ({ name, status: 'running' })));\n`;
+      }
+      case 'ThinkStatement': {
+        const prompt = this.genJavaScript(node.prompt);
+        const model = node.config?.model
+          ? (typeof node.config.model === 'string' ? node.config.model : this.genJavaScript(node.config.model))
+          : 'ollama:llama3';
+        const maxTokens = node.config?.max_tokens
+          ? (typeof node.config.max_tokens === 'number' ? node.config.max_tokens : this.genJavaScript(node.config.max_tokens))
+          : 512;
+        return `await std.think(${prompt}, { model: "${model}", max_tokens: ${maxTokens} })`;
+      }
       case 'NeuralLayer':
         return `/* Neural Layer: 86B neurons activated */`;
       case 'ArrayLiteral':

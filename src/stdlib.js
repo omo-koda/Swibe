@@ -4,7 +4,6 @@
  */
 
 import vm from 'node:vm';
-import ivm from 'isolated-vm';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
@@ -167,8 +166,10 @@ class StandardLibrary {
   }
 
   async sandbox_run(fn) {
+    console.warn('[SWIBE] secure{} sandbox: Node.js vm isolation. Not for untrusted code.');
+
     const ragApi = Object.freeze({
-      save: async function(key, data) {
+      save: async (key, data) => {
         const dir = path.join(os.homedir(), '.swibe');
         if (!fs.existsSync(dir)) fs.mkdirSync(dir);
         const dbPath = path.join(dir, 'vault.json');
@@ -185,39 +186,39 @@ class StandardLibrary {
         console.log(`[SANDBOX-LOG] [RAG] Persistent store: ${key}`);
         return true;
       },
-      search: async function(query, n = 5) {
+      search: async (query, n = 5) => {
         return this.rag.search(query, n);
       }
     });
 
-    const isolate = new ivm.Isolate({ memoryLimit: 128 });
-    const context = await isolate.createContext();
-    const jail = context.global;
-    await jail.set('console', new ivm.ExternalCopy({
-      log: function(...args) { console.log('[SANDBOX]', ...args); }
-    }).copyInto());
-    await jail.set('encrypt_storage', new ivm.ExternalCopy(this.encrypt_storage.bind(this)).copyInto());
-    await jail.set('no_external_upload', new ivm.ExternalCopy(this.no_external_upload.bind(this)).copyInto());
-    await jail.set('println', new ivm.ExternalCopy(function(...args) { console.log('[SANDBOX]', ...args); }).copyInto());
-    await jail.set('join', new ivm.ExternalCopy(this.join.bind(this)).copyInto());
-    await jail.set('trace', new ivm.ExternalCopy(this.trace.bind(this)).copyInto());
-    await jail.set('gen_ritual_keypair', new ivm.ExternalCopy(this.gen_ritual_keypair.bind(this)).copyInto());
-    await jail.set('aes_gcm_encrypt', new ivm.ExternalCopy(this.aes_gcm_encrypt.bind(this)).copyInto());
-    await jail.set('aes_gcm_decrypt', new ivm.ExternalCopy(this.aes_gcm_decrypt.bind(this)).copyInto());
-    await jail.set('ed25519_sign', new ivm.ExternalCopy(this.ed25519_sign.bind(this)).copyInto());
-    await jail.set('ed25519_verify', new ivm.ExternalCopy(this.ed25519_verify.bind(this)).copyInto());
-    await jail.set('derive_aes_key', new ivm.ExternalCopy(this.derive_aes_key.bind(this)).copyInto());
-    await jail.set('bipon39_entropyToMnemonic', new ivm.ExternalCopy(this.bipon39_entropyToMnemonic.bind(this)).copyInto());
-    await jail.set('bipon39_mnemonicToSeed', new ivm.ExternalCopy(this.bipon39_mnemonicToSeed.bind(this)).copyInto());
-    await jail.set('crypto', new ivm.ExternalCopy({ randomBytes: (n) => crypto.randomBytes(n) }).copyInto());
-    await jail.set('json', new ivm.ExternalCopy({ stringify: (obj) => JSON.stringify(obj), parse: (str) => JSON.parse(str) }).copyInto());
-    await jail.set('rag', new ivm.ExternalCopy(ragApi).copyInto());
-    await jail.set('process', new ivm.ExternalCopy({ exit: () => { throw new Error('process.exit() is forbidden'); } }).copyInto());
-    const code = `(${fn.toString()})()`;
-    const script = await isolate.compileScript(code);
-    const result = await script.run(context, { timeout: 5000 });
-    isolate.dispose();
-    return result;
+    const script = new vm.Script(`(${fn.toString()})()`);
+    const context = vm.createContext(Object.freeze({
+      console: Object.freeze({ log: (...args) => console.log('[SANDBOX-LOG]', ...args) }),
+      encrypt_storage: this.encrypt_storage.bind(this),
+      no_external_upload: this.no_external_upload.bind(this),
+      println: (...args) => console.log('[SANDBOX-LOG]', ...args),
+      join: this.join.bind(this),
+      trace: this.trace.bind(this),
+      gen_ritual_keypair: this.gen_ritual_keypair.bind(this),
+      aes_gcm_encrypt: this.aes_gcm_encrypt.bind(this),
+      aes_gcm_decrypt: this.aes_gcm_decrypt.bind(this),
+      ed25519_sign: this.ed25519_sign.bind(this),
+      ed25519_verify: this.ed25519_verify.bind(this),
+      derive_aes_key: this.derive_aes_key.bind(this),
+      bipon39_entropyToMnemonic: this.bipon39_entropyToMnemonic.bind(this),
+      bipon39_mnemonicToSeed: this.bipon39_mnemonicToSeed.bind(this),
+      crypto: Object.freeze({ randomBytes: (n) => crypto.randomBytes(n) }),
+      json: Object.freeze({ stringify: (obj) => JSON.stringify(obj), parse: (str) => JSON.parse(str) }),
+      rag: ragApi,
+      process: Object.freeze({ exit: () => { throw new Error('process.exit() is forbidden'); } })
+    }));
+
+    try {
+      return await script.runInContext(context, { timeout: 5000 });
+    } catch (err) {
+      console.error('[SANDBOX-ERROR]', err.message);
+      throw err;
+    }
   }
 
   gen_ritual_keypair(seed) {

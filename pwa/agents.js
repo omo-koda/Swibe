@@ -1,5 +1,6 @@
 // Swibe Genesis Engine — Agent Swarm Simulation
 // Simulates autonomous agents decomposing a wish into a living micro-app
+import { processWish } from './genesis.js';
 
 const ROLES = {
   orchestrator: { color: '#ffd93d', title: 'Orchestrator' },
@@ -258,8 +259,23 @@ export class AgentSwarm extends EventTarget {
     this.running = true;
     this.agents = [];
 
-    const category = detectCategory(wish);
-    const components = componentNamesFor(category);
+    // Try real LLM pipeline via Ollama; fall back to regex detection
+    let llmSource = null;
+    try {
+      const llmResult = await processWish(wish);
+      if (llmResult.ollamaAvailable && llmResult.swibeSource) {
+        llmSource = llmResult.swibeSource;
+        this._emit('log', { message: '🤖 Ollama connected — live LLM generation active', type: 'success' });
+      } else if (!llmResult.ollamaAvailable) {
+        this._emit('log', {
+          message: '💡 Start Ollama for live generation: ollama serve',
+          type: 'warn'
+        });
+      }
+    } catch (_) { /* silent fallback */ }
+
+    const category = llmSource ? 'llm-generated' : detectCategory(wish);
+    const components = componentNamesFor(llmSource ? 'greeting' : category);
     const totalAgents = 3 + components.length; // orch + arch + validator + stylist + builders
 
     // ── Phase 1: DECOMPOSE ──
@@ -364,7 +380,10 @@ export class AgentSwarm extends EventTarget {
       this._emit('agent-done', { agentId: a.id });
     }
 
-    const html = generateApp(wish);
+    // Use LLM-generated source if available, otherwise regex fallback
+    const html = llmSource
+      ? generateGreetingApp(`${wish}\n\n<pre style="font-size:11px;opacity:.5">${llmSource.substring(0, 200)}…</pre>`)
+      : generateApp(wish);
 
     this._emit('log', { message: '🌟 Genesis complete — your creation lives.', type: 'success' });
     this._emit('genesis-complete', { html });

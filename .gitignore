@@ -13,3 +13,5 @@ coverage/
 *~
 examples/target/
 target/
+web-playground-legacy/
+.claude/
