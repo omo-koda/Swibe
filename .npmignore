@@ -13,3 +13,6 @@ skills/
 grammar.ebnf
 universal_swibe_core.swibe
 *.txt
+examples/target/
+examples/*.ex
+examples/*.move
