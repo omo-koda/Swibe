@@ -15,7 +15,7 @@ class LLMIntegration {
     this.groqKey = process.env.GROQ_API_KEY || null;
     this.tools = this.initializeTools();
     this.prompt = { optimize: true };
-    this.providers = ['claude', 'ollama', 'hf', 'grok'];
+    this.providers = ['ollama', 'claude', 'openrouter', 'hf', 'grok'];
   }
 
   initializeTools() {
@@ -110,7 +110,7 @@ class LLMIntegration {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        model: 'mistral:latest',
+        model: process.env.OLLAMA_MODEL || 'glm-4.7:cloud',
         prompt: prompt,
         stream: false,
       }),
