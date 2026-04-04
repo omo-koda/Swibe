@@ -35,15 +35,18 @@ export function genOdin(node, indent = "") {
     case 'Return':
       return `${indent}return ${genOdin(node.value, "")}`;
 
-    case 'SwarmStatement': {
-      // Map swarm to Odin's threads
-      let swarmCode = `${indent}// Swarm Initiation: Odin Threads\n`;
-      node.steps.forEach(step => {
-        swarmCode += `${indent}fmt.printf("[ODIN] Birthing Agent ${step.name}...\\n")\n`;
-      });
-      return swarmCode;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}fmt.println(${node.args.map(a => genOdin(a, "")).join(', ')})`;
+      }
+      return `${indent}${node.name}(${node.args.map(a => genOdin(a, "")).join(', ')})`;
 
-    }
+    case 'BinaryOp':
+      return `${genOdin(node.left, "")} ${node.op} ${genOdin(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}// think: ${genOdin(node.prompt, "")}`;
+
     case 'Number':
       return String(node.value);
 

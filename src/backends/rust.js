@@ -255,6 +255,11 @@ export function genRust(node, indent = "") {
     case 'EmptyStatement':
       return '';
 
+    case 'ThinkStatement': {
+      const prompt = genRust(node.prompt, "");
+      return `${indent}println!("Thinking: {}", ${prompt});`;
+    }
+
     default:
       return `${indent}// [RUST-GEN] Unhandled: ${node.type}`;
   }

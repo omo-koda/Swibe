@@ -273,7 +273,7 @@ class Parser {
     }
 
     // Body
-    const body = this.parseBlock();
+    const body = this.parseBlock(true);
 
     return new ASTNode('FunctionDecl', {
       name,
@@ -307,8 +307,11 @@ class Parser {
     const params = [];
     while (this.current().type !== TokenType.RPAREN) {
       const name = this.expect(TokenType.IDENTIFIER).value;
-      this.expect(TokenType.COLON);
-      const type = this.parseType();
+      let type = null;
+      if (this.current().type === TokenType.COLON) {
+        this.advance();
+        type = this.parseType();
+      }
       params.push({ name, type });
 
       if (this.current().type !== TokenType.RPAREN) {
@@ -626,7 +629,7 @@ class Parser {
     return new ASTNode('VariableDecl', { name, type, value, isMut });
   }
 
-  parseBlock() {
+  parseBlock(isFunctionBody = false) {
     this.expect(TokenType.LBRACE);
     const statements = [];
 
@@ -642,6 +645,15 @@ class Parser {
     }
 
     this.expect(TokenType.RBRACE);
+
+    // If this is a function body and the last statement is an expression, wrap it in Return
+    if (isFunctionBody && statements.length > 0) {
+      const last = statements[statements.length - 1];
+      const expressionTypes = ['BinaryOp', 'Number', 'String', 'Boolean', 'Nil', 'Identifier', 'FunctionCall', 'Call', 'MethodCall', 'FieldAccess', 'ArrayLiteral', 'DictLiteral', 'Index'];
+      if (expressionTypes.includes(last.type)) {
+        statements[statements.length - 1] = new ASTNode('Return', { value: last });
+      }
+    }
 
     return new ASTNode('Block', { statements });
   }

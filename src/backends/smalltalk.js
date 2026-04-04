@@ -15,11 +15,29 @@ export function genSmalltalk(node, indent = "") {
       return code;
 
     }
+    case 'FunctionDecl':
+      return `${node.name}\n\t^ ${genSmalltalk(node.body)}`;
+
+    case 'Block':
+      return node.statements.map(s => genSmalltalk(s)).join('.\n\t');
+
+    case 'Return':
+      return `^ ${genSmalltalk(node.value)}`;
+
     case 'VariableDecl':
       return `${node.name} := ${genSmalltalk(node.value)}`;
 
     case 'FunctionCall':
+      if (node.name === 'print') {
+        return `Transcript show: ${node.args.map(a => genSmalltalk(a)).join(' , ')}`;
+      }
       return `${node.name} value: ${node.args.map(a => genSmalltalk(a)).join(' value: ')}`;
+
+    case 'BinaryOp':
+      return `(${genSmalltalk(node.left)} ${node.op} ${genSmalltalk(node.right)})`;
+
+    case 'ThinkStatement':
+      return `"think: ${genSmalltalk(node.prompt)}"`;
 
     case 'Number':
       return String(node.value);

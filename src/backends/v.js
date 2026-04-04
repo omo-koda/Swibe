@@ -33,17 +33,18 @@ export function genV(node, indent = "") {
     case 'Return':
       return `${indent}return ${genV(node.value, "")}`;
 
-    case 'SwarmStatement': {
-      // Map swarm to V's threads
-      let swarmCode = `${indent}// Swarm Initiation: V Threads\n`;
-      node.steps.forEach(step => {
-        swarmCode += `${indent}go fn(name string) {\n`;
-        swarmCode += `${indent}    println('[V] Birthing Agent $name...')\n`;
-        swarmCode += `${indent}}('${step.name}')\n`;
-      });
-      return swarmCode;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}println(${node.args.map(a => genV(a, "")).join(' + ')})`;
+      }
+      return `${indent}${node.name}(${node.args.map(a => genV(a, "")).join(', ')})`;
 
-    }
+    case 'BinaryOp':
+      return `${genV(node.left, "")} ${node.op} ${genV(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}// think: ${genV(node.prompt, "")}`;
+
     case 'Number':
       return String(node.value);
 

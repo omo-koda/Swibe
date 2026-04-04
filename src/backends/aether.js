@@ -17,6 +17,24 @@ export function genAether(node, indent = "") {
       return code;
 
     }
+    case 'FunctionDecl':
+      return `${indent}void ${node.name}() {\n${genAether(node.body, indent + "  ")}\n${indent}}`;
+
+    case 'Block':
+      return node.statements.map(s => genAether(s, indent)).join('\n');
+
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}printf(${node.args.map(a => genAether(a, "")).join(' ')});`;
+      }
+      return `${indent}${node.name}(${node.args.map(a => genAether(a, "")).join(', ')});`;
+
+    case 'BinaryOp':
+      return `${genAether(node.left, "")} ${node.op} ${genAether(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}// think: ${genAether(node.prompt, "")}`;
+
     case 'VariableDecl':
       return `${indent}auto ${node.name} = ${genAether(node.value, "")};`;
 

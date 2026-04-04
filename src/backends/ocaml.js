@@ -28,15 +28,18 @@ export function genOCaml(node, indent = "") {
     case 'Return':
       return genOCaml(node.value, "");
 
-    case 'SwarmStatement': {
-      // Map swarm to OCaml threads or Lwt/Async
-      let swarmCode = `${indent}(* Swarm Initiation: OCaml Threads *)\n`;
-      node.steps.forEach(step => {
-        swarmCode += `${indent}print_endline "[OCAML] Birthing Agent ${step.name}...";\n`;
-      });
-      return swarmCode;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}print_endline ${node.args.map(a => genOCaml(a, "")).join(' ^ ')}`;
+      }
+      return `${indent}${node.name} ${node.args.map(a => genOCaml(a, "")).join(' ')}`;
 
-    }
+    case 'BinaryOp':
+      return `${genOCaml(node.left, "")} ${node.op} ${genOCaml(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}(* think: ${genOCaml(node.prompt, "")} *)`;
+
     case 'Number':
       return String(node.value);
 

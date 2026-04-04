@@ -19,8 +19,17 @@ export function genJ(node, indent = "") {
     case 'Block':
       return node.statements.map(s => genJ(s)).join('\n');
 
-    case 'VariableDecl':
-      return `${node.name} =: ${genJ(node.value)}`;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `echo ${node.args.map(a => genJ(a)).join(' ')}`;
+      }
+      return `${node.name} ${node.args.map(a => genJ(a)).join(' ')}`;
+
+    case 'BinaryOp':
+      return `(${genJ(node.left)} ${node.op} ${genJ(node.right)})`;
+
+    case 'ThinkStatement':
+      return `NB. think: ${genJ(node.prompt)}`;
 
     case 'Number':
       return String(node.value);

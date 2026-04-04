@@ -28,15 +28,18 @@ export function genD(node, indent = "") {
     case 'VariableDecl':
       return `${indent}auto ${node.name} = ${genD(node.value, "")};`;
 
-    case 'SwarmStatement': {
-      // Map swarm to D fibers or threads
-      let swarmCode = `${indent}// Swarm Initiation: Coroutines\n`;
-      node.steps.forEach(step => {
-        swarmCode += `${indent}writeln("[D] Birthing Agent ${step.name}...");\n`;
-      });
-      return swarmCode;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}writeln(${node.args.map(a => genD(a, "")).join(' ~ ')});`;
+      }
+      return `${indent}${node.name}(${node.args.map(a => genD(a, "")).join(', ')});`;
 
-    }
+    case 'BinaryOp':
+      return `${genD(node.left, "")} ${node.op} ${genD(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}// think: ${genD(node.prompt, "")}`;
+
     case 'Number':
       return String(node.value);
 

@@ -54,6 +54,12 @@ export function genJulia(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'BinaryOp':
+      return `${genJulia(node.left, "")} ${node.op} ${genJulia(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}# think: ${genJulia(node.prompt, "")}`;
+
     default:
       return `${indent}# [JULIA-GEN] Unhandled: ${node.type}`;
   }

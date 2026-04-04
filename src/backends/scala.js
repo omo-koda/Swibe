@@ -50,6 +50,12 @@ export function genScala(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'BinaryOp':
+      return `${genScala(node.left, "")} ${node.op} ${genScala(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}// think: ${genScala(node.prompt, "")}`;
+
     default:
       return `${indent}// [SCALA-GEN] Unhandled: ${node.type}`;
   }

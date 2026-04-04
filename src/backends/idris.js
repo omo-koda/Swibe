@@ -27,8 +27,14 @@ export function genIdris(node, indent = "") {
     case 'VariableDecl':
       return `${indent}let ${node.name} = ${genIdris(node.value, "")}`;
 
-    case 'Return':
-      return genIdris(node.value, "");
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}putStrLn ${node.args.map(a => genIdris(a, "")).join(' ++ ')}`;
+      }
+      return `${indent}${node.name} ${node.args.map(a => genIdris(a, "")).join(' ')}`;
+
+    case 'ThinkStatement':
+      return `${indent}-- think: ${genIdris(node.prompt, "")}`;
 
     case 'Number':
       return String(node.value);

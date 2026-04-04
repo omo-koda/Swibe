@@ -139,10 +139,7 @@ export function genElixir(node, indent = "") {
 
     }
     case 'BinaryOp': {
-      let op = node.op;
-      if (op === '+') op = '<>';
-      return `(${genElixir(node.left, "")} ${op} ${genElixir(node.right, "")})`;
-
+      return `(${genElixir(node.left, "")} ${node.op} ${genElixir(node.right, "")})`;
     }
     case 'DictLiteral':
       return `%{${Object.entries(node.fields).map(([k, v]) => `"${k}" => ${genElixir(v, "")}`).join(', ')}}`;

@@ -56,6 +56,15 @@ export function genZig(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'Return':
+      return `${indent}return ${genZig(node.value, "")};`;
+
+    case 'BinaryOp':
+      return `${genZig(node.left, "")} ${node.op} ${genZig(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}// think: ${genZig(node.prompt, "")}`;
+
     default:
       return `${indent}// [ZIG-GEN] Unhandled: ${node.type}`;
   }

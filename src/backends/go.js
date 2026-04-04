@@ -146,6 +146,11 @@ export function genGo(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'ThinkStatement': {
+      const prompt = genGo(node.prompt, "");
+      return `${indent}fmt.Printf("Thinking: %s\\n", ${prompt})`;
+    }
+
     default:
       return `${indent}// [GO-GEN] Unhandled: ${node.type}`;
   }

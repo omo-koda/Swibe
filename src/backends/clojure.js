@@ -49,6 +49,12 @@ export function genClojure(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'BinaryOp':
+      return `(${node.op} ${genClojure(node.left, "")} ${genClojure(node.right, "")})`;
+
+    case 'ThinkStatement':
+      return `${indent}; think: ${genClojure(node.prompt, "")}`;
+
     default:
       return `${indent}; [CLOJURE-GEN] Unhandled: ${node.type}`;
   }

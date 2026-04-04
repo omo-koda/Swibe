@@ -38,9 +38,7 @@ import { genAda } from './backends/ada.js';
 import { genCOBOL } from './backends/cobol.js';
 import { genSmalltalk } from './backends/smalltalk.js';
 import { genD } from './backends/d.js';
-import { genRaku } from './backends/raku.js';
-import { IRGenerator } from './ir-generator.js';
-import { TypeInference } from './type-inference.js';
+import { genTypeScript } from './backends/typescript.js';
 
 class Compiler {
   constructor(source, targetLanguage = 'javascript') {
@@ -141,6 +139,7 @@ class Compiler {
       case 'smalltalk': return genSmalltalk(node);
       case 'd': return genD(node);
       case 'raku': return genRaku(node);
+      case 'typescript': return genTypeScript(node);
       case 'python': return this.genPython(node);
       case 'r': return this.genR(node);
       case 'lisp': return this.genLisp(node);
@@ -291,10 +290,24 @@ class Compiler {
     switch (node.type) {
       case 'Program': return node.statements.map(s => this.genPython(s)).join('\n\n');
       case 'FunctionDecl': return `def ${node.name}(${node.params.map(p => p.name).join(', ')}):\n` + this.indentCode(this.genPython(node.body), 2);
-      case 'Block': return node.statements.map(s => this.genPython(s)).join('\n');
+      case 'Block': {
+        const stmts = node.statements.map(s => this.genPython(s));
+        if (stmts.length > 0) {
+          const last = node.statements[node.statements.length - 1];
+          if (['BinaryOp', 'FunctionCall', 'Number', 'String', 'Identifier', 'ArrayLiteral'].includes(last.type)) {
+            stmts[stmts.length - 1] = 'return ' + stmts[stmts.length - 1];
+          }
+        }
+        return stmts.join('\n');
+      }
       case 'VariableDecl': return `${node.name} = ${this.genPython(node.value)}`;
       case 'Return': return `return ${this.genPython(node.value)}`;
       case 'FunctionCall': return `${node.name}(${node.args.map(a => this.genPython(a)).join(', ')})`;
+      case 'BinaryOp': return `(${this.genPython(node.left)} ${node.op} ${this.genPython(node.right)})`;
+      case 'ThinkStatement': {
+        const prompt = this.genPython(node.prompt);
+        return `print(f"Thinking: {${prompt}}")`;
+      }
       case 'Number': return String(node.value);
       case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
       case 'Boolean': return node.value ? 'True' : 'False';
@@ -320,6 +333,10 @@ class Compiler {
       case 'Identifier': return node.name;
       case 'ArrayLiteral': return `c(${node.elements.map(e => this.genR(e)).join(', ')})`;
       case 'BinaryOp': return `${this.genR(node.left)} ${node.op} ${this.genR(node.right)}`;
+      case 'ThinkStatement': {
+        const prompt = this.genR(node.prompt);
+        return `cat("Thinking:", ${prompt}, "\n")`;
+      }
       default: return '';
     }
   }
@@ -338,6 +355,10 @@ class Compiler {
       case 'Identifier': return node.name;
       case 'ArrayLiteral': return `'(${node.elements.map(e => this.genLisp(e)).join(' ')})`;
       case 'BinaryOp': return `(${node.op} ${this.genLisp(node.left)} ${this.genLisp(node.right)})`;
+      case 'ThinkStatement': {
+        const prompt = this.genLisp(node.prompt);
+        return `(format t "Thinking: ~a~%" ${prompt})`;
+      }
       default: return '';
     }
   }
@@ -357,6 +378,10 @@ class Compiler {
       case 'Identifier': return node.name;
       case 'ArrayLiteral': return `[${node.elements.map(e => this.genMatlab(e)).join(', ')}]`;
       case 'BinaryOp': return `${this.genMatlab(node.left)} ${node.op} ${this.genMatlab(node.right)}`;
+      case 'ThinkStatement': {
+        const prompt = this.genMatlab(node.prompt);
+        return `disp(['Thinking: ', ${prompt}])`;
+      }
       default: return '';
     }
   }
@@ -376,6 +401,10 @@ class Compiler {
       case 'Identifier': return node.name;
       case 'ArrayLiteral': return `{${node.elements.map(e => this.genWolfram(e)).join(', ')}}`;
       case 'BinaryOp': return `${this.genWolfram(node.left)} ${node.op} ${this.genWolfram(node.right)}`;
+      case 'ThinkStatement': {
+        const prompt = this.genWolfram(node.prompt);
+        return `Print["Thinking: ", ${prompt}]`;
+      }
       default: return '';
     }
   }

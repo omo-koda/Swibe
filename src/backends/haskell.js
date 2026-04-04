@@ -51,6 +51,12 @@ export function genHaskell(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'BinaryOp':
+      return `${genHaskell(node.left, "")} ${node.op} ${genHaskell(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}-- think: ${genHaskell(node.prompt, "")}`;
+
     default:
       return `${indent}-- [HASKELL-GEN] Unhandled: ${node.type}`;
   }

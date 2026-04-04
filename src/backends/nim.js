@@ -59,6 +59,12 @@ export function genNim(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'BinaryOp':
+      return `${genNim(node.left, "")} ${node.op} ${genNim(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}# think: ${genNim(node.prompt, "")}`;
+
     default:
       return `${indent}# [NIM-GEN] Unhandled: ${node.type}`;
   }

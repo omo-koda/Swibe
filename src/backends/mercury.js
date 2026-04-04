@@ -28,6 +28,18 @@ export function genMercury(node, indent = "") {
     case 'Block':
       return node.statements.map(s => genMercury(s, indent)).join(',\n');
 
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}io.write_string(${node.args.map(a => genMercury(a, "")).join(' ++ ')}, !IO)`;
+      }
+      return `${indent}${node.name}(${node.args.map(a => genMercury(a, "")).join(', ')}, !IO)`;
+
+    case 'BinaryOp':
+      return `${genMercury(node.left, "")} ${node.op} ${genMercury(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}% think: ${genMercury(node.prompt, "")}`;
+
     case 'VariableDecl':
       return `${indent}_${node.name} = ${genMercury(node.value, "")}`;
 

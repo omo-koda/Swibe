@@ -22,8 +22,17 @@ export function genAPL(node, indent = "") {
     case 'VariableDecl':
       return `${node.name} ← ${genAPL(node.value)}`;
 
-    case 'NeuralLayer':
-      return `⍝ 86B Neurons Simulation\nNeurons ← 86000000000 ⍴ 1\nSynapses ← Neurons +.× Neurons`;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `⎕ ← ${node.args.map(a => genAPL(a)).join(' ')}`;
+      }
+      return `${node.name} ${node.args.map(a => genAPL(a)).join(' ')}`;
+
+    case 'BinaryOp':
+      return `(${genAPL(node.left)} ${node.op} ${genAPL(node.right)})`;
+
+    case 'ThinkStatement':
+      return `⍝ think: ${genAPL(node.prompt)}`;
 
     case 'Number':
       return String(node.value);

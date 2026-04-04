@@ -19,8 +19,17 @@ export function genForth(node, indent = "") {
     case 'Block':
       return node.statements.map(s => genForth(s)).join(' ');
 
-    case 'VariableDecl':
-      return `VARIABLE ${node.name} ${genForth(node.value)} ${node.name} !`;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${node.args.map(a => genForth(a)).join(' ')} .`;
+      }
+      return `${node.args.map(a => genForth(a)).join(' ')} ${node.name}`;
+
+    case 'BinaryOp':
+      return `${genForth(node.left)} ${genForth(node.right)} ${node.op}`;
+
+    case 'ThinkStatement':
+      return `( think: ${genForth(node.prompt)} )`;
 
     case 'Number':
       return String(node.value);

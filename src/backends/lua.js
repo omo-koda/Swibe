@@ -76,6 +76,9 @@ export function genLua(node, indent = "") {
       return `(${genLua(node.left, "")} ${op} ${genLua(node.right, "")})`;
 
     }
+    case 'ThinkStatement':
+      return `${indent}-- think: ${genLua(node.prompt, "")}`;
+
     default:
       return `${indent}-- [LUA-GEN] Unhandled: ${node.type}`;
   }

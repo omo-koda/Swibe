@@ -25,15 +25,18 @@ export function genRaku(node, indent = "") {
     case 'VariableDecl':
       return `${indent}my $${node.name} = ${genRaku(node.value, "")};`;
 
-    case 'SwarmStatement': {
-      // Map swarm to Raku promises/channels
-      let swarmCode = `${indent}# Swarm Initiation: Promises\n`;
-      node.steps.forEach(step => {
-        swarmCode += `${indent}start { say "[RAKU] Birthing Agent ${step.name}..." };\n`;
-      });
-      return swarmCode;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}say ${node.args.map(a => genRaku(a, "")).join(' ~ ')};`;
+      }
+      return `${indent}${node.name}(${node.args.map(a => genRaku(a, "")).join(', ')});`;
 
-    }
+    case 'BinaryOp':
+      return `${genRaku(node.left, "")} ${node.op} ${genRaku(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}# think: ${genRaku(node.prompt, "")}`;
+
     case 'Number':
       return String(node.value);
 

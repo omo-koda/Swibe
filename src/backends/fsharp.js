@@ -28,15 +28,18 @@ export function genFSharp(node, indent = "") {
     case 'Return':
       return genFSharp(node.value, "");
 
-    case 'SwarmStatement': {
-      // Map swarm to Async workflows
-      let swarmCode = `${indent}// Swarm Initiation: Async Workflows\n`;
-      node.steps.forEach(step => {
-        swarmCode += `${indent}async { printfn "[F#] Birthing Agent ${step.name}..." } |> Async.Start\n`;
-      });
-      return swarmCode;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}printfn "%s" ${node.args.map(a => genFSharp(a, "")).join(' + ')}`;
+      }
+      return `${indent}${node.name} ${node.args.map(a => genFSharp(a, "")).join(' ')}`;
 
-    }
+    case 'BinaryOp':
+      return `${genFSharp(node.left, "")} ${node.op} ${genFSharp(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}// think: ${genFSharp(node.prompt, "")}`;
+
     case 'Number':
       return String(node.value);
 

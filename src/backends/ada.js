@@ -17,6 +17,27 @@ export function genAda(node, indent = "") {
       return code;
 
     }
+    case 'FunctionDecl':
+      return `${indent}function ${node.name} return Integer is\n${indent}begin\n${genAda(node.body, indent + "    ")}\n${indent}end ${node.name};`;
+
+    case 'Block':
+      return node.statements.map(s => genAda(s, indent)).join('\n');
+
+    case 'Return':
+      return `${indent}return ${genAda(node.value, "")};`;
+
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}Put_Line(${node.args.map(a => genAda(a, "")).join(' & ')});`;
+      }
+      return `${indent}${node.name}(${node.args.map(a => genAda(a, "")).join(', ')});`;
+
+    case 'BinaryOp':
+      return `${genAda(node.left, "")} ${node.op} ${genAda(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}-- think: ${genAda(node.prompt, "")}`;
+
     case 'VariableDecl':
       return `${indent}${node.name} : Integer := ${genAda(node.value, "")};`;
 

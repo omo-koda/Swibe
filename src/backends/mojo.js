@@ -25,6 +25,18 @@ export function genMojo(node, indent = "") {
     case 'Block':
       return node.statements.map(s => genMojo(s, indent)).join('\n');
 
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}print(${node.args.map(a => genMojo(a, "")).join(' ')})`;
+      }
+      return `${indent}${node.name}(${node.args.map(a => genMojo(a, "")).join(', ')})`;
+
+    case 'BinaryOp':
+      return `${genMojo(node.left, "")} ${node.op} ${genMojo(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}# think: ${genMojo(node.prompt, "")}`;
+
     case 'VariableDecl':
       return `${indent}var ${node.name} = ${genMojo(node.value, "")}`;
 

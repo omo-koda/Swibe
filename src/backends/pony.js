@@ -39,7 +39,16 @@ export function genPony(node, indent = "") {
 
     }
     case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}env.out.print(${node.args.map(a => genPony(a, "")).join(' + ')})`;
+      }
       return `${indent}${node.name}(${node.args.map(a => genPony(a, "")).join(', ')})`;
+
+    case 'BinaryOp':
+      return `${genPony(node.left, "")} ${node.op} ${genPony(node.right, "")}`;
+
+    case 'ThinkStatement':
+      return `${indent}// think: ${genPony(node.prompt, "")}`;
 
     case 'Number':
       return String(node.value);

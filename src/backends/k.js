@@ -19,8 +19,17 @@ export function genK(node, indent = "") {
     case 'Block':
       return node.statements.map(s => genK(s)).join('; ');
 
-    case 'VariableDecl':
-      return `${node.name}: ${genK(node.value)}`;
+    case 'FunctionCall':
+      if (node.name === 'print') {
+        return `0: ${node.args.map(a => genK(a)).join(' ')}`;
+      }
+      return `${node.name} ${node.args.map(a => genK(a)).join(' ')}`;
+
+    case 'BinaryOp':
+      return `(${genK(node.left)} ${node.op} ${genK(node.right)})`;
+
+    case 'ThinkStatement':
+      return `/ think: ${genK(node.prompt)}`;
 
     case 'Number':
       return String(node.value);

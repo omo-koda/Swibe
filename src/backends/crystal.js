@@ -32,19 +32,17 @@ export function genCrystal(node, indent = "") {
       return `${indent}${genCrystal(node.value, "")}`;
 
     case 'FunctionCall':
+      if (node.name === 'print') {
+        return `${indent}puts ${node.args.map(a => genCrystal(a, "")).join(' + ')}`;
+      }
       return `${indent}${node.name}(${node.args.map(a => genCrystal(a, "")).join(', ')})`;
 
-    case 'SwarmStatement': {
-      // Map swarm to native fibers
-      let swarmCode = `${indent}# Swarm Initiation: Fibers/Channels\n`;
-      node.steps.forEach(step => {
-        swarmCode += `${indent}spawn do\n`;
-        swarmCode += `${indent}  puts "[CRYSTAL] Birthing Agent ${step.name}..."\n`;
-        swarmCode += `${indent}end\n`;
-      });
-      return swarmCode;
+    case 'BinaryOp':
+      return `${genCrystal(node.left, "")} ${node.op} ${genCrystal(node.right, "")}`;
 
-    }
+    case 'ThinkStatement':
+      return `${indent}# think: ${genCrystal(node.prompt, "")}`;
+
     case 'Number':
       return String(node.value);
 
