@@ -9,6 +9,7 @@ export function genElixir(node, indent = "") {
     case 'Program': {
       let code = '';
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genElixir(s, "")).join('\n\n');
+      code += node.statements.filter(s => s.type === 'SwarmStatement').map(s => genElixir(s, "")).join('\n\n');
       code += '\n\n# Run main\ncase Function.info(:main, 0) do\n';
       code += '  [_ | _] -> main()\n';
       code += '  nil -> :ok\nend\n';
@@ -54,6 +55,17 @@ export function genElixir(node, indent = "") {
       return node.name;
     case 'ArrayLiteral':
       return `[${node.elements.map(e => genElixir(e, "")).join(', ')}]`;
+    case 'SwarmStatement': {
+      // Handle swarm agents for Elixir
+      let code = '';
+      if (node.steps && node.steps.length > 0) {
+        node.steps.forEach(step => {
+          code += `${indent}# Agent: ${step.name}\n`;
+          code += `${indent}name: "${step.name}"\n`;
+        });
+      }
+      return code;
+    }
     default:
       return '';
   }

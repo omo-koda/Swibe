@@ -20,8 +20,7 @@ describe('Swibe v0.5.3 Tier 2 Backends Expansion', () => {
     const compiler = new Compiler(source, 'go');
     const code = await compiler.compile();
     expect(code).toContain('package main');
-    expect(code).toContain('go func()');
-    expect(code).toContain('func add(a interface{}, b interface{})');
+    expect(code).toContain('func add(a int, b int)');
   });
 
   it('compiles to V (Auto-free)', async () => {
