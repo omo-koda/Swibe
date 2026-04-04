@@ -92,7 +92,8 @@ class StandardLibrary {
       this.plugin.onThink(prompt, result.content);
     }
     
-    this.neural.fire(prompt, { type: 'thought', receipt: result.receipt });
+    this.neural.fire(prompt, { type: "thought", receipt: result.receipt });
+    console.log(`[THINK] ${result.content || result}`);
     
     // Wire Hook: after receipt seal → call onReceipt(receipt)
     if (this.plugin && typeof this.plugin.onReceipt === 'function') {
