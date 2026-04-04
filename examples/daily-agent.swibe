@@ -1,0 +1,59 @@
+-- Techgnosis Daily Agent
+-- Reads today's Òrìṣà archetype from ritual-codex
+-- Routes LLM call based on archetype
+-- Logs receipt to vault
+
+skill RitualCodex {
+  secure {
+    let codexPath = "/data/data/com.termux/files/home/technosis/ritual-codex/json"
+    println("Loading ritual-codex...")
+  }
+}
+
+skill DailyOracle {
+  secure {
+    println("Oracle awakening...")
+  }
+}
+
+fn getArchetype(day) {
+  day
+}
+
+fn morningThought(archetype, principle) {
+  think "You are embodying the archetype of " + archetype + ". The Hermetic principle today is: " + principle + ". Give me one sovereign action I should take today as a developer building the future. Be specific and brief."
+}
+
+fn eveningReflection(archetype) {
+  think "As " + archetype + " reflects at the end of the day — what did the forge produce? Give one honest assessment of today's work in the spirit of this Òrìṣà."
+}
+
+fn main() {
+  println("🌄 Techgnosis Daily Agent — Awakening")
+  println("======================================")
+
+  let archetype = "Ògún"
+  let principle = "Cause and Effect"
+  let frequency = "852 Hz"
+  let color = "Dark Green and Black"
+  let virtue = "Dedication, Focus, Mastery"
+  let crypto = "Real-World Assets, Infrastructure"
+
+  println("⚡ Archetype: " + archetype)
+  println("🌀 Principle: " + principle)
+  println("🎵 Frequency: " + frequency)
+  println("🎨 Color: " + color)
+  println("✨ Virtue: " + virtue)
+  println("₿ Crypto Sector: " + crypto)
+  println("")
+
+  println("🤔 Morning Oracle...")
+  morningThought(archetype, principle)
+
+  println("")
+  println("🌙 Evening Reflection...")
+  eveningReflection(archetype)
+
+  println("")
+  println("Àṣẹ. The agent has spoken. 🕊️")
+}
