@@ -651,7 +651,10 @@ class Parser {
       const last = statements[statements.length - 1];
       const expressionTypes = ['BinaryOp', 'Number', 'String', 'Boolean', 'Nil', 'Identifier', 'FunctionCall', 'Call', 'MethodCall', 'FieldAccess', 'ArrayLiteral', 'DictLiteral', 'Index'];
       if (expressionTypes.includes(last.type)) {
-        statements[statements.length - 1] = new ASTNode('Return', { value: last });
+        // Don't wrap print calls in return
+        if (!(last.type === 'FunctionCall' && last.name === 'print')) {
+          statements[statements.length - 1] = new ASTNode('Return', { value: last });
+        }
       }
     }
 

@@ -186,16 +186,18 @@ class Compiler {
     if (!node) return '';
     switch (node.type) {
       case 'Program':
-        return node.statements.map(s => {
+        let code = node.statements.map(s => {
           const code = this.genJavaScript(s);
           return code.endsWith(';') || code.endsWith('}') ? code : code + ';';
         }).join('\n\n');
+        code += '\n\nmain();';
+        return code;
       case 'FunctionDecl': {
         // Strip type annotations: 'a: i32' -> 'a', handles both {name,type} objects and 'a: i32' strings
         const jsParams = node.params.map(p =>
           typeof p === 'string' ? p.split(':')[0].trim() : p.name
         ).join(', ');
-        return `async function ${node.name}(${jsParams}) ${this.genJavaScript(node.body)}`;
+        return `function ${node.name}(${jsParams}) ${this.genJavaScript(node.body)}`;
       }
       case 'Block':
         return '{\n' + node.statements.map(s => {
@@ -207,11 +209,16 @@ class Compiler {
       case 'Return':
         return `return ${this.genJavaScript(node.value)};`;
       case 'FunctionCall':
-        return `await ${node.name}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
+        const args = node.args.map(a => this.genJavaScript(a)).join(', ');
+        if (node.name === 'print') {
+          return `console.log(${args})`;
+        } else {
+          return `${node.name}(${args})`;
+        }
       case 'Call':
-        return `await ${this.genJavaScript(node.callee)}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
+        return `${this.genJavaScript(node.callee)}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
       case 'MethodCall':
-        return `await ${this.genJavaScript(node.object)}.${node.method}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
+        return `${this.genJavaScript(node.object)}.${node.method}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
       case 'FieldAccess':
         return `${this.genJavaScript(node.object)}.${node.field}`;
       case 'If': {
@@ -289,21 +296,33 @@ class Compiler {
   genPython(node) {
     if (!node) return '';
     switch (node.type) {
-      case 'Program': return node.statements.map(s => this.genPython(s)).join('\n\n');
+      case 'Program': {
+        const code = node.statements.map(s => this.genPython(s)).join('\n\n');
+        return code + '\n\nif __name__ == "__main__":\n  main()';
+      }
       case 'FunctionDecl': return `def ${node.name}(${node.params.map(p => p.name).join(', ')}):\n` + this.indentCode(this.genPython(node.body), 2);
       case 'Block': {
         const stmts = node.statements.map(s => this.genPython(s));
         if (stmts.length > 0) {
           const last = node.statements[node.statements.length - 1];
           if (['BinaryOp', 'FunctionCall', 'Number', 'String', 'Identifier', 'ArrayLiteral'].includes(last.type)) {
-            stmts[stmts.length - 1] = 'return ' + stmts[stmts.length - 1];
+            // Only add return if it's not a print call
+            if (!(last.type === 'FunctionCall' && last.name === 'print')) {
+              stmts[stmts.length - 1] = 'return ' + stmts[stmts.length - 1];
+            }
           }
         }
         return stmts.join('\n');
       }
       case 'VariableDecl': return `${node.name} = ${this.genPython(node.value)}`;
       case 'Return': return `return ${this.genPython(node.value)}`;
-      case 'FunctionCall': return `${node.name}(${node.args.map(a => this.genPython(a)).join(', ')})`;
+      case 'FunctionCall': {
+        if (node.name === 'print') {
+          return `print(${node.args.map(a => this.genPython(a)).join(', ')})`;
+        } else {
+          return `${node.name}(${node.args.map(a => this.genPython(a)).join(', ')})`;
+        }
+      }
       case 'BinaryOp': return `(${this.genPython(node.left)} ${node.op} ${this.genPython(node.right)})`;
       case 'ThinkStatement': {
         const prompt = this.genPython(node.prompt);

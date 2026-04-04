@@ -12,7 +12,8 @@ export function genPython(node) {
 
   switch (node.type) {
     case 'Program':
-      return node.statements.map(s => genPython(s)).join('\n\n');
+      const code = node.statements.map(s => genPython(s)).join('\n\n');
+      return code + '\n\nif __name__ == "__main__":\n  main()';
 
     case 'FunctionDecl':
       return (
@@ -30,7 +31,11 @@ export function genPython(node) {
       return `return ${genPython(node.value)}`;
 
     case 'FunctionCall':
-      return `${node.name}(${node.args.map(a => genPython(a)).join(', ')})`;
+      if (node.name === 'print') {
+        return `print(${node.args.map(a => genPython(a)).join(', ')})`;
+      } else {
+        return `${node.name}(${node.args.map(a => genPython(a)).join(', ')})`;
+      }
 
     case 'Number':
       return String(node.value);

@@ -92,7 +92,7 @@ export function genRust(node, indent = "") {
     }
     case 'FunctionDecl': {
       const params = node.params.map(p => `${p.name}: i32`).join(', ');
-      const retType = node.returnType ? ` -> ${node.returnType}` : '';
+      const retType = node.returnType ? ` -> ${node.returnType}` : ' -> i32';
       return `${indent}fn ${node.name}(${params})${retType} {\n` +
         genRust(node.body, indent + "    ") +
         `\n${indent}}`;
@@ -102,7 +102,13 @@ export function genRust(node, indent = "") {
       return node.statements.map((s, i) => {
         const scode = genRust(s, indent);
         if (s.type === 'BinaryOp' || s.type === 'Number' || s.type === 'Identifier' || s.type === 'FieldAccess' || s.type === 'FunctionCall' || s.type === 'MethodCall') {
-           if (i === node.statements.length - 1) return scode;
+           if (i === node.statements.length - 1) {
+             // Don't return print statements, and add return for expressions
+             if (!(s.type === 'FunctionCall' && s.name === 'print')) {
+               return scode;
+             }
+             return scode + ";";
+           }
            if (!scode.trim().endsWith(';')) return scode + ";";
         }
         return scode;
@@ -114,10 +120,14 @@ export function genRust(node, indent = "") {
 
     }
     case 'Return':
-      return `${indent}${genRust(node.value, "")}`;
+      return `${indent}return ${genRust(node.value, "")};`;
 
     case 'FunctionCall': {
       let fnName = node.name;
+      // Map 'print' to 'println!'
+      if (fnName === 'print') {
+        return `${indent}println!("{}", ${node.args.map(a => genRust(a, "")).join(', ')})`;
+      }
       if (fnName === 'aes_gcm_encrypt') fnName = 'aes_gcm_encrypt_vault';
       if (fnName === 'println') {
           return `${indent}println!("{}", ${node.args.map(a => genRust(a, "")).join(', ')})`;

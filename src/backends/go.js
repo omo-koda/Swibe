@@ -9,53 +9,43 @@ export function genGo(node, indent = "") {
   switch (node.type) {
     case 'Program': {
       let code = `package main\n\n`;
-      code += `import (\n  "context"\n  "crypto/aes"\n  "crypto/cipher"\n  "crypto/ed25519"\n  "crypto/rand"\n  "crypto/sha256"\n  "encoding/hex"\n  "fmt"\n  "strings"\n  "sync"\n  "time"\n)\n\n`;
-      code += `type Keypair struct { Pub string; Priv string }\n`;
-      code += `type Encrypted struct { Iv string; Content string; Tag string }\n`;
-      code += `type Vault struct { Mnemonic []string; Creds map[string]string; BornAt string }\n\n`;
-      code += `func bipon39_entropyToMnemonic(e []byte, b string) []string { return []string{"esu-gate"} }\n`;
-      code += `func bipon39_mnemonicToSeed(p string) []byte { return make([]byte, 64) }\n`;
-      code += `func gen_ritual_keypair(s []byte) Keypair {\n  pub, priv, _ := ed25519.GenerateKey(rand.Reader)\n  return Keypair{hex.EncodeToString(pub), hex.EncodeToString(priv)}\n}\n`;
-      code += `func aes_gcm_encrypt(d string, s []byte) Encrypted {\n  block, _ := aes.NewCipher(s[:32])\n  gcm, _ := cipher.NewGCM(block)\n  iv := make([]byte, gcm.NonceSize())\n  rand.Read(iv)\n  sealed := gcm.Seal(nil, iv, []byte(d), nil)\n  return Encrypted{hex.EncodeToString(iv), hex.EncodeToString(sealed[:len(sealed)-gcm.Overhead()]), hex.EncodeToString(sealed[len(sealed)-gcm.Overhead():])}\n}\n`;
-      code += `func aes_gcm_decrypt(e Encrypted, s []byte) string { return "{}" }\n`;
-      code += `func ed25519_sign(p string, k string) string { return "sig" }\n`;
-      code += `func ed25519_verify(sig string, payload string, pub string) bool {\n  pubBytes, err := hex.DecodeString(pub)\n  if err != nil { return false }\n  sigBytes, err2 := hex.DecodeString(sig)\n  if err2 != nil { return false }\n  return ed25519.Verify(ed25519.PublicKey(pubBytes), []byte(payload), sigBytes)\n}\n`;
-      code += `func join(v []string, s string) string { return strings.Join(v, s) }\n`;
-      code += `func trace(m string) { fmt.Printf("[TRACE] %s\\n", m) }\n\n`;
-      code += `var json = struct {\n  Stringify func(interface{}) string\n  Parse func(string) Vault\n}{\n  Stringify: func(v interface{}) string { return "{}" },\n  Parse: func(s string) Vault { return Vault{} },\n}\n\n`;
-      code += `var crypto_struct = struct {\n  RandomBytes func(int) []byte\n}{\n  RandomBytes: func(n int) []byte { b := make([]byte, n); rand.Read(b); return b },\n}\n\n`;
-      code += `var rag = struct {\n  Save func(string, interface{}) \n}{\n  Save: func(k string, v interface{}) {},\n}\n\n`;
-      code += `func Think(prompt string) string {\n  fmt.Printf("[GO-THINK] %s...\\n", prompt[:10])\n  return "Àṣẹ"\n}\n\n`;
-
+      code += `import (\n  "fmt"\n)\n\n`;
+      
       const functionDecls = node.statements.filter(s => s.type === 'FunctionDecl' || s.type === 'SkillDecl');
       code += functionDecls.map(s => genGo(s, "")).join('\n\n');
 
       const hasMain = node.statements.some(s => s.type === 'FunctionDecl' && s.name === 'main');
       if (!hasMain) {
         code += `\nfunc main() {\n`;
-        code += `    fmt.Println("Swibe Sovereign Birth Ritual (Go Backend)")\n`;
-        code += `    var wg sync.WaitGroup\n`;
+        code += `    fmt.Println("Swibe")\n`;
         code += node.statements.filter(s => s.type !== 'FunctionDecl' && s.type !== 'SkillDecl').map(s => genGo(s, "    ")).join('\n');
-        code += `    wg.Wait()\n`;
         code += `}\n`;
       }
       return code;
 
     }
     case 'FunctionDecl': {
-      const params = node.params.map(p => `${p.name} interface{}`).join(', ');
-      return `${indent}func ${node.name}(${params}) {\n` +
+      const params = node.params.map(p => `${p.name} int`).join(', ');
+      let retType = '';
+      // Go main() has no return type
+      if (node.name !== 'main') {
+        retType = node.returnType ? ` ${node.returnType}` : ' int';
+      }
+      return `${indent}func ${node.name}(${params})${retType} {\n` +
         genGo(node.body, indent + "    ") +
         `\n${indent}}`;
 
     }
     case 'Block':
-      return node.statements.map(s => {
-          const g = genGo(s, indent);
-          if (s.type === 'FunctionCall' || s.type === 'MethodCall' || s.type === 'VariableDecl') {
-              return g;
+      return node.statements.map((s, i) => {
+        const g = genGo(s, indent);
+        if (i === node.statements.length - 1) {
+          // For the last statement, if it's an expression (not print), add return
+          if ((s.type === 'BinaryOp' || s.type === 'FunctionCall' || s.type === 'Identifier' || s.type === 'Number') && !(s.type === 'FunctionCall' && s.name === 'print')) {
+            return `${indent}return ${g}`;
           }
-          return g;
+        }
+        return g;
       }).join('\n');
 
     case 'VariableDecl':
@@ -66,6 +56,7 @@ export function genGo(node, indent = "") {
 
     case 'FunctionCall': {
       const fName = node.name;
+      if (fName === 'print') return `${indent}fmt.Println(${node.args.map(a => genGo(a, "")).join(', ')})`;
       if (fName === 'think') return `${indent}Think(${node.args.map(a => genGo(a, "")).join(', ')})`;
       if (fName === 'println') return `${indent}fmt.Println(${node.args.map(a => genGo(a, "")).join(', ')})`;
       return `${indent}${fName}(${node.args.map(a => genGo(a, "")).join(', ')})`;
