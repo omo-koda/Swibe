@@ -40,6 +40,8 @@ import { genSmalltalk } from './backends/smalltalk.js';
 import { genD } from './backends/d.js';
 import { genTypeScript } from './backends/typescript.js';
 import { genRaku } from './backends/raku.js';
+import { genRuby } from './backends/ruby.js';
+import { genPerl } from './backends/perl.js';
 
 class Compiler {
   constructor(source, targetLanguage = 'javascript') {
@@ -140,7 +142,8 @@ class Compiler {
       case 'smalltalk': return genSmalltalk(node);
       case 'd': return genD(node);
       case 'raku': return genRaku(node);
-      case 'typescript': return genTypeScript(node);
+      case 'ruby': return genRuby(node);
+      case 'perl': return genPerl(node);
       case 'python': return this.genPython(node);
       case 'r': return this.genR(node);
       case 'lisp': return this.genLisp(node);
