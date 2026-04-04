@@ -6,6 +6,10 @@ export default defineConfig({
       '**/node_modules/**',
       '**/archive/**',
       '**/web-playground-legacy/**'
-    ]
+    ],
+    environment: 'node'
+  },
+  esbuild: {
+    target: 'node18'
   }
 });

@@ -1,0 +1,23 @@
+-- Chain Agent — demonstrates chaining primitives
+-- think → retrieve → think forms a reasoning chain
+
+fn research(topic) {
+  chain "deep-research" {
+    think "What are the key aspects of " + topic + "?"
+  }
+}
+
+fn dailyPlan() {
+  plan "Build Techgnosis ecosystem today" {
+    think "What is the single most important task?"
+  }
+}
+
+fn main() {
+  println("🔗 Chain Agent Starting...")
+  research("sovereign AI agent languages")
+  println("")
+  dailyPlan()
+  println("")
+  println("Àṣẹ. The chain is complete. 🕊️")
+}

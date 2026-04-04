@@ -63,6 +63,8 @@ const TokenType = {
   PROMPT: 'PROMPT', // %%
   VOICE: 'VOICE',   // [voice: ...]
   AT_TARGET: 'AT_TARGET', // @target
+  CHAIN: 'CHAIN',
+  PLAN: 'PLAN',
 
   // Operators
   PLUS: 'PLUS',
@@ -301,7 +303,9 @@ class Lexer {
     receipt: TokenType.RECEIPT,
     seal: TokenType.SEAL,
     walrus: TokenType.WALRUS,
-    think: TokenType.THINK
+    think: TokenType.THINK,
+    chain: TokenType.CHAIN,
+    plan: TokenType.PLAN
   };
 
   addToken(type, value = null) {
@@ -504,6 +508,9 @@ class Lexer {
         this.advance();
       } else if (char === ']') {
         this.addToken(TokenType.RBRACKET, ']');
+        this.advance();
+      } else if (char === '\u2192') {  // →
+        this.addToken(TokenType.ARROW, '→');
         this.advance();
       } else if (char === '@') {
         this.advance();

@@ -65,6 +65,8 @@ class StandardLibrary {
       'lookup_meta': this.lookup_meta.bind(this),
       'elemental_signature': this.elemental_signature.bind(this),
       'think': this.think.bind(this),
+      'retrieve': this.retrieve.bind(this),
+      'invoke': this.invoke.bind(this),
       'neural': this.neural,
       'refuse_if': this.refuse_if.bind(this),
       'seal': (msg) => msg,
@@ -87,6 +89,8 @@ class StandardLibrary {
     console.log(`[THINK] Processing: ${prompt.substring(0, 50)}...`);
     const result = await this.llm.think(prompt);
     
+    global._lastThought = result.content;
+    
     // Wire Hook: after think → call onThink(prompt, response)
     if (this.plugin && typeof this.plugin.onThink === 'function') {
       this.plugin.onThink(prompt, result.content);
@@ -101,6 +105,19 @@ class StandardLibrary {
     }
     
     return result;
+  }
+
+  async retrieve(vaultKey) {
+    // Simple implementation - in real sovereign vault, this would be cryptographic
+    console.log(`[RETRIEVE] Accessing vault: ${vaultKey}`);
+    // For now, return a mock retrieval
+    return { content: `Retrieved data from ${vaultKey}` };
+  }
+
+  async invoke(tool) {
+    console.log(`[INVOKE] Calling tool: ${tool}`);
+    // Mock tool invocation
+    return { result: `Invoked ${tool}` };
   }
 
   async refuse_if(condition) {

@@ -159,6 +159,16 @@ class Parser {
       return this.parseSecureBlock();
     }
 
+    // Chain statement
+    if (token.type === TokenType.CHAIN) {
+      return this.parseChainStatement();
+    }
+
+    // Plan statement
+    if (token.type === TokenType.PLAN) {
+      return this.parsePlanStatement();
+    }
+
     // Loop until goal
     if (token.type === TokenType.LOOP) {
       return this.parseLoopUntil();
@@ -575,12 +585,61 @@ class Parser {
 
   parseLoopUntil() {
     this.expect(TokenType.LOOP);
-    this.expect(TokenType.UNTIL);
-    this.expect(TokenType.GOAL);
-    this.expect(TokenType.COLON);
-    const goal = this.parseExpression();
+    const untilStr = this.expect(TokenType.STRING).value;
     const body = this.parseBlock();
-    return new ASTNode('LoopUntil', { goal, body });
+    return new ASTNode('LoopStatement', { until: untilStr, body });
+  }
+
+  parseChainStatement() {
+    this.expect(TokenType.CHAIN);
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.expect(TokenType.STRING).value;
+    }
+    this.expect(TokenType.LBRACE);
+    const steps = [];
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      const step = this.parseChainStep();
+      steps.push(step);
+      if (this.current().type === TokenType.ARROW) {
+        this.advance();
+      } else if (this.current().type !== TokenType.RBRACE) {
+        throw new Error(`Expected '→' or '}' in chain, got ${this.current().type}`);
+      }
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('ChainStatement', { name, steps });
+  }
+
+  parseChainStep() {
+    const token = this.current();
+    if (token.type === TokenType.THINK) {
+      this.advance();
+      const prompt = this.parseExpression();
+      return new ASTNode('ThinkStatement', { prompt });
+    } else if (token.type === TokenType.IDENTIFIER && token.value === 'invoke') {
+      this.advance();
+      const tool = this.parseExpression();
+      return new ASTNode('InvokeStatement', { tool });
+    } else if (token.type === TokenType.IDENTIFIER && token.value === 'retrieve') {
+      this.advance();
+      const vault = this.parseExpression();
+      return new ASTNode('RetrieveStatement', { vault });
+    } else if (token.type === TokenType.RECEIPT) {
+      this.advance();
+      return new ASTNode('ReceiptStatement', {});
+    }
+    throw new Error(`Unexpected step in chain: ${token.type}`);
+  }
+
+  parsePlanStatement() {
+    this.expect(TokenType.PLAN);
+    let goal = null;
+    if (this.current().type === TokenType.STRING) {
+      goal = this.expect(TokenType.STRING).value;
+    }
+    const body = this.parseBlock();
+    return new ASTNode('PlanStatement', { goal, body });
   }
 
   parseCallToolStatement() {

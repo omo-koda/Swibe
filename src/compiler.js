@@ -280,9 +280,26 @@ class Compiler {
         const arms = node.arms.map(a => `  case ${this.genJavaScript(a.pattern)}: ${this.genJavaScript(a.body)}; break;`).join('\n');
         return `switch (${this.genJavaScript(node.expr)}) {\n${arms}\n}`;
       }
-      case 'LoopUntil': {
-        const maxAttemptsArg = node.maxAttempts ? this.genJavaScript(node.maxAttempts) : 'undefined';
-        return `while (!(await checkGoal(${this.genJavaScript(node.goal)}, ${maxAttemptsArg}))) ${this.genJavaScript(node.body)}`;
+      case 'LoopStatement': {
+        const until = node.until || '';
+        const maxAttempts = node.maxAttempts 
+          || parseInt(process.env.SWIBE_LOOP_MAX) || 10;
+        const body = this.genJavaScript(node.body);
+        return `
+        let _loopAttempts = 0;
+        let _loopDone = false;
+        while (!_loopDone && _loopAttempts < ${maxAttempts}) {
+          _loopAttempts++;
+          ${body}
+          // Check until condition
+          if ("${until}" && typeof _lastThought === 'string') {
+            if (_lastThought.toLowerCase().includes(
+              "${until}".replace('until:', '').trim().toLowerCase()
+            )) {
+              _loopDone = true;
+            }
+          }
+        }`;
       }
       case 'AppDecl': {
         const configEntries = Object.entries(node.config).map(([k, v]) => `  const ${k} = ${this.genJavaScript(v)};`).join('\n');
@@ -292,6 +309,42 @@ class Compiler {
         return `this.${node.name} = ${this.genJavaScript(node.value)}`;
       case 'TargetDirective':
         return `/* @target ${node.target} */`;
+      case 'ChainStatement': {
+        const name = node.name || 'chain';
+        const steps = node.steps || [];
+        let code = `// Chain: ${name}\nlet _ctx = {};\n`;
+        steps.forEach((step, i) => {
+          code += `// Step ${i+1}\n`;
+          code += `_ctx = await (async () => {\n`;
+          code += `  const _prev = _ctx;\n`;
+          code += `  ${this.genJavaScript(step)}\n`;
+          code += `  return _ctx;\n`;
+          code += `})();\n`;
+        });
+        return code;
+      }
+      case 'PlanStatement': {
+        const goal = node.goal || 'plan';
+        const body = this.genJavaScript(node.body);
+        return `
+// Plan: ${goal}
+console.log('[PLAN] Starting: ${goal}');
+const _plan = await std.think(
+  'Break this goal into 3-5 concrete steps: ${goal}'
+);
+console.log('[PLAN] Steps:', _plan.content);
+${body}
+console.log('[PLAN] Complete: ${goal}');`;
+      }
+      case 'ThinkStatement': {
+        return `await std.think(${this.genJavaScript(node.prompt)});`;
+      }
+      case 'InvokeStatement': {
+        return `await std.invoke(${this.genJavaScript(node.tool)});`;
+      }
+      case 'RetrieveStatement': {
+        return `await std.retrieve(${this.genJavaScript(node.vault)});`;
+      }
       default: return `/* Unhandled: ${node.type} */`;
     }
   }
@@ -441,8 +494,8 @@ class Compiler {
     if (node.type === 'SwarmStatement') {
       return JSON.stringify({ version: "2026.1", type: "swarm", agents: node.steps.map(s => s.name), pipeline: node.steps.map(s => s.name).join(" => "), memory: "rag.last_iteration" }, null, 2);
     }
-    if (node.type === 'LoopUntil') {
-      return JSON.stringify({ version: "2026.1", type: "loop", until: this.genJavaScript(node.goal), trace: true }, null, 2);
+    if (node.type === 'LoopStatement') {
+      return JSON.stringify({ version: "2026.1", type: "loop", until: node.until, trace: true }, null, 2);
     }
     if (node.type === 'Program') {
       return node.statements.map(s => this.genAgentSkills(s)).filter(s => s !== "").join('\n---\n');
