@@ -49,6 +49,9 @@ export function genFSharp(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'SwarmStatement':
+      return `Async.Start(async {\n    // ${node.name || 'swarm'}\n})`;
+
     default:
       return `${indent}// [F#-GEN] Unhandled: ${node.type}`;
   }

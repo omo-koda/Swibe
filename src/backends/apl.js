@@ -9,6 +9,7 @@ export function genAPL(node, indent = "") {
   switch (node.type) {
     case 'Program': {
       let code = `⍝ Swibe Sovereign Birth Ritual (APL Backend)\n`;
+      code += `Neurons ← 86000000000 ⍴ 1\nSynapses ← Neurons +.× Neurons\n`;
       code += node.statements.map(s => genAPL(s)).join('\n');
       return code;
 

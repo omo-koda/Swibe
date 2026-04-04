@@ -54,6 +54,9 @@ export function genV(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'SwarmStatement':
+      return `go fn(name string) {\n  // ${node.name || 'swarm'}\n}('${node.name || 'agent'}')`;
+
     default:
       return `${indent}// [V-GEN] Unhandled: ${node.type}`;
   }

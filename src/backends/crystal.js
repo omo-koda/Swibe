@@ -52,6 +52,9 @@ export function genCrystal(node, indent = "") {
     case 'Identifier':
       return node.name;
 
+    case 'SwarmStatement':
+      return `spawn do\n  # ${node.name || 'swarm'}\nend`;
+
     default:
       return `${indent}# [CRYSTAL-GEN] Unhandled: ${node.type}`;
   }

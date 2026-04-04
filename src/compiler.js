@@ -39,6 +39,7 @@ import { genCOBOL } from './backends/cobol.js';
 import { genSmalltalk } from './backends/smalltalk.js';
 import { genD } from './backends/d.js';
 import { genTypeScript } from './backends/typescript.js';
+import { genRaku } from './backends/raku.js';
 
 class Compiler {
   constructor(source, targetLanguage = 'javascript') {

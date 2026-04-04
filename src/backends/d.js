@@ -10,7 +10,7 @@ export function genD(node, indent = "") {
     case 'Program': {
       let code = `import std.stdio;\nimport core.thread;\n\n`;
       code += `void main() {\n`;
-      code += `    writeln("Swibe Sovereign Birth Ritual (D Backend)");\n`;
+      code += `    writeln("[D] Birthing Agent Genesis...");\n`;
       code += node.statements.filter(s => s.type !== 'FunctionDecl').map(s => genD(s, "    ")).join('\n');
       code += `}\n\n`;
       code += node.statements.filter(s => s.type === 'FunctionDecl').map(s => genD(s, "")).join('\n\n');
