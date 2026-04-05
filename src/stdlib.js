@@ -480,10 +480,11 @@ class StandardLibrary {
   bipon39_mnemonicToSeed(phrase) { return sovereign.deriveSeed(phrase); }
 
   async swarmScale(config) {
-    const { agents = 1, circuit_breaker = {} } = config;
+    const max = parseInt(config?.max || config?.agents || 3);
+    const { circuit_breaker = {} } = config;
     const { failure_threshold = 3, recovery_timeout = 30000 } = circuit_breaker;
 
-    console.log(`[SWARM-SCALE] Scaling to ${agents} agents with circuit breaker (threshold: ${failure_threshold}, timeout: ${recovery_timeout}ms)`);
+    console.log(`[SWARM-SCALE] Scaling to ${max} agents...`);
 
     // Circuit breaker state
     const breakerKey = 'swarm_scale_breaker';
@@ -500,7 +501,7 @@ class StandardLibrary {
       const { Worker } = this.workerThreads;
       const workers = [];
 
-      for (let i = 0; i < agents; i++) {
+      for (let i = 0; i < max; i++) {
         const worker = new Worker(`
           const { parentPort } = require('worker_threads');
           parentPort.postMessage({ agentId: ${i}, status: 'running' });
@@ -536,7 +537,7 @@ class StandardLibrary {
         });
       }
 
-      console.log(`[SWARM-SCALE] Successfully scaled to ${agents} agents`);
+      console.log(`[SWARM-SCALE] Successfully scaled to ${results.length} agents`);
       return { success: true, agents: results.length, failures };
 
     } catch (error) {
@@ -561,7 +562,10 @@ class StandardLibrary {
   }
 
   async writeSharedState(config) {
-    const { namespace, data } = config;
+    let { namespace, data = {} } = config;
+    if (!data || typeof data !== 'object') {
+      data = {};
+    }
     const dirPath = path.join(process.cwd(), 'shared_state');
     const filePath = path.join(dirPath, `${namespace}.json`);
 
@@ -569,7 +573,7 @@ class StandardLibrary {
       // Ensure directory exists
       await fs.promises.mkdir(dirPath, { recursive: true });
       await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
-      console.log(`[SHARED-STATE] Written to namespace '${namespace}'`);
+      console.log(`[SHARED-STATE] Written: ${namespace}`);
       return { success: true };
     } catch (error) {
       console.error('[SHARED-STATE] Error writing shared state:', error.message);
