@@ -169,6 +169,11 @@ class Parser {
       return this.parsePlanStatement();
     }
 
+    // Retrieve statement
+    if (token.type === TokenType.RETRIEVE) {
+      return this.parseRetrieveStatement();
+    }
+
     // Loop until goal
     if (token.type === TokenType.LOOP) {
       return this.parseLoopUntil();
@@ -641,6 +646,21 @@ class Parser {
     }
     const body = this.parseBlock();
     return new ASTNode('PlanStatement', { goal, body });
+  }
+
+  parseRetrieveStatement() {
+    this.expect(TokenType.RETRIEVE);
+    const source = this.check(TokenType.STRING) ? this.advance().value : 'vault';
+    let query = null;
+    if (this.check(TokenType.LBRACE)) {
+      this.advance();
+      if (this.check(TokenType.IDENTIFIER) && this.peek().value === 'embed') {
+        this.advance();
+        query = this.parseExpression();
+      }
+      this.expect(TokenType.RBRACE);
+    }
+    return new ASTNode('RetrieveStatement', { source, query });
   }
 
   parseCallToolStatement() {

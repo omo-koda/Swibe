@@ -341,7 +341,9 @@ class Compiler {
         return `await std.invoke(${this.genJavaScript(node.tool)});`;
       }
       case 'RetrieveStatement': {
-        return `await std.retrieve(${this.genJavaScript(node.vault)});`;
+        const source = node.source || 'vault';
+        const query = node.query ? this.genJavaScript(node.query) : (node.vault ? this.genJavaScript(node.vault) : '"query"');
+        return `await std.retrieve(${query}, { source: "${source}" })`;
       }
       default: return `/* Unhandled: ${node.type} */`;
     }

@@ -153,6 +153,17 @@ class SovereignNeuralLayer {
     return this.getTopModel();
   }
 
+  getRoutingReport() {
+    return {
+      fingerprint: this.fingerprint,
+      topModel: this.getTopModel(),
+      ethicsModel: this.getEthicsModel(),
+      prefrontalPeak: Math.max(...this.cortex.prefrontal),
+      ethicsThreshold: this.ethicsThreshold,
+      memoryCapacity: this.memoryCapacity
+    };
+  }
+
   // Summary for logging
   summary() {
     return {

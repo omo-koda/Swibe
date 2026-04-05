@@ -65,6 +65,7 @@ const TokenType = {
   AT_TARGET: 'AT_TARGET', // @target
   CHAIN: 'CHAIN',
   PLAN: 'PLAN',
+  RETRIEVE: 'RETRIEVE',
 
   // Operators
   PLUS: 'PLUS',
@@ -305,8 +306,8 @@ class Lexer {
     walrus: TokenType.WALRUS,
     think: TokenType.THINK,
     chain: TokenType.CHAIN,
-    plan: TokenType.PLAN
-  };
+    plan: TokenType.PLAN,
+    retrieve: TokenType.RETRIEVE,  };
 
   addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);

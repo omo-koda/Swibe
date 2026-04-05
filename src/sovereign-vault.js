@@ -4,6 +4,9 @@
  */
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 
 class SovereignVault {
   constructor() {
@@ -184,6 +187,23 @@ class SovereignVault {
     // Derive 86 neural birth params from the seed bytes
     const neuralParams = Array.from({ length: 86 }, (_, i) => (seed[i % seed.length] || 0) / 255);
     return { identity, neuralParams, seed, phrase };
+  }
+
+  async saveReceiptChain(chain) {
+    try {
+      const vaultPath = path.join(
+        os.homedir(), '.swibe', 'receipt-chain.json'
+      );
+      const existing = fs.existsSync(vaultPath)
+        ? JSON.parse(fs.readFileSync(vaultPath, 'utf-8'))
+        : [];
+      const updated = [...existing, ...chain];
+      fs.mkdirSync(path.dirname(vaultPath), { recursive: true });
+      fs.writeFileSync(vaultPath, JSON.stringify(updated, null, 2));
+      return { saved: true, total: updated.length };
+    } catch(e) {
+      return { saved: false, error: e.message };
+    }
   }
 }
 

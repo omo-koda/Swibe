@@ -19,6 +19,8 @@ class StandardLibrary {
     this.llm = new LLMIntegration();
     this.rag = new RAGIntegration();
     this.plugin = null;
+    this._receiptChain = [];
+    this._lastReceiptHash = null;
     
     this.builtins = {
       'len': this.len.bind(this),
@@ -104,14 +106,43 @@ class StandardLibrary {
       this.plugin.onReceipt(result.receipt);
     }
     
+    // Receipt chain
+    const receiptData = JSON.stringify({
+      prompt: prompt.substring(0, 100),
+      content: result.content?.substring(0, 100),
+      timestamp: Date.now(),
+      prev: this._lastReceiptHash
+    });
+    const hash = crypto.createHash('sha256')
+      .update(receiptData)
+      .digest('hex');
+    this._lastReceiptHash = hash;
+    this._receiptChain.push({
+      hash,
+      prev: receiptData,
+      timestamp: Date.now()
+    });
+    console.log(`[RECEIPT-CHAIN] ${hash.slice(0,16)}...`);
+    
     return result;
   }
 
-  async retrieve(vaultKey) {
-    // Simple implementation - in real sovereign vault, this would be cryptographic
-    console.log(`[RETRIEVE] Accessing vault: ${vaultKey}`);
-    // For now, return a mock retrieval
-    return { content: `Retrieved data from ${vaultKey}` };
+  getReceiptChain() {
+    return this._receiptChain;
+  }
+
+  async retrieve(query, options = {}) {
+    try {
+      const results = await this.rag.search(query);
+      if (results.length > 0) {
+        console.log(`[RETRIEVE] Found ${results.length} results`);
+        return results[0].data || results[0].key;
+      }
+      return null;
+    } catch(e) {
+      console.log('[RETRIEVE] No results:', e.message);
+      return null;
+    }
   }
 
   async invoke(tool) {
