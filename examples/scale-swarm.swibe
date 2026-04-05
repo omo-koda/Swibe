@@ -1,57 +1,19 @@
-// Phase C: Scale primitives demonstration
-// This file demonstrates swarm.scale for distributed agent coordination
-// and share for inter-agent communication via shared JSON state
+-- Scale Swarm Phase C demonstration
+-- swarm.scale with circuit breaker
+-- Shared state between agents
 
-// Example 1: Basic swarm scaling with circuit breaker
-swarm.scale {
-  agents: 3,
-  circuit_breaker: {
-    failure_threshold: 2,
-    recovery_timeout: 15000
-  }
-}
-
-// Example 2: Share data between agents
-share {
-  namespace: "global_config",
-  data: {
-    max_retries: 5,
-    timeout_ms: 30000,
-    api_endpoint: "http://localhost:3000"
-  }
-}
-
-// Example 3: Read shared state
-let config = readSharedState({ namespace: "global_config" });
-println("Shared config loaded:", config);
-
-// Example 4: Swarm scaling with custom configuration
-swarm.scale {
-  agents: 5,
-  circuit_breaker: {
-    failure_threshold: 3,
-    recovery_timeout: 60000
-  }
-}
-
-// Example 5: Update shared state during execution
-share {
-  namespace: "execution_state",
-  data: {
-    phase: "scaling",
-    timestamp: Date.now(),
-    active_agents: 5
-  }
-}
-
-// Example 6: Conditional scaling based on shared state
-let state = readSharedState({ namespace: "execution_state" });
-if (state && state.active_agents < 10) {
+fn main() {
+  println("🌊 Swarm Scale Agent Starting...")
+  println("===================================")
+  budget { tokens: 50000; time: "120s" }
+  share { namespace: "swarm-demo" }
   swarm.scale {
-    agents: 10,
-    circuit_breaker: {
-      failure_threshold: 5,
-      recovery_timeout: 30000
-    }
+    max: 3
+    strategy: "decentralized"
+    checkpoint: true
+    circuit_breaker: true
   }
+  remember { "scale-swarm-session" }
+  println("")
+  println("Àṣẹ. The swarm has scaled. 🕊️")
 }
