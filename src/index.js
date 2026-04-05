@@ -198,8 +198,9 @@ async function main() {
         process.exit(1);
       }
       const { StandardLibrary } = await import('./stdlib.js');
-      const std = new StandardLibrary();
-      const report = std.neural.getRoutingReport();
+      const { SovereignNeuralLayer } = await import('./neural.js');
+      const agent = SovereignNeuralLayer.random();
+      const report = agent.getRoutingReport();
       console.log('Agent Routing Report:');
       console.log(JSON.stringify(report, null, 2));
       break;
