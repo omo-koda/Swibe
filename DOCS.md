@@ -1,5 +1,5 @@
 # Swibe Language Documentation
-Generated: 2026-04-05T04:17:11.439Z
+Generated: 2026-04-05T04:30:15.518Z
 
 ## Installation
 ```bash
