@@ -60,6 +60,7 @@ const TokenType = {
   SEAL: 'SEAL',
   WALRUS: 'WALRUS',
   THINK: 'THINK',
+  BIRTH: 'BIRTH',
   PROMPT: 'PROMPT', // %%
   VOICE: 'VOICE',   // [voice: ...]
   AT_TARGET: 'AT_TARGET', // @target
@@ -311,6 +312,7 @@ class Lexer {
     seal: TokenType.SEAL,
     walrus: TokenType.WALRUS,
     think: TokenType.THINK,
+    birth: TokenType.BIRTH,
     chain: TokenType.CHAIN,
     plan: TokenType.PLAN,
     retrieve: TokenType.RETRIEVE,

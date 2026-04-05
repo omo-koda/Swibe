@@ -193,6 +193,77 @@ async function main() {
       break;
     }
 
+    case 'plugin': {
+      const subcommand = args[1];
+
+      if (subcommand === 'list') {
+        const fs = await import('node:fs');
+        const pluginsDir = path.join(
+          path.dirname(fileURLToPath(import.meta.url)),
+          '..', 'src', 'plugins'
+        );
+        if (fs.existsSync(pluginsDir)) {
+          const plugins = fs.readdirSync(pluginsDir)
+            .filter(f => f.endsWith('.js'));
+          console.log('Available plugins:');
+          plugins.forEach(p => console.log(' •', p.replace('.js', '')));
+        } else {
+          console.log('No plugins installed');
+        }
+        break;
+      }
+
+      if (subcommand === 'add') {
+        const pluginName = args[2];
+        if (!pluginName) {
+          console.error('Usage: swibe plugin add <name>');
+          process.exit(1);
+        }
+        console.log(`[PLUGIN] Adding: ${pluginName}`);
+        console.log('[PLUGIN] Available: telephony');
+        console.log('[PLUGIN] To enable: set env vars');
+        console.log('  TELNYX_API_KEY=your_key');
+        console.log('  TELEPHONY_PROVIDER=telnyx');
+        break;
+      }
+
+      if (subcommand === 'info') {
+        const pluginName = args[2];
+        const pluginPath = path.join(
+          path.dirname(fileURLToPath(import.meta.url)),
+          '..', 'src', 'plugins',
+          `${pluginName}.js`
+        );
+        const fs = await import('node:fs');
+        if (fs.existsSync(pluginPath)) {
+          const { default: plugin } = await import(pluginPath);
+          console.log(`Plugin: ${plugin.name || pluginName}`);
+          console.log(`Hooks: ${Object.keys(plugin)
+            .filter(k => k.startsWith('on'))
+            .join(', ')}`);
+        } else {
+          console.log(`Plugin not found: ${pluginName}`);
+          console.log('Available: telephony');
+        }
+        break;
+      }
+
+      console.log(`
+                Swibe Plugin Manager
+                
+                USAGE:
+                  swibe plugin list           List installed plugins
+                    swibe plugin add <name>     Add a plugin
+                      swibe plugin info <name>    Plugin details
+                      
+                      AVAILABLE PLUGINS:
+                        telephony   Phone/SMS at agent birth
+                                      Providers: telnyx, twilio (mock default)
+                                                    Env: TELNYX_API_KEY, TELEPHONY_PROVIDER
+                                                      `);
+      break;
+    }
+
     case 'route': {
       if (args.length < 2) {
         console.error('Usage: swibe route <file>');

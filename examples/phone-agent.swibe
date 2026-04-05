@@ -1,0 +1,26 @@
+-- Phone Agent — Plugin system demonstration
+-- birth { telephony: "telnyx" } provisions number
+-- Works in mock mode without API keys
+
+fn main() {
+  println("📱 Phone Agent Awakening...")
+  println("==============================")
+
+  -- Birth with telephony plugin
+  birth {
+    telephony: "telnyx"
+    identity: "bipọn39"
+  }
+
+  -- Set ethics
+  ethics { harm-none; audit-trail }
+
+  -- Think
+  think "What is the purpose of a sovereign phone number for an AI agent?"
+
+  -- Evolve
+  evolve { soul: "Èṣù", rank: 1 }
+
+  println("")
+  println("Àṣẹ. The phone agent is born. 🕊️")
+}

@@ -254,6 +254,10 @@ class Compiler {
           `const swarm = await Promise.all([${agents}]\n` +
           `.map(name => ({ name, status: 'running' })));\n`;
       }
+      case 'BirthStatement': {
+        const config = this.genJavaScript(node.config);
+        return `await std.birth(${config})`;
+      }
       case 'SwarmScaleStatement': {
         const config = this.genJavaScript(node.config);
         return `await std.swarmScale(${config})`;

@@ -143,6 +143,11 @@ class Parser {
       return this.parseShareStatement();
     }
 
+    // Birth statement
+    if (token.type === TokenType.BIRTH) {
+      return this.parseBirthStatement();
+    }
+
     // Neural statement
     if (token.type === TokenType.NEURAL) {
       this.advance();
@@ -681,6 +686,28 @@ class Parser {
     return new ASTNode('ShareStatement', { config: new ASTNode('DictLiteral', { fields: config }) });
   }
 
+  parseBirthStatement() {
+    this.expect(TokenType.BIRTH);
+    this.expect(TokenType.LBRACE);
+
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON || this.current().type === TokenType.COMMA) {
+        this.advance();
+        continue;
+      }
+      const key = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+      }
+    }
+
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('BirthStatement', { config: new ASTNode('DictLiteral', { fields: config }) });
+  }
+
   parseAppDecl() {
     this.expect(TokenType.APP);
     this.expect(TokenType.LBRACE);
@@ -715,7 +742,12 @@ class Parser {
       if (fieldName === 'chain') {
         value = [];
         while (true) {
-          value.push(this.expect(TokenType.IDENTIFIER).value);
+          if (this.current().type === TokenType.IDENTIFIER || this.current().type === TokenType.BIRTH) {
+            value.push(this.current().value);
+            this.advance();
+          } else {
+            throw new Error(`Expected chain identifier, got ${this.current().type}`);
+          }
           if (this.current().type === TokenType.COMMA) {
             this.advance();
           } else {

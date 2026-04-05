@@ -70,6 +70,7 @@ class StandardLibrary {
       'bipon39_entropyToMnemonic': this.bipon39_entropyToMnemonic.bind(this),
       'bipon39_mnemonicToSeed': this.bipon39_mnemonicToSeed.bind(this),
       'swarmScale': this.swarmScale.bind(this),
+      'birth': this.birth.bind(this),
       'readSharedState': this.readSharedState.bind(this),
       'writeSharedState': this.writeSharedState.bind(this),
       'lookup_meta': this.lookup_meta.bind(this),
@@ -93,6 +94,30 @@ class StandardLibrary {
       this.plugin.onBirth(agent);
     }
     return agent;
+  }
+
+  async birth(config = {}) {
+    console.log('[BIRTH] Agent awakening...');
+
+    const { registry } = await import('./plugin-registry.js');
+
+    if (config.telephony) {
+      try {
+        const { default: telephonyPlugin } = await import('./plugins/telephony.js');
+        registry.register('telephony', telephonyPlugin);
+      } catch (err) {
+        console.warn('[BIRTH] Failed to load telephony plugin:', err.message);
+      }
+    }
+
+    const results = await registry.fire('onBirth', {
+      config,
+      timestamp: Date.now(),
+      vault: this._lastReceiptHash
+    });
+
+    console.log('[BIRTH] Complete');
+    return { results, config };
   }
 
   async think(prompt) {

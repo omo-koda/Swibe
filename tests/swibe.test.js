@@ -316,3 +316,44 @@ describe('Swibe v2.0 Primitives', () => {
   });
 
 });
+
+describe('Swibe v2.0 Phase D — Plugins', () => {
+  it('birth compiles correctly', async () => {
+    const src = `fn main() {
+      birth { telephony: "telnyx" }
+    }`;
+    const c = new Compiler(src, 'javascript');
+    const code = await c.compile();
+    expect(code).toContain('std.birth');
+    expect(code).toContain('telnyx');
+  });
+
+  it('plugin registry registers plugins', async () => {
+    const { PluginRegistry } = await import('../src/plugin-registry.js');
+    const registry = new PluginRegistry();
+    const mockPlugin = {
+      name: 'test',
+      onBirth: async () => ({ born: true })
+    };
+    registry.register('test', mockPlugin);
+    expect(registry.list()).toContain('test');
+  });
+
+  it('plugin registry fires hooks', async () => {
+    const { PluginRegistry } = await import('../src/plugin-registry.js');
+    const registry = new PluginRegistry();
+    let fired = false;
+    registry.register('test', {
+      onBirth: async () => { fired = true; }
+    });
+    await registry.fire('onBirth', {});
+    expect(fired).toBe(true);
+  });
+
+  it('telephony plugin mock mode works', async () => {
+    const { default: telephony } = await import('../src/plugins/telephony.js');
+    const result = await telephony.onBirth({});
+    expect(result).toBeDefined();
+    expect(result.mock).toBe(true);
+  });
+});
