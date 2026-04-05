@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
+import { EventEmitter } from 'node:events';
 import { Agent, LLMIntegration, RAGIntegration } from './llm-integration.js';
 import { sovereign } from './sovereign-vault.js';
 import { NeuralLayer } from './neural.js';
@@ -21,6 +22,8 @@ class StandardLibrary {
     this.plugin = null;
     this._receiptChain = [];
     this._lastReceiptHash = null;
+    this._budget = null;
+    this._events = new EventEmitter();
     
     this.builtins = {
       'len': this.len.bind(this),
@@ -88,6 +91,32 @@ class StandardLibrary {
   }
 
   async think(prompt) {
+    // Budget enforcement
+    if (this._budget) {
+      const elapsed = Date.now() - this._budget.startTime;
+      if (elapsed > this._budget.maxMs) {
+        console.warn('[BUDGET] Time limit exceeded');
+        return { content: '[BUDGET EXCEEDED: time]', receipt: null };
+      }
+      const estimated = Math.ceil(prompt.length / 4);
+      this._budget.usedTokens += estimated;
+      if (this._budget.usedTokens > this._budget.maxTokens) {
+        console.warn('[BUDGET] Token limit exceeded');
+        return { content: '[BUDGET EXCEEDED: tokens]', receipt: null };
+      }
+      console.log(`[BUDGET] ${this._budget.usedTokens}/${this._budget.maxTokens} tokens used`);
+    }
+
+    // Ethics enforcement
+    if (this._ethicsPrompt) {
+      prompt = this._ethicsPrompt + prompt;
+    }
+    if (this._ethicsRefuse && 
+        prompt.toLowerCase().includes(this._ethicsRefuse.toLowerCase())) {
+      console.warn('[ETHICS] Request refused');
+      return { content: '[ETHICS: request refused]', receipt: null };
+    }
+
     console.log(`[THINK] Processing: ${prompt.substring(0, 50)}...`);
     const result = await this.llm.think(prompt);
     
@@ -124,6 +153,11 @@ class StandardLibrary {
     });
     console.log(`[RECEIPT-CHAIN] ${hash.slice(0,16)}...`);
     
+    this._events.emit('think.complete', {
+      prompt: prompt.substring(0, 50),
+      content: result.content?.substring(0, 50)
+    });
+    
     return result;
   }
 
@@ -149,6 +183,152 @@ class StandardLibrary {
     console.log(`[INVOKE] Calling tool: ${tool}`);
     // Mock tool invocation
     return { result: `Invoked ${tool}` };
+  }
+
+  async remember(key, options = {}) {
+    try {
+      const memDir = path.join(os.homedir(), '.swibe', 'memory');
+      fs.mkdirSync(memDir, { recursive: true });
+      
+      // Load existing memory
+      const memFile = path.join(memDir, 'agent.json');
+      const memory = fs.existsSync(memFile)
+        ? JSON.parse(fs.readFileSync(memFile, 'utf-8'))
+        : { keys: [], receipts: [], thoughts: [] };
+        
+      // Save current receipt chain to memory
+      if (this._receiptChain?.length > 0) {
+        memory.receipts.push(...this._receiptChain);
+      }
+      
+      // Tag with key
+      memory.keys.push({
+        key,
+        timestamp: Date.now(),
+        receiptCount: this._receiptChain?.length || 0
+      });
+      
+      fs.writeFileSync(memFile, JSON.stringify(memory, null, 2));
+      
+      console.log(`[REMEMBER] Saved: ${key}`);
+      
+      if (options.arweave) {
+        console.log('[REMEMBER] Arweave: plugin not installed, saved locally');
+      }
+      
+      return { saved: true, key, local: true };
+    } catch(e) {
+      console.warn('[REMEMBER] Failed:', e.message);
+      return { saved: false };
+    }
+  }
+
+  async recall(key) {
+    try {
+      const memFile = path.join(os.homedir(), '.swibe', 'memory', 'agent.json');
+      if (!fs.existsSync(memFile)) return null;
+      const memory = JSON.parse(fs.readFileSync(memFile, 'utf-8'));
+      const entry = memory.keys.find(k => k.key === key);
+      console.log(`[RECALL] ${entry ? 'Found' : 'Not found'}: ${key}`);
+      return entry || null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  observe(eventName) {
+    console.log(`[OBSERVE] Watching: ${eventName}`);
+    return new Promise((resolve) => {
+      this._events.once(String(eventName), (data) => {
+        console.log(`[OBSERVE] Event fired: ${eventName}`);
+        resolve(data);
+      });
+      // Auto-resolve after 5s if no event
+      setTimeout(() => resolve(null), 5000);
+    });
+  }
+
+  async evolve(options = {}) {
+    try {
+      const soulFile = path.join(os.homedir(), '.swibe', 'soul.json');
+      
+      const soul = fs.existsSync(soulFile)
+        ? JSON.parse(fs.readFileSync(soulFile, 'utf-8'))
+        : {
+          created: Date.now(),
+          breathCount: 0,
+          rank: 0,
+          archetype: null,
+          receipts: 0,
+          evolutions: []
+        };
+        
+      soul.breathCount++;
+      soul.rank = Math.max(soul.rank, parseInt(options.rank) || 1);
+      soul.archetype = options.soul || soul.archetype;
+      soul.receipts = this._receiptChain?.length || 0;
+      soul.evolutions.push({
+        timestamp: Date.now(),
+        soul: options.soul,
+        rank: options.rank,
+        onChain: false
+      });
+      
+      fs.mkdirSync(path.dirname(soulFile), { recursive: true });
+      fs.writeFileSync(soulFile, JSON.stringify(soul, null, 2));
+      
+      console.log(`[EVOLVE] Soul: ${options.soul || 'unknown'} | Rank: ${soul.rank} | Breaths: ${soul.breathCount}`);
+      
+      if (options.onChain) {
+        console.log('[EVOLVE] On-chain: Techgnosis plugin required');
+      }
+      
+      return soul;
+    } catch(e) {
+      console.warn('[EVOLVE] Failed:', e.message);
+      return null;
+    }
+  }
+
+  async ethics(rules = []) {
+    const auditLog = path.join(os.homedir(), '.swibe', 'ethics-audit.jsonl');
+    
+    for (const rule of rules) {
+      const entry = {
+        rule: rule.rule,
+        timestamp: Date.now(),
+        enforced: true
+      };
+      
+      switch(rule.rule) {
+        case 'harm-none':
+          console.log('[ETHICS] harm-none: enforced');
+          // Inject into next think call
+          this._ethicsPrompt = 'You must not produce harmful content. ';
+          break;
+        case 'audit-trail':
+          console.log('[ETHICS] audit-trail: enabled');
+          this._auditTrail = true;
+          break;
+        case 'refuse':
+          console.log(`[ETHICS] refuse: ${rule.value}`);
+          this._ethicsRefuse = rule.value;
+          break;
+        case 'log':
+          console.log('[ETHICS] logging: enabled');
+          break;
+        default:
+          console.log(`[ETHICS] rule registered: ${rule.rule}`);
+      }
+      
+      // Append to audit log
+      if (this._auditTrail || rule.rule === 'log') {
+        fs.mkdirSync(path.dirname(auditLog), { recursive: true });
+        fs.appendFileSync(auditLog, JSON.stringify(entry) + '\n');
+      }
+    }
+    
+    return { enforced: rules.map(r => r.rule) };
   }
 
   async refuse_if(condition) {

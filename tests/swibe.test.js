@@ -165,3 +165,68 @@ describe('Swibe v0.5.0 Extensions', () => {
     expect(a.neuronPool).toBe(86_000_000_000n);
   });
 });
+
+describe('Swibe v2.0 Primitives', () => {
+
+  it('budget compiles correctly', async () => {
+    const src = `fn main() {
+      budget { tokens: 1000; time: "10s" }
+    }`;
+    const c = new Compiler(src, 'javascript');
+    const code = await c.compile();
+    expect(code).toContain('maxTokens: 1000');
+    expect(code).toContain('BUDGET');
+  });
+
+  it('remember compiles correctly', async () => {
+    const src = `fn main() {
+      remember { "session-key" }
+    }`;
+    const c = new Compiler(src, 'javascript');
+    const code = await c.compile();
+    expect(code).toContain('std.remember');
+    expect(code).toContain('session-key');
+  });
+
+  it('observe compiles correctly', async () => {
+    const src = `fn main() {
+      observe { "think.complete" }
+    }`;
+    const c = new Compiler(src, 'javascript');
+    const code = await c.compile();
+    expect(code).toContain('std.observe');
+  });
+
+  it('evolve compiles correctly', async () => {
+    const src = `fn main() {
+      evolve { soul: "Ọbàtálá" }
+    }`;
+    const c = new Compiler(src, 'javascript');
+    const code = await c.compile();
+    expect(code).toContain('std.evolve');
+    expect(code).toContain('Ọbàtálá');
+  });
+
+  it('ethics compiles correctly', async () => {
+    const src = `fn main() {
+      ethics { harm-none; audit-trail }
+    }`;
+    const c = new Compiler(src, 'javascript');
+    const code = await c.compile();
+    expect(code).toContain('std.ethics');
+  });
+
+  it('budget runtime enforces token limit', async () => {
+    const { StandardLibrary } = await import('../src/stdlib.js');
+    const std = new StandardLibrary();
+    std._budget = {
+      maxTokens: 1,
+      maxMs: 60000,
+      startTime: Date.now(),
+      usedTokens: 999
+    };
+    const result = await std.think('This should be budget exceeded');
+    expect(result.content).toContain('BUDGET');
+  });
+
+});

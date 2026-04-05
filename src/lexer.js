@@ -66,6 +66,11 @@ const TokenType = {
   CHAIN: 'CHAIN',
   PLAN: 'PLAN',
   RETRIEVE: 'RETRIEVE',
+  BUDGET: 'BUDGET',
+  REMEMBER: 'REMEMBER',
+  OBSERVE: 'OBSERVE',
+  EVOLVE: 'EVOLVE',
+  ETHICS: 'ETHICS',
 
   // Operators
   PLUS: 'PLUS',
@@ -307,7 +312,12 @@ class Lexer {
     think: TokenType.THINK,
     chain: TokenType.CHAIN,
     plan: TokenType.PLAN,
-    retrieve: TokenType.RETRIEVE,  };
+    retrieve: TokenType.RETRIEVE,
+    budget: TokenType.BUDGET,
+    remember: TokenType.REMEMBER,
+    observe: TokenType.OBSERVE,
+    evolve: TokenType.EVOLVE,
+    ethics: TokenType.ETHICS,  };
 
   addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);

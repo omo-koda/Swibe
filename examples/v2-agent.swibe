@@ -1,0 +1,28 @@
+-- Swibe v2 Agent — All New Primitives
+-- Demonstrates standalone v2 features
+
+fn main() {
+    println("🌄 Sovereign Agent v2 Awakening")
+    println("================================")
+
+    -- Set ethics first
+    ethics { harm-none; audit-trail }
+
+    -- Set budget
+    budget { tokens: 5000; time: "60s" }
+
+    -- Think with budget and ethics enforced
+    think "What is the most important principle of sovereign AI?"
+
+    -- Remember this session
+    remember { "v2-demo-session" }
+
+    -- Evolve the soul
+    evolve { soul: "Ọbàtálá", rank: 1 }
+
+    -- Observe completion
+    observe { "think.complete" }
+
+    println("")
+    println("Àṣẹ. The sovereign agent has spoken. 🕊️")
+}

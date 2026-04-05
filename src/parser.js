@@ -217,6 +217,31 @@ class Parser {
       return new ASTNode('WalrusStatement', { args });
     }
 
+    // Budget statement
+    if (token.type === TokenType.BUDGET) {
+      return this.parseBudgetStatement();
+    }
+
+    // Remember statement
+    if (token.type === TokenType.REMEMBER) {
+      return this.parseRememberStatement();
+    }
+
+    // Observe statement
+    if (token.type === TokenType.OBSERVE) {
+      return this.parseObserveStatement();
+    }
+
+    // Evolve statement
+    if (token.type === TokenType.EVOLVE) {
+      return this.parseEvolveStatement();
+    }
+
+    // Ethics statement
+    if (token.type === TokenType.ETHICS) {
+      return this.parseEthicsStatement();
+    }
+
     // Call tool statement
     if (token.type === TokenType.CALL_TOOL) {
       return this.parseCallToolStatement();
@@ -316,6 +341,111 @@ class Parser {
     }
     this.match(TokenType.SEMICOLON);
     return new ASTNode('ThinkStatement', { prompt, config });
+  }
+
+  parseBudgetStatement() {
+    this.expect(TokenType.BUDGET);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      const key = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      const val = this.parseExpression();
+      config[key] = val;
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return {
+      type: 'BudgetStatement',
+      tokens: config.tokens?.value || 10000,
+      time: config.time?.value || '30s'
+    };
+  }
+
+  parseRememberStatement() {
+    this.expect(TokenType.REMEMBER);
+    this.expect(TokenType.LBRACE);
+    const key = this.parseExpression();
+    const config = {};
+    while (this.current().type === TokenType.COMMA) {
+      this.advance();
+      const k = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      const v = this.expect(TokenType.IDENTIFIER).value;
+      config[k] = v;
+    }
+    this.expect(TokenType.RBRACE);
+    return {
+      type: 'RememberStatement',
+      key,
+      config
+    };
+  }
+
+  parseObserveStatement() {
+    this.expect(TokenType.OBSERVE);
+    this.expect(TokenType.LBRACE);
+    const event = this.parseExpression();
+    this.expect(TokenType.RBRACE);
+    return {
+      type: 'ObserveStatement',
+      event
+    };
+  }
+
+  parseEvolveStatement() {
+    this.expect(TokenType.EVOLVE);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      const key = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      const val = this.parseExpression();
+      config[key] = val;
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return {
+      type: 'EvolveStatement',
+      config
+    };
+  }
+
+  parseEthicsStatement() {
+    this.expect(TokenType.ETHICS);
+    this.expect(TokenType.LBRACE);
+    const rules = [];
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      // Parse rule name, which may include dashes
+      let rule = this.expect(TokenType.IDENTIFIER).value;
+      while (this.current().type === TokenType.MINUS) {
+        this.advance();
+        // Next can be IDENTIFIER or keyword like NONE
+        const next = this.current();
+        if (next.type === TokenType.IDENTIFIER || next.type === TokenType.NONE || next.type === TokenType.TRUE || next.type === TokenType.FALSE) {
+          rule += '-' + next.value;
+          this.advance();
+        } else {
+          throw new Error(`Expected identifier after -, got ${next.type}`);
+        }
+      }
+      let value = true;
+      if (this.current().type === TokenType.COLON) {
+        this.advance();
+        value = this.parseExpression();
+      }
+      rules.push({ rule, value });
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return {
+      type: 'EthicsStatement',
+      rules
+    };
   }
 
   parseParamList() {

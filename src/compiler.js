@@ -193,7 +193,6 @@ class Compiler {
           const code = this.genJavaScript(s);
           return code.endsWith(';') || code.endsWith('}') ? code : code + ';';
         }).join('\n\n');
-        code += '\n\nmain();';
         return code;
       case 'FunctionDecl': {
         // Strip type annotations: 'a: i32' -> 'a', handles both {name,type} objects and 'a: i32' strings
@@ -344,6 +343,56 @@ class Compiler {
         const source = node.source || 'vault';
         const query = node.query ? this.genJavaScript(node.query) : (node.vault ? this.genJavaScript(node.vault) : '"query"');
         return `await std.retrieve(${query}, { source: "${source}" })`;
+      }
+      case 'BudgetStatement': {
+        const tokens = node.tokens || 10000;
+        const timeStr = node.time || '30s';
+        const seconds = parseInt(timeStr) || 30;
+        return `
+// Budget enforcement
+std._budget = {
+        maxTokens: ${tokens},
+          maxMs: ${seconds * 1000},
+            startTime: Date.now(),
+              usedTokens: 0
+};
+console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
+      }
+      case 'RememberStatement': {
+        const key = this.genJavaScript(node.key);
+        const arweave = node.config?.arweave === 'true';
+        return `await std.remember(${key}, {
+        arweave: ${arweave}
+});`;
+      }
+      case 'ObserveStatement': {
+        const event = this.genJavaScript(node.event);
+        return `std.observe(${event})`;
+      }
+      case 'EvolveStatement': {
+        const soul = node.config?.soul
+          ? this.genJavaScript(node.config.soul)
+            : '"unknown"';
+        const rank = node.config?.rank
+          ? this.genJavaScript(node.config.rank)
+            : '1';
+        return `await std.evolve({
+        soul: ${soul},
+          rank: ${rank},
+            onChain: false
+});`;
+      }
+      case 'EthicsStatement': {
+        const rules = node.rules || [];
+        const rulesJson = JSON.stringify(
+          rules.map(r => ({
+            rule: r.rule,
+              value: typeof r.value === 'object'
+                ? this.genJavaScript(r.value)
+                  : r.value
+          }))
+        );
+        return `await std.ethics(${rulesJson})`;
       }
       default: return `/* Unhandled: ${node.type} */`;
     }
