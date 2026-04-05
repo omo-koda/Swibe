@@ -17,6 +17,7 @@ import { MicroservicesGenerator } from './microservices-generator.js';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 async function main() {
   const args = process.argv.slice(2);
@@ -604,6 +605,204 @@ fn main() {
       break;
     }
 
+    case 'watch': {
+      const file = args[1];
+      if (!file) {
+        console.error('Usage: swibe watch <file.swibe>');
+        process.exit(1);
+      }
+      if (!fs.existsSync(file)) {
+        console.error(`File not found: ${file}`);
+        process.exit(1);
+      }
+
+      const runFile = async () => {
+        console.clear();
+        console.log(`[WATCH] Running: ${file}`);
+        console.log('[WATCH] Press Ctrl+C to stop');
+        console.log('─'.repeat(40));
+        try {
+          const source = fs.readFileSync(file, 'utf-8');
+          const compiler = new Compiler(source, 'javascript');
+          const code = await compiler.compile();
+          const { StandardLibrary } = await import('./stdlib.js');
+          const std = new StandardLibrary();
+          const context = vm.createContext({
+            std, console, process,
+            setTimeout, clearTimeout, setInterval
+          });
+          await vm.runInContext(
+            `(async () => { ${code} })()`, context,
+            { timeout: 30000 }
+          );
+        } catch(e) {
+          console.error('[WATCH] Error:', e.message);
+        }
+        console.log('─'.repeat(40));
+        console.log(`[WATCH] Waiting for changes...`);
+      };
+
+      await runFile();
+
+      fs.watch(file, async (eventType) => {
+        if (eventType === 'change') {
+          console.log('[WATCH] Change detected, rerunning...');
+          await runFile();
+        }
+      });
+
+      // Keep process alive
+      process.stdin.resume();
+      break;
+    }
+
+    case 'debug': {
+      const file = args[1];
+      if (!file) {
+        console.error('Usage: swibe debug <file.swibe> [--target lang]');
+        process.exit(1);
+      }
+
+      const targetFlag = args.indexOf('--target');
+      const target = targetFlag !== -1 ? args[targetFlag + 1] : 'javascript';
+
+      if (!fs.existsSync(file)) {
+        console.error(`File not found: ${file}`);
+        process.exit(1);
+      }
+
+      const source = fs.readFileSync(file, 'utf-8');
+
+      console.log('╔══════════════════════════════╗');
+      console.log('║   Swibe Debug Mode           ║');
+      console.log('╚══════════════════════════════╝');
+      console.log(`File:   ${file}`);
+      console.log(`Target: ${target}`);
+      console.log(`Lines:  ${source.split('\n').length}`);
+      console.log('');
+
+      // Lexer debug
+      const { Lexer } = await import('./lexer.js');
+      const t0 = Date.now();
+      const lexer = new Lexer(source);
+      const tokens = lexer.tokenize();
+      const lexTime = Date.now() - t0;
+      console.log(`[LEX]    ${tokens.length} tokens in ${lexTime}ms`);
+
+      // Parser debug
+      const { Parser } = await import('./parser.js');
+      const t1 = Date.now();
+      const parser = new Parser(tokens);
+      const ast = parser.parse();
+      const parseTime = Date.now() - t1;
+      console.log(`[PARSE]  ${ast.statements.length} statements in ${parseTime}ms`);
+      if (parser.errors?.length > 0) {
+        console.log(`[PARSE]  Errors: ${parser.errors.join(', ')}`);
+      }
+
+      // Compiler debug
+      const t2 = Date.now();
+      const compiler = new Compiler(source, target);
+      const code = await compiler.compile();
+      const compileTime = Date.now() - t2;
+      const lines = code.split('\n').length;
+      console.log(`[COMPILE] ${lines} lines in ${compileTime}ms`);
+      console.log('');
+
+      // Neural routing
+      const { SovereignNeuralLayer } = await import('./neural.js');
+      const agent = SovereignNeuralLayer.random();
+      const routing = agent.getRoutingReport();
+      console.log('[ROUTE]  Model:', routing.topModel);
+      console.log('[ROUTE]  Ethics threshold:', routing.ethicsThreshold.toFixed(3));
+      console.log('');
+
+      // Show compiled output
+      console.log('── Compiled Output ──────────────');
+      console.log(code);
+      console.log('─────────────────────────────────');
+      console.log(`Total: ${lexTime + parseTime + compileTime}ms`);
+      break;
+    }
+
+    case 'docs': {
+      const live = args.includes('--live');
+      const outFile = args[1] && !args[1].startsWith('--') ? args[1] : 'DOCS.md';
+
+      const examplesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'examples');
+
+      const examples = fs.readdirSync(examplesDir)
+        .filter(f => f.endsWith('.swibe'))
+        .sort();
+
+      let doc = `# Swibe Language Documentation
+Generated: ${new Date().toISOString()}
+
+## Installation
+\`\`\`bash
+npm i -g github:Bino-Elgua/Swibe
+\`\`\`
+
+## Examples\n\n`;
+
+      for (const example of examples) {
+        const src = fs.readFileSync(path.join(examplesDir, example), 'utf-8');
+        const lines = src.split('\n');
+        const comments = lines
+          .filter(l => l.startsWith('--'))
+          .map(l => l.replace('--', '').trim())
+          .join(' ');
+
+        const primitives = [];
+        if (src.includes('think')) primitives.push('think');
+        if (src.includes('swarm')) primitives.push('swarm');
+        if (src.includes('chain')) primitives.push('chain');
+        if (src.includes('plan')) primitives.push('plan');
+        if (src.includes('budget')) primitives.push('budget');
+        if (src.includes('remember')) primitives.push('remember');
+        if (src.includes('evolve')) primitives.push('evolve');
+        if (src.includes('ethics')) primitives.push('ethics');
+        if (src.includes('observe')) primitives.push('observe');
+
+        doc += `### ${example}\n`;
+        if (comments) doc += `${comments}\n\n`;
+        doc += `**Primitives:** ${primitives.join(', ') || 'basic'}\n\n`;
+        doc += `**Run:** \`swibe run examples/${example}\`\n\n`;
+        doc += `\`\`\`swibe\n${src.slice(0, 200)}${src.length > 200 ? '\n...' : ''}\n\`\`\`\n\n`;
+        doc += '---\n\n';
+      }
+
+      doc += `## Primitives Reference\n\n`;
+      doc += `| Primitive | Purpose | Standalone |\n`;
+      doc += `|-----------|---------|------------|\n`;
+      doc += `| \`think\` | Real LLM call via Ollama/OpenRouter | ✅ |\n`;
+      doc += `| \`chain\` | Sequential reasoning steps | ✅ |\n`;
+      doc += `| \`plan\` | Auto-decompose goals | ✅ |\n`;
+      doc += `| \`loop\` | ReAct until condition | ✅ |\n`;
+      doc += `| \`swarm\` | Multi-agent coordination | ✅ |\n`;
+      doc += `| \`budget\` | Token/time limits | ✅ |\n`;
+      doc += `| \`remember\` | Persistent memory | ✅ |\n`;
+      doc += `| \`evolve\` | Soul state evolution | ✅ |\n`;
+      doc += `| \`observe\` | Event listeners | ✅ |\n`;
+      doc += `| \`ethics\` | Runtime ethics | ✅ |\n`;
+      doc += `| \`retrieve\` | RAG retrieval | ✅ |\n`;
+      doc += `| \`receipt.onChain\` | Sui blockchain | 🔌 Techgnosis |\n`;
+      doc += `| \`earn\` | ToC token economy | 🔌 Techgnosis |\n\n`;
+
+      fs.writeFileSync(outFile, doc);
+      console.log(`✅ Docs generated: ${outFile}`);
+      console.log(`   Examples: ${examples.length}`);
+
+      if (live) {
+        console.log('[DOCS] Live mode: watching examples/...');
+        fs.watch(examplesDir, () => {
+          console.log('[DOCS] Regenerating...');
+        });
+        process.stdin.resume();
+      }
+      break;
+    }
+
     case 'version': {
       console.log('Swibe v1.2.0');
       break;
@@ -612,34 +811,40 @@ fn main() {
     case 'help':
     default: {
       console.log(`
-Swibe Language CLI v1.2.0
+Swibe — Sovereign Agent Language v1.2.0
 
-Usage:
-  swibe compile <file> [--target]   Compile Swibe to target language
-  swibe run <file> [--plugin path]  Run Swibe code with optional ecosystem plugin
-  swibe route <file>                Show agent routing report
-  swibe daemon <file>               Start headless agent daemon
-  swibe daemon:stop                 Stop running daemon
-  swibe init <template> [name]      Create new Swibe file from template
-  swibe doc <file>                  Generate documentation from a Swibe file
-  swibe api <file> [--format]       Generate API code/spec from a Swibe file
-  swibe pkg <command> [args...]     Manage Swibe packages
-  swibe agent <file> [--gen-class <name>] Generate agent code
-  swibe docker <command> [args...]  Generate Docker/Cloud Function configs
-  swibe microservice <name> [--port] Generate microservice scaffold
-  swibe repl                        Start interactive shell
-  swibe version                     Show version
-  swibe help                        Show this help
+USAGE:
+  swibe run <file.swibe>          Run a Swibe agent
+  swibe compile <file> [--target] Compile to target lang
+  swibe watch <file.swibe>        Hot reload on changes
+  swibe debug <file> [--target]   Debug with AST + timing
+  swibe init <template> [name]    Scaffold new agent
+  swibe daemon <file.swibe>       Run headless agent
+  swibe daemon:stop               Stop running daemon
+  swibe route <file.swibe>        Show LLM routing
+  swibe docs [--live]             Generate documentation
+  swibe repl                      Interactive REPL
 
-Target languages: 
-  Tier 1: javascript, lua, nim, crystal, janet, scheme
-  Tier 2: rust, go, zig, v, odin, ocaml, fsharp, clojure, haskell
-  Tier 3: pony, aether, mojo, move, julia, apl, j, k, forth, prolog, mercury, ada, cobol, smalltalk, d, raku, scala, idris
+TARGETS:
+  javascript typescript python rust go elixir
+  move zig julia haskell lua r scala clojure
+  crystal nim ocaml fsharp d ruby perl wasm
+  + 19 more exotic targets
 
-Examples:
-  swibe compile hello.swibe --target apl
-  swibe run agent.swibe --plugin ./technosis-adapter.js
-  swibe compile ai-app.swibe --target cobol
+PRIMITIVES:
+  think plan chain loop swarm
+  budget remember evolve observe ethics retrieve
+
+TEMPLATES:
+  basic-agent swarm hybrid chain daily
+
+EXAMPLES:
+  swibe init daily my-agent
+  swibe run my-agent.swibe
+  swibe watch my-agent.swibe
+  swibe debug my-agent.swibe --target rust
+  swibe compile my-agent.swibe --target wasm
+  swibe docs --live
       `);
       break;
     }

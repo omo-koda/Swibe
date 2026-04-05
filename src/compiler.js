@@ -75,7 +75,7 @@ class Compiler {
 
     this.ast = ast;
     await this.processPrompts(this.ast);
-    const code = this.generateCode(this.ast);
+    const code = await this.generateCode(this.ast);
     return code;
   }
 
@@ -105,7 +105,7 @@ class Compiler {
     }
   }
 
-  generateCode(node) {
+  async generateCode(node) {
     switch (this.targetLanguage) {
       case 'javascript': return this.genJavaScript(node);
       case 'rust': return genRust(node);
@@ -145,6 +145,11 @@ class Compiler {
       case 'ruby': return genRuby(node);
       case 'perl': return genPerl(node);
       case 'python': return this.genPython(node);
+      case 'wasm': {
+        const { WasmGenerator } = await import('./wasm-generator.js');
+        const gen = new WasmGenerator(this.ast);
+        return gen.generate();
+      }
       case 'r': return this.genR(node);
       case 'lisp': return this.genLisp(node);
       case 'matlab': return this.genMatlab(node);
