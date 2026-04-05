@@ -200,7 +200,7 @@ class Compiler {
         const jsParams = node.params.map(p =>
           typeof p === 'string' ? p.split(':')[0].trim() : p.name
         ).join(', ');
-        return `function ${node.name}(${jsParams}) ${this.genJavaScript(node.body)}`;
+        return `async function ${node.name}(${jsParams}) ${this.genJavaScript(node.body)}`;
       }
       case 'Block':
         return '{\n' + node.statements.map(s => {
@@ -311,30 +311,28 @@ class Compiler {
         return `/* @target ${node.target} */`;
       case 'ChainStatement': {
         const name = node.name || 'chain';
-        const steps = node.steps || [];
-        let code = `// Chain: ${name}\nlet _ctx = {};\n`;
-        steps.forEach((step, i) => {
-          code += `// Step ${i+1}\n`;
-          code += `_ctx = await (async () => {\n`;
-          code += `  const _prev = _ctx;\n`;
-          code += `  ${this.genJavaScript(step)}\n`;
-          code += `  return _ctx;\n`;
-          code += `})();\n`;
-        });
-        return code;
+        const steps = (node.steps || [])
+          .map(s => this.genJavaScript(s))
+          .join('\n  ');
+        return `await (async () => {
+            // Chain: ${name}
+            let _ctx = {};
+            ${steps}
+            return _ctx;
+        })();`;
       }
       case 'PlanStatement': {
         const goal = node.goal || 'plan';
         const body = this.genJavaScript(node.body);
-        return `
-// Plan: ${goal}
-console.log('[PLAN] Starting: ${goal}');
-const _plan = await std.think(
-  'Break this goal into 3-5 concrete steps: ${goal}'
-);
-console.log('[PLAN] Steps:', _plan.content);
-${body}
-console.log('[PLAN] Complete: ${goal}');`;
+        return `await (async () => {
+            console.log('[PLAN] Starting: ${goal}');
+            const _plan = await std.think(
+              'Break this goal into 3-5 steps: ${goal}'
+            );
+            console.log('[PLAN] Steps:', _plan.content);
+            ${body}
+            console.log('[PLAN] Complete: ${goal}');
+        })();`;
       }
       case 'ThinkStatement': {
         return `await std.think(${this.genJavaScript(node.prompt)});`;
