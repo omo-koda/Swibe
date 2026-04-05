@@ -213,7 +213,7 @@ class Lexer {
 
   readComment() {
     const start = this.pos;
-    if (this.current() === '-' && this.peek() === '-') {
+    if ((this.current() === '-' && this.peek() === '-') || (this.current() === '/' && this.peek() === '/')) {
       this.advance();
       this.advance();
       while (this.current() && this.current() !== '\n') {
@@ -347,7 +347,7 @@ class Lexer {
       }
 
       // Comments
-      if (char === '-' && this.peek() === '-') {
+      if ((char === '-' && this.peek() === '-') || (char === '/' && this.peek() === '/')) {
         this.readComment();
         continue;
       }

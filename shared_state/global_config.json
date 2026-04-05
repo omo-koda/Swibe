@@ -1,0 +1,5 @@
+{
+  "max_retries": 5,
+  "timeout_ms": 30000,
+  "api_endpoint": "http://localhost:3000"
+}
