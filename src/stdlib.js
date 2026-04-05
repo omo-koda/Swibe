@@ -9,6 +9,7 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
+import { Worker } from 'node:worker_threads';
 import { Agent, LLMIntegration, RAGIntegration } from './llm-integration.js';
 import { sovereign } from './sovereign-vault.js';
 import { NeuralLayer } from './neural.js';
@@ -24,6 +25,7 @@ class StandardLibrary {
     this._lastReceiptHash = null;
     this._budget = null;
     this._events = new EventEmitter();
+    this.workerThreads = { Worker };
     
     this.builtins = {
       'len': this.len.bind(this),
@@ -67,6 +69,9 @@ class StandardLibrary {
       'derive_aes_key': this.derive_aes_key.bind(this),
       'bipon39_entropyToMnemonic': this.bipon39_entropyToMnemonic.bind(this),
       'bipon39_mnemonicToSeed': this.bipon39_mnemonicToSeed.bind(this),
+      'swarmScale': this.swarmScale.bind(this),
+      'readSharedState': this.readSharedState.bind(this),
+      'writeSharedState': this.writeSharedState.bind(this),
       'lookup_meta': this.lookup_meta.bind(this),
       'elemental_signature': this.elemental_signature.bind(this),
       'think': this.think.bind(this),
@@ -473,6 +478,104 @@ class StandardLibrary {
   derive_aes_key(seed) { return seed; }
   bipon39_entropyToMnemonic(entropy, bits) { return sovereign.generateRitualPhrase(bits); }
   bipon39_mnemonicToSeed(phrase) { return sovereign.deriveSeed(phrase); }
+
+  async swarmScale(config) {
+    const { agents = 1, circuit_breaker = {} } = config;
+    const { failure_threshold = 3, recovery_timeout = 30000 } = circuit_breaker;
+
+    console.log(`[SWARM-SCALE] Scaling to ${agents} agents with circuit breaker (threshold: ${failure_threshold}, timeout: ${recovery_timeout}ms)`);
+
+    // Circuit breaker state
+    const breakerKey = 'swarm_scale_breaker';
+    const breakerState = await this.readSharedState({ namespace: breakerKey });
+    const now = Date.now();
+
+    if (breakerState?.open && (now - breakerState.lastFailure) < recovery_timeout) {
+      console.warn('[SWARM-SCALE] Circuit breaker open, skipping scale operation');
+      return { success: false, reason: 'circuit_breaker_open' };
+    }
+
+    try {
+      // Use worker_threads for parallel execution
+      const { Worker } = this.workerThreads;
+      const workers = [];
+
+      for (let i = 0; i < agents; i++) {
+        const worker = new Worker(`
+          const { parentPort } = require('worker_threads');
+          parentPort.postMessage({ agentId: ${i}, status: 'running' });
+        `, { eval: true });
+
+        workers.push(new Promise((resolve, reject) => {
+          worker.on('message', resolve);
+          worker.on('error', reject);
+          worker.on('exit', (code) => {
+            if (code !== 0) reject(new Error('Worker ' + i + ' exited with code ' + code));
+          });
+        }));
+      }
+
+      const results = await Promise.allSettled(workers);
+      const failures = results.filter(r => r.status === 'rejected').length;
+
+      if (failures >= failure_threshold) {
+        // Open circuit breaker
+        await this.writeSharedState({
+          namespace: breakerKey,
+          data: { open: true, lastFailure: now, failureCount: failures }
+        });
+        console.error(`[SWARM-SCALE] Circuit breaker opened due to ${failures} failures`);
+        return { success: false, reason: 'circuit_breaker_triggered', failures };
+      }
+
+      // Reset circuit breaker on success
+      if (breakerState?.open) {
+        await this.writeSharedState({
+          namespace: breakerKey,
+          data: { open: false, lastFailure: null, failureCount: 0 }
+        });
+      }
+
+      console.log(`[SWARM-SCALE] Successfully scaled to ${agents} agents`);
+      return { success: true, agents: results.length, failures };
+
+    } catch (error) {
+      console.error('[SWARM-SCALE] Error during scaling:', error.message);
+      return { success: false, reason: 'execution_error', error: error.message };
+    }
+  }
+
+  async readSharedState(config) {
+    const { namespace } = config;
+    const filePath = path.join(process.cwd(), 'shared_state', `${namespace}.json`);
+
+    try {
+      const data = await fs.promises.readFile(filePath, 'utf8');
+      return JSON.parse(data);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        return null; // File doesn't exist
+      }
+      throw error;
+    }
+  }
+
+  async writeSharedState(config) {
+    const { namespace, data } = config;
+    const dirPath = path.join(process.cwd(), 'shared_state');
+    const filePath = path.join(dirPath, `${namespace}.json`);
+
+    try {
+      // Ensure directory exists
+      await fs.promises.mkdir(dirPath, { recursive: true });
+      await fs.promises.writeFile(filePath, JSON.stringify(data, null, 2));
+      console.log(`[SHARED-STATE] Written to namespace '${namespace}'`);
+      return { success: true };
+    } catch (error) {
+      console.error('[SHARED-STATE] Error writing shared state:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 const sandbox = {

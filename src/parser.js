@@ -129,7 +129,18 @@ class Parser {
 
     // Swarm statement
     if (token.type === TokenType.SWARM) {
+      // Check for swarm.scale
+      if (this.peek().type === TokenType.DOT && 
+          this.peek(2).type === TokenType.IDENTIFIER && 
+          this.peek(2).value === 'scale') {
+        return this.parseSwarmScaleStatement();
+      }
       return this.parseSwarmStatement();
+    }
+
+    // Share statement
+    if (token.type === TokenType.SHARE) {
+      return this.parseShareStatement();
     }
 
     // Neural statement
@@ -628,6 +639,46 @@ class Parser {
 
     this.expect(TokenType.RBRACE);
     return new ASTNode('SwarmStatement', { steps });
+  }
+
+  parseSwarmScaleStatement() {
+    this.expect(TokenType.SWARM);
+    this.expect(TokenType.DOT);
+    this.expect(TokenType.IDENTIFIER); // 'scale'
+    this.expect(TokenType.LBRACE);
+
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE) {
+      const fieldName = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      config[fieldName] = this.parseExpression();
+
+      if (this.current().type === TokenType.COMMA) {
+        this.advance();
+      }
+    }
+
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('SwarmScaleStatement', { config: new ASTNode('DictLiteral', { fields: config }) });
+  }
+
+  parseShareStatement() {
+    this.expect(TokenType.SHARE);
+    this.expect(TokenType.LBRACE);
+
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE) {
+      const fieldName = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      config[fieldName] = this.parseExpression();
+
+      if (this.current().type === TokenType.COMMA) {
+        this.advance();
+      }
+    }
+
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('ShareStatement', { config: new ASTNode('DictLiteral', { fields: config }) });
   }
 
   parseAppDecl() {

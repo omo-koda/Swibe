@@ -71,6 +71,7 @@ const TokenType = {
   OBSERVE: 'OBSERVE',
   EVOLVE: 'EVOLVE',
   ETHICS: 'ETHICS',
+  SHARE: 'SHARE',
 
   // Operators
   PLUS: 'PLUS',
@@ -317,7 +318,8 @@ class Lexer {
     remember: TokenType.REMEMBER,
     observe: TokenType.OBSERVE,
     evolve: TokenType.EVOLVE,
-    ethics: TokenType.ETHICS,  };
+    ethics: TokenType.ETHICS,
+    share: TokenType.SHARE,  };
 
   addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);

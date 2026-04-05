@@ -4,6 +4,7 @@ import { Parser } from '../src/parser.js';
 import { Compiler } from '../src/compiler.js';
 import { StandardLibrary, MetaDigital } from '../src/stdlib.js';
 import { NeuralLayer } from '../src/neural.js';
+import fs from 'node:fs';
 import { sovereign } from '../src/sovereign-vault.js';
 import SovereignNeuralLayer from '../src/neural.js';
 
@@ -227,6 +228,91 @@ describe('Swibe v2.0 Primitives', () => {
     };
     const result = await std.think('This should be budget exceeded');
     expect(result.content).toContain('BUDGET');
+  });
+
+  it('should parse and compile swarm.scale statement', async () => {
+    const source = `
+      swarm.scale {
+        agents: 3,
+        circuit_breaker: {
+          failure_threshold: 2,
+          recovery_timeout: 15000
+        }
+      }
+    `;
+    const compiler = new Compiler(source, 'javascript');
+    const code = await compiler.compile();
+    expect(code).toContain('swarmScale');
+    expect(code).toContain('agents: 3');
+    expect(code).toContain('failure_threshold: 2');
+  });
+
+  it('should parse and compile share statement', async () => {
+    const source = `
+      share {
+        namespace: "test_config",
+        data: {
+          key: "value",
+          count: 42
+        }
+      }
+    `;
+    const compiler = new Compiler(source, 'javascript');
+    const code = await compiler.compile();
+    expect(code).toContain('writeSharedState');
+    expect(code).toContain('test_config');
+    expect(code).toContain('key: "value"');
+  });
+
+  it('should handle swarm.scale with circuit breaker in stdlib', async () => {
+    const std = new StandardLibrary();
+    std.workerThreads = {
+      Worker: class MockWorker {
+        constructor() {
+          this.listeners = {};
+          setTimeout(() => this.listeners.message?.({ agentId: 0, status: 'running' }), 10);
+        }
+        on(event, callback) {
+          this.listeners[event] = callback;
+        }
+      }
+    };
+
+    const result = await std.swarmScale({
+      agents: 1,
+      circuit_breaker: { failure_threshold: 3, recovery_timeout: 30000 }
+    });
+    expect(result.success).toBe(true);
+    expect(result.agents).toBe(1);
+  });
+
+  it('should handle shared state read/write in stdlib', async () => {
+    const std = new StandardLibrary();
+
+    const testData = { key: 'value', count: 42 };
+    const namespace = 'test_namespace';
+    const filePath = `shared_state/${namespace}.json`;
+
+    // Clean up before test
+    if (fs.existsSync(filePath)) {
+      await fs.promises.unlink(filePath);
+    }
+
+    // Write shared state
+    const writeResult = await std.writeSharedState({
+      namespace,
+      data: testData
+    });
+    expect(writeResult.success).toBe(true);
+
+    // Read shared state
+    const readResult = await std.readSharedState({ namespace });
+    expect(readResult).toEqual(testData);
+
+    // Clean up after test
+    if (fs.existsSync(filePath)) {
+      await fs.promises.unlink(filePath);
+    }
   });
 
 });
