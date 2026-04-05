@@ -45,8 +45,7 @@ export function genNim(node, indent = "") {
     case 'MetaDigital': {
       // Map meta-digital to macro-like templates
       let metaCode = `${indent}# Meta-Digital: ${node.name}\n`;
-      metaCode += `${indent}template ${node.name}_ritual() =\n`;
-      metaCode += `${indent}  echo "Executing high-stakes chain: ${node.name}"\n`;
+      metaCode += `${indent}template ${node.name}_ritual()\n`;
       return metaCode;
 
     }

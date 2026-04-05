@@ -521,7 +521,8 @@ class Parser {
 
     const config = {};
     while (this.current().type !== TokenType.RBRACE) {
-      const fieldName = this.expect(TokenType.IDENTIFIER).value;
+      const fieldName = this.current().value;
+      this.advance();
       this.expect(TokenType.COLON);
       
       let value;
