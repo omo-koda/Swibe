@@ -1,0 +1,28 @@
+-- Hermetic Ethics Agent — v3.1
+-- Demonstrates the 7 Hermetic Principles
+-- as runtime ethics enforcement
+
+fn main() {
+  println("🔮 Hermetic Ethics Agent v3.1")
+  println("==============================")
+
+  -- Activate all 7 Hermetic Principles
+  ethics {
+    mode: "hermetic"
+    harm-none
+    audit-trail
+    gender: "mint,phone,dispatch"
+  }
+
+  -- Mentalism fires on every think
+  think "What is the most ethical action I can take today?"
+
+  -- Soul karma updates via Correspondence
+  evolve { soul: "Ọbàtálá", rank: 2 }
+
+  -- Remember this session
+  remember { "hermetic-session" }
+
+  println("")
+  println("Àṣẹ. The 7 laws are active. 🕊️")
+}

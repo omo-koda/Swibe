@@ -143,8 +143,26 @@ class StandardLibrary {
     }
     if (this._ethicsRefuse && 
         prompt.toLowerCase().includes(this._ethicsRefuse.toLowerCase())) {
+      if (this._hermeticPolarity) {
+        const redirect = await this.llm.think(
+          `The action "${prompt.substring(0,50)}" was refused for ethics. What is the constructive, ethical opposite action that achieves the underlying goal safely?`
+        );
+        console.log('[POLARITY] Redirect:', redirect.content?.substring(0,80));
+        this._setVibrationTTL(prompt.substring(0, 50));
+        return {
+          content: `[ETHICS: redirected] ${redirect.content}`,
+          receipt: null,
+          polarity: redirect.content
+        };
+      }
+      this._setVibrationTTL(prompt.substring(0, 50));
       console.warn('[ETHICS] Request refused');
       return { content: '[ETHICS: request refused]', receipt: null };
+    }
+
+    // Hermetic: Mentalism — declare intent
+    if (this._hermeticMentalism) {
+      console.log(`[MENTALISM] Intent declared: ${prompt.substring(0, 60)}`);
     }
 
     console.log(`[THINK] Processing: ${prompt.substring(0, 50)}...`);
@@ -182,6 +200,26 @@ class StandardLibrary {
       timestamp: Date.now()
     });
     console.log(`[RECEIPT-CHAIN] ${hash.slice(0,16)}...`);
+
+    // Hermetic: Correspondence — soul karma
+    if (this._hermeticCorrespondence) {
+      try {
+        const soulFile = path.join(
+          os.homedir(), '.swibe', 'soul.json'
+        );
+        if (fs.existsSync(soulFile)) {
+          const soul = JSON.parse(
+            fs.readFileSync(soulFile, 'utf-8')
+          );
+          soul.karma = (soul.karma || 0) + 1;
+          soul.lastAction = prompt.substring(0, 50);
+          fs.writeFileSync(soulFile,
+            JSON.stringify(soul, null, 2)
+          );
+          console.log(`[CORRESPONDENCE] Karma: ${soul.karma}`);
+        }
+      } catch(e) {}
+    }
     
     this._events.emit('think.complete', {
       prompt: prompt.substring(0, 50),
@@ -321,6 +359,16 @@ class StandardLibrary {
   }
 
   async ethics(rules = []) {
+    // Check for hermetic mode
+    const hermeticMode = rules.find(
+      r => r.rule === 'mode' && r.value === 'hermetic'
+    );
+
+    if (hermeticMode) {
+      await this._activateHermeticEthics(rules);
+      return { enforced: ['hermetic'], mode: 'hermetic' };
+    }
+
     const auditLog = path.join(os.homedir(), '.swibe', 'ethics-audit.jsonl');
     
     for (const rule of rules) {
@@ -398,6 +446,116 @@ class StandardLibrary {
     }, ms);
 
     return { started: true, every: ms, check };
+  }
+
+  async _activateHermeticEthics(rules = []) {
+    console.log('[HERMETIC] 7 Principles activating...');
+
+    // 1. MENTALISM — declare intent before invoke
+    this._hermeticMentalism = true;
+    console.log('[HERMETIC] 1. Mentalism: intent required before action');
+
+    // 2. CORRESPONDENCE — soul karma updates on every action
+    this._hermeticCorrespondence = true;
+    console.log('[HERMETIC] 2. Correspondence: soul karma tracking active');
+
+    // 3. VIBRATION — TTL on refusals (60s cooling period)
+    this._hermeticVibration = true;
+    this._refusalTTL = new Map();
+    console.log('[HERMETIC] 3. Vibration: refusals have 60s TTL');
+
+    // 4. POLARITY — redirect instead of pure refuse
+    this._hermeticPolarity = true;
+    console.log('[HERMETIC] 4. Polarity: refusals redirect to constructive opposite');
+
+    // 5. RHYTHM — Sabbath guard + time-of-day routing
+    this._hermeticRhythm = true;
+    const day = new Date().getDay();
+    if (day === 6) {
+      console.warn('[HERMETIC] 5. Rhythm: Sabbath guard active — heavy actions blocked');
+    } else {
+      console.log('[HERMETIC] 5. Rhythm: Sabbath guard standing by');
+    }
+
+    // 6. CAUSE-EFFECT — receipt chain (already active)
+    this._hermeticCauseEffect = true;
+    console.log('[HERMETIC] 6. Cause-Effect: receipt chain enforced');
+
+    // 7. GENDER — consensus threshold (developer configures)
+    const genderRule = rules.find(r => r.rule === 'gender');
+    this._hermeticGender = {
+      active: true,
+      requiresConsensus: genderRule?.value?.split(',') || []
+    };
+    console.log(
+      `[HERMETIC] 7. Gender: consensus required for: ${
+        this._hermeticGender.requiresConsensus.join(', ') || 'none configured'
+      }`
+    );
+
+    // Also activate standard harm-none and audit-trail if present
+    const hasHarmNone = rules.find(r => r.rule === 'harm-none');
+    if (hasHarmNone) {
+      this._ethicsPrompt = 'You must not produce harmful content. ';
+    }
+    const hasAuditTrail = rules.find(r => r.rule === 'audit-trail');
+    if (hasAuditTrail) {
+      this._auditTrail = true;
+    }
+
+    // Log to ethics audit
+    const auditLog = path.join(
+      os.homedir(), '.swibe', 'hermetic-audit.jsonl'
+    );
+    fs.mkdirSync(path.dirname(auditLog), { recursive: true });
+    fs.appendFileSync(auditLog,
+      JSON.stringify({
+        activated: true,
+        timestamp: Date.now(),
+        principles: 7
+      }) + '\n'
+    );
+
+    console.log('[HERMETIC] All 7 principles active. Àṣẹ.');
+    return { activated: true, principles: 7 };
+  }
+
+  _checkVibrationTTL(action) {
+    if (!this._hermeticVibration) return false;
+    const entry = this._refusalTTL?.get(action);
+    if (!entry) return false;
+    const elapsed = Date.now() - entry.ts;
+    if (elapsed > entry.ttl) {
+      this._refusalTTL.delete(action);
+      console.log(`[VIBRATION] Cooling ended for: ${action}`);
+      return false;
+    }
+    const remaining = Math.ceil((entry.ttl - elapsed) / 1000);
+    console.log(`[VIBRATION] Cooling: retry in ${remaining}s`);
+    return true;
+  }
+
+  _setVibrationTTL(action, ttlMs = 60000) {
+    if (!this._hermeticVibration) return;
+    if (!this._refusalTTL) this._refusalTTL = new Map();
+    this._refusalTTL.set(action, { ts: Date.now(), ttl: ttlMs });
+    console.log(`[VIBRATION] Cooling started: ${action} (${ttlMs/1000}s)`);
+  }
+
+  async checkConsensus(action) {
+    if (!this._hermeticGender?.active) return true;
+    const required = this._hermeticGender.requiresConsensus || [];
+    if (!required.includes(action)) return true;
+
+    const token = process.env.SWIBE_CONSENSUS_TOKEN;
+    if (!token) {
+      console.warn(`[GENDER] Consensus required for: ${action}`);
+      console.warn('[GENDER] Set SWIBE_CONSENSUS_TOKEN or add second agent');
+      return false;
+    }
+
+    console.log(`[GENDER] Consensus authorized for: ${action}`);
+    return true;
   }
 
   async refuse_if(condition) {

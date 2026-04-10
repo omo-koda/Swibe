@@ -407,12 +407,16 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
       case 'EthicsStatement': {
         const rules = node.rules || [];
         const rulesJson = JSON.stringify(
-          rules.map(r => ({
-            rule: r.rule,
-              value: typeof r.value === 'object'
-                ? this.genJavaScript(r.value)
-                  : r.value
-          }))
+          rules.map(r => {
+            let value = r.value;
+            if (typeof value === 'object' && value !== null) {
+              if (value.type === 'String') value = value.value;
+              else if (value.type === 'Number') value = value.value;
+              else if (value.type === 'Boolean') value = value.value;
+              else value = this.genJavaScript(value);
+            }
+            return { rule: r.rule, value };
+          })
         );
         return `await std.ethics(${rulesJson})`;
       }

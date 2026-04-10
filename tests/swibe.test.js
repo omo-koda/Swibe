@@ -421,3 +421,65 @@ describe('Swibe OpenClaw Integration', () => {
     expect(result.started).toBe(true);
   });
 });
+
+describe('Swibe v3.1 — Hermetic Ethics', () => {
+  it('hermetic mode compiles correctly', async () => {
+    const src = `fn main() {
+      ethics { mode: "hermetic"; harm-none }
+    }`;
+    const c = new Compiler(src, 'javascript');
+    const code = await c.compile();
+    expect(code).toContain('std.ethics');
+    expect(code).toContain('hermetic');
+  });
+
+  it('hermetic mode activates in runtime', async () => {
+    const { StandardLibrary } = await import('../src/stdlib.js');
+    const std = new StandardLibrary();
+    const result = await std.ethics([
+      { rule: 'mode', value: 'hermetic' },
+      { rule: 'harm-none', value: true }
+    ]);
+    expect(result.mode).toBe('hermetic');
+    expect(std._hermeticMentalism).toBe(true);
+    expect(std._hermeticPolarity).toBe(true);
+    expect(std._hermeticVibration).toBe(true);
+    expect(std._hermeticGender.active).toBe(true);
+  });
+
+  it('vibration TTL blocks then releases', async () => {
+    const { StandardLibrary } = await import('../src/stdlib.js');
+    const std = new StandardLibrary();
+    std._hermeticVibration = true;
+    std._refusalTTL = new Map();
+    std._setVibrationTTL('test-action', 100);
+    expect(std._checkVibrationTTL('test-action')).toBe(true);
+    await new Promise(r => setTimeout(r, 150));
+    expect(std._checkVibrationTTL('test-action')).toBe(false);
+  });
+
+  it('gender blocks without consensus token', async () => {
+    const { StandardLibrary } = await import('../src/stdlib.js');
+    const std = new StandardLibrary();
+    std._hermeticGender = {
+      active: true,
+      requiresConsensus: ['mint']
+    };
+    delete process.env.SWIBE_CONSENSUS_TOKEN;
+    const allowed = await std.checkConsensus('mint');
+    expect(allowed).toBe(false);
+  });
+
+  it('gender allows with consensus token', async () => {
+    const { StandardLibrary } = await import('../src/stdlib.js');
+    const std = new StandardLibrary();
+    std._hermeticGender = {
+      active: true,
+      requiresConsensus: ['mint']
+    };
+    process.env.SWIBE_CONSENSUS_TOKEN = 'test-token';
+    const allowed = await std.checkConsensus('mint');
+    expect(allowed).toBe(true);
+    delete process.env.SWIBE_CONSENSUS_TOKEN;
+  });
+});
