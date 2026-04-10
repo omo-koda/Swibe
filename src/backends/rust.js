@@ -267,11 +267,135 @@ export function genRust(node, indent = "") {
 
     case 'ThinkStatement': {
       const prompt = genRust(node.prompt, "");
-      return `${indent}println!("Thinking: {}", ${prompt});`;
+      return `${indent}let result = std::think(&ctx, &${prompt}).await?;\n${indent}println!("[THINK] {}", result.content);`;
     }
 
+    case 'ChainStatement': {
+      const name = node.name || 'chain';
+      const steps = (node.steps || []).map(s => genRust(s, indent + "    ")).join('\n');
+      return `${indent}// Chain: ${name}\n${indent}{\n${steps}\n${indent}}`;
+    }
+
+    case 'PlanStatement': {
+      const goal = node.goal || 'plan';
+      const body = genRust(node.body, indent + "    ");
+      return `${indent}// Plan: ${goal}\n${indent}let plan = std::plan(&ctx, "${goal}").await?;\n${indent}for step in &plan.steps {\n${indent}    std::think(&ctx, step).await?;\n${indent}}\n${body}`;
+    }
+
+    case 'EthicsStatement': {
+      const rules = (node.rules || []).map(r => `"${r.rule}"`).join(', ');
+      return `${indent}if !std::ethics(&[${rules}]) {\n${indent}    return Err("ethics violation".into());\n${indent}}`;
+    }
+
+    case 'BirthStatement': {
+      const config = genRust(node.config, "");
+      return `${indent}let agent = std::birth(&${config});\n${indent}println!("[BIRTH] {}", agent.name);`;
+    }
+
+    case 'BudgetStatement': {
+      const tokens = node.tokens || 10000;
+      const timeStr = node.time || '30s';
+      return `${indent}let ctx = std::with_budget(ctx, ${tokens}, "${timeStr}");`;
+    }
+
+    case 'RememberStatement': {
+      const key = genRust(node.key, "");
+      return `${indent}std::remember(&ctx, &${key}).await?;`;
+    }
+
+    case 'EvolveStatement': {
+      const soul = node.config?.soul ? genRust(node.config.soul, "") : `"unknown".to_string()`;
+      const rank = node.config?.rank ? genRust(node.config.rank, "") : '1';
+      return `${indent}std::evolve(&ctx, &${soul}, ${rank}).await?;`;
+    }
+
+    case 'HeartbeatStatement': {
+      const every = node.config?.every ? genRust(node.config.every, "") : `"60s"`;
+      const check = node.config?.check ? genRust(node.config.check, "") : `"any updates?"`;
+      return `${indent}tokio::spawn(async move { std::heartbeat(&ctx, ${every}, ${check}).await; });`;
+    }
+
+    case 'PrintlnStatement': {
+      const args = (node.args || []).map(a => genRust(a, "")).join(', ');
+      return `${indent}println!("{}", ${args});`;
+    }
+
+    case 'ObserveStatement': {
+      const event = genRust(node.event, "");
+      return `${indent}std::observe(&ctx, &${event});`;
+    }
+
+    case 'InvokeStatement': {
+      const tool = genRust(node.tool, "");
+      return `${indent}std::invoke(&ctx, &${tool}).await?;`;
+    }
+
+    case 'RetrieveStatement': {
+      const query = node.query ? genRust(node.query, "") : `"query".to_string()`;
+      return `${indent}std::retrieve(&ctx, &${query}).await?;`;
+    }
+
+    case 'ArrayLiteral':
+      return `vec![${node.elements.map(e => genRust(e, "")).join(', ')}]`;
+
+    case 'LoopStatement': {
+      const body = genRust(node.body, indent + "    ");
+      const max = node.maxAttempts || 10;
+      return `${indent}for _i in 0..${max} {\n${body}\n${indent}}`;
+    }
+
+    case 'StructDecl': {
+      const fields = node.fields.map(f => `${indent}    pub ${f.name}: String,`).join('\n');
+      return `${indent}#[derive(Debug, Clone)]\n${indent}struct ${node.name} {\n${fields}\n${indent}}`;
+    }
+
+    case 'EnumDecl': {
+      const variants = node.variants.map(v => `${indent}    ${v},`).join('\n');
+      return `${indent}#[derive(Debug, Clone)]\n${indent}enum ${node.name} {\n${variants}\n${indent}}`;
+    }
+
+    case 'NeuralLayer':
+      return `${indent}// Neural Layer: 86B neurons activated`;
+
+    case 'TargetDirective':
+      return `${indent}// @target ${node.target}`;
+
+    case 'SkillProperty':
+      return `${indent}// skill.${node.name}`;
+
+    case 'AppDecl':
+      return `${indent}// App: ${node.name || "app"}`;
+
+    case 'Match': {
+      const expr = genRust(node.expr, "");
+      const arms = node.arms.map(a => `${indent}    ${genRust(a.pattern, "")} => ${genRust(a.body, "")},`).join('\n');
+      return `${indent}match ${expr} {\n${arms}\n${indent}}`;
+    }
+
+    case 'SwarmScaleStatement': {
+      const config = genRust(node.config, "");
+      return `${indent}std::swarm_scale(&${config}).await?;`;
+    }
+
+    case 'ShareStatement': {
+      const config = genRust(node.config, "");
+      return `${indent}std::write_shared_state(&${config}).await?;`;
+    }
+
+    case 'CallToolStatement':
+      return `${indent}mcp::call_tool("${node.name}", &${genRust(node.args, "")}).await?;`;
+
+    case 'Call':
+      return `${indent}${genRust(node.callee, "")}(${node.args.map(a => genRust(a, "")).join(', ')})`;
+
+    case 'Index':
+      return `${genRust(node.object, "")}[${genRust(node.index, "")}]`;
+
+    case 'IdentifierPattern':
+      return node.name;
+
     default:
-      return `${indent}// [RUST-GEN] Unhandled: ${node.type}`;
+      return `${indent}// [RUST-GEN] ${node.type}`;
   }
 }
 

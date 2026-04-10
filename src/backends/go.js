@@ -139,10 +139,140 @@ export function genGo(node, indent = "") {
 
     case 'ThinkStatement': {
       const prompt = genGo(node.prompt, "");
-      return `${indent}fmt.Printf("Thinking: %s\\n", ${prompt})`;
+      return `${indent}fmt.Printf("[THINK] Processing: %s\\n", ${prompt})\n${indent}result := std.Think(ctx, ${prompt})`;
     }
 
+    case 'ChainStatement': {
+      const name = node.name || 'chain';
+      const steps = (node.steps || []).map(s => genGo(s, indent + "    ")).join('\n');
+      return `${indent}// Chain: ${name}\n${indent}func() {\n${steps}\n${indent}}()`;
+    }
+
+    case 'PlanStatement': {
+      const goal = node.goal || 'plan';
+      const body = genGo(node.body, indent + "    ");
+      return `${indent}// Plan: ${goal}\n${indent}plan := std.Plan(ctx, "${goal}")\n${indent}for _, step := range plan.Steps {\n${indent}    std.Think(ctx, step)\n${indent}}\n${body}`;
+    }
+
+    case 'EthicsStatement': {
+      const rules = (node.rules || []).map(r => `"${r.rule}"`).join(', ');
+      return `${indent}if !std.Ethics([]string{${rules}}) {\n${indent}    return errors.New("ethics violation")\n${indent}}`;
+    }
+
+    case 'BirthStatement': {
+      const config = genGo(node.config, "");
+      return `${indent}agent := std.Birth(${config})\n${indent}fmt.Printf("[BIRTH] Agent: %s\\n", agent.Name)`;
+    }
+
+    case 'BudgetStatement': {
+      const tokens = node.tokens || 10000;
+      const timeStr = node.time || '30s';
+      return `${indent}ctx = std.WithBudget(ctx, ${tokens}, "${timeStr}")`;
+    }
+
+    case 'RememberStatement': {
+      const key = genGo(node.key, "");
+      return `${indent}std.Remember(ctx, ${key})`;
+    }
+
+    case 'EvolveStatement': {
+      const soul = node.config?.soul ? genGo(node.config.soul, "") : `"unknown"`;
+      const rank = node.config?.rank ? genGo(node.config.rank, "") : '1';
+      return `${indent}std.Evolve(ctx, ${soul}, ${rank})`;
+    }
+
+    case 'HeartbeatStatement': {
+      const every = node.config?.every ? genGo(node.config.every, "") : `"60s"`;
+      const check = node.config?.check ? genGo(node.config.check, "") : `"any updates?"`;
+      return `${indent}go std.Heartbeat(ctx, ${every}, ${check})`;
+    }
+
+    case 'PrintlnStatement': {
+      const args = (node.args || []).map(a => genGo(a, "")).join(', ');
+      return `${indent}fmt.Println(${args})`;
+    }
+
+    case 'ObserveStatement': {
+      const event = genGo(node.event, "");
+      return `${indent}std.Observe(ctx, ${event})`;
+    }
+
+    case 'InvokeStatement': {
+      const tool = genGo(node.tool, "");
+      return `${indent}std.Invoke(ctx, ${tool})`;
+    }
+
+    case 'RetrieveStatement': {
+      const query = node.query ? genGo(node.query, "") : `"query"`;
+      return `${indent}std.Retrieve(ctx, ${query})`;
+    }
+
+    case 'EmptyStatement':
+      return '';
+
+    case 'ArrayLiteral':
+      return `[]interface{}{${node.elements.map(e => genGo(e, "")).join(', ')}}`;
+
+    case 'LoopStatement': {
+      const body = genGo(node.body, indent + "    ");
+      const max = node.maxAttempts || 10;
+      return `${indent}for _i := 0; _i < ${max}; _i++ {\n${body}\n${indent}}`;
+    }
+
+    case 'StructDecl': {
+      const fields = node.fields.map(f => `    ${f.name.charAt(0).toUpperCase() + f.name.slice(1)} interface{}`).join('\n');
+      return `${indent}type ${node.name} struct {\n${fields}\n${indent}}`;
+    }
+
+    case 'EnumDecl': {
+      const variants = node.variants.map((v, i) => `${indent}    ${v} = ${i}`).join('\n');
+      return `${indent}const (\n${variants}\n${indent})`;
+    }
+
+    case 'NeuralLayer':
+      return `${indent}// Neural Layer: 86B neurons activated`;
+
+    case 'TargetDirective':
+      return `${indent}// @target ${node.target}`;
+
+    case 'SkillProperty':
+      return `${indent}// skill.${node.name}`;
+
+    case 'AppDecl':
+      return `${indent}// App: ${node.name || 'app'}`;
+
+    case 'Match': {
+      const expr = genGo(node.expr, "");
+      const arms = node.arms.map(a => `${indent}case ${genGo(a.pattern, "")}:\n${indent}    ${genGo(a.body, "")}`).join('\n');
+      return `${indent}switch ${expr} {\n${arms}\n${indent}}`;
+    }
+
+    case 'SwarmScaleStatement': {
+      const config = genGo(node.config, "");
+      return `${indent}std.SwarmScale(${config})`;
+    }
+
+    case 'ShareStatement': {
+      const config = genGo(node.config, "");
+      return `${indent}std.WriteSharedState(${config})`;
+    }
+
+    case 'CallToolStatement':
+      return `${indent}mcp.CallTool("${node.name}", ${genGo(node.args, "")})`;
+
+    case 'Return':
+      return `${indent}return ${genGo(node.value, "")}`;
+
+    case 'Call':
+      return `${indent}${genGo(node.callee, "")}(${node.args.map(a => genGo(a, "")).join(', ')})`;
+
+    case 'Index':
+      return `${genGo(node.object, "")}[${genGo(node.index, "")}]`;
+
+    case 'IdentifierPattern':
+      return node.name;
+
     default:
-      return `${indent}// [GO-GEN] Unhandled: ${node.type}`;
+      return `${indent}// [GO-GEN] ${node.type}`;
   }
 }

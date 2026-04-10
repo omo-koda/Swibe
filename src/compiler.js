@@ -6,6 +6,7 @@
 import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
 import { LLMIntegration } from './llm-integration.js';
+import { TypeInferencer } from './typeinference.js';
 import { genElixir } from './backends/elixir.js';
 import { genPony } from './backends/pony.js';
 import { genMojo } from './backends/mojo.js';
@@ -71,6 +72,17 @@ class Compiler {
       typeInference.infer(ast);
     } catch (_e) {
       // silently catch type inference errors
+    }
+
+    try {
+      const inferencer = new TypeInferencer(ast);
+      const typeResult = inferencer.infer();
+      if (typeResult.errors.length > 0) {
+        console.warn('[TYPE] Warnings:', typeResult.errors);
+      }
+      this._types = typeResult.types;
+    } catch (_e) {
+      // silently catch type inferencer errors
     }
 
     this.ast = ast;

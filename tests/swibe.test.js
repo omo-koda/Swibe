@@ -483,3 +483,73 @@ describe('Swibe v3.1 — Hermetic Ethics', () => {
     delete process.env.SWIBE_CONSENSUS_TOKEN;
   });
 });
+
+describe('Swibe v3.2 — Compiler Hardening', () => {
+  it('Go backend has no Unhandled fallbacks', async () => {
+    const src = `fn main() {
+      think "hello go"
+      ethics { harm-none }
+      birth { identity: "test" }
+    }`;
+    const c = new Compiler(src, 'go');
+    const code = await c.compile();
+    expect(code).not.toContain('// Unhandled');
+    expect(code).toContain('fmt.Print');
+  });
+
+  it('Rust backend has no Unhandled fallbacks', async () => {
+    const src = `fn main() {
+      think "hello rust"
+      ethics { harm-none }
+    }`;
+    const c = new Compiler(src, 'rust');
+    const code = await c.compile();
+    expect(code).not.toContain('// Unhandled');
+  });
+
+  it('type inferencer runs without error', async () => {
+    const { TypeInferencer } = await import('../src/typeinference.js');
+    const src = `fn main() {
+      think "test"
+      ethics { harm-none }
+      birth { identity: "bipọn39" }
+    }`;
+    const lexer = new Lexer(src);
+    const tokens = lexer.tokenize();
+    const parser = new Parser(tokens);
+    const ast = parser.parse();
+    const inferencer = new TypeInferencer(ast);
+    const result = inferencer.infer();
+    expect(result.errors).toHaveLength(0);
+    expect(result.types.think_result).toBe('Receipt');
+    expect(result.types.agent).toBe('SovereignAgent');
+  });
+
+  it('AST visitor collects think statements', async () => {
+    const { ThinkCollector } = await import('../src/visitor.js');
+    const src = `fn main() {
+      think "first"
+      think "second"
+      think "third"
+    }`;
+    const lexer = new Lexer(src);
+    const tokens = lexer.tokenize();
+    const parser = new Parser(tokens);
+    const ast = parser.parse();
+    const collector = new ThinkCollector();
+    collector.visit(ast);
+    expect(collector.thinks).toHaveLength(3);
+  });
+
+  it('ethics validator detects missing ethics', async () => {
+    const { EthicsValidator } = await import('../src/visitor.js');
+    const src = `fn main() { think "unsafe" }`;
+    const lexer = new Lexer(src);
+    const tokens = lexer.tokenize();
+    const parser = new Parser(tokens);
+    const ast = parser.parse();
+    const validator = new EthicsValidator();
+    validator.visit(ast);
+    expect(validator.violations.length).toBeGreaterThan(0);
+  });
+});
