@@ -1,192 +1,276 @@
 /**
- * Swibe REPL
- * Interactive shell for Swibe language
+ * Swibe REPL v3.3
+ * Interactive sovereign agent shell
  */
 
-import readline from 'readline';
+import readline from 'node:readline';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
 import { Compiler } from './compiler.js';
-import { LLMIntegration, RAGIntegration } from './llm-integration.js';
+import { StandardLibrary } from './stdlib.js';
 
-class SwibeREPL {
-  constructor() {
-    this.rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    this.context = {};
-    this.llm = new LLMIntegration();
-    this.rag = new RAGIntegration();
-    this.history = [];
-  }
+const HISTORY_FILE = path.join(
+  os.homedir(), '.swibe', 'repl-history.json'
+);
 
-  start() {
-    console.log('🎵 Swibe Language REPL v1.2.0');
-    console.log('Type "help" for commands, "exit" to quit\n');
+const BANNER = `🌀 Swibe REPL v3.3
+══════════════════════════════════════
+Sovereign Agent-Native Scripting Shell
+Type Swibe primitives and see results.
+Type .help for commands, .exit to quit.
+══════════════════════════════════════`;
 
-    this.prompt();
-  }
+const HINTS = [
+  'think "your prompt"',
+  'swarm { think "task" }',
+  'ethics { harm-none }',
+  'ethics { mode: "hermetic" }',
+  'birth { identity: "bipọn39" }',
+  'budget { tokens: 1000; time: "30s" }',
+  'remember { "key" }',
+  'evolve { soul: "Ọbàtálá", rank: 1 }',
+  'heartbeat { every: 60s; check: "updates?" }',
+  'println("Àṣẹ")',
+  '.help',
+  '.exit',
+  '.clear',
+  '.history',
+  '.sabbath',
+];
 
-  prompt() {
-    this.rl.question('swibe> ', async (input) => {
-      input = input.trim();
+const DOT_COMMANDS = {
+  '.help': () => {
+    console.log(`Swibe REPL Commands:
+  .help     — Show this help
+  .exit     — Exit the REPL
+  .clear    — Clear the screen
+  .history  — Show command history
+  .sabbath  — Check Sabbath status
+  .reset    — Reset the VM state
+  .version  — Show Swibe version
 
-      if (!input) {
-        this.prompt();
+Primitives:
+  think "prompt"
+  swarm { think "task" }
+  ethics { harm-none }
+  ethics { mode: "hermetic" }
+  birth { identity: "bipọn39" }
+  budget { tokens: 1000 }
+  remember { "key" }
+  evolve { soul: "name", rank: 1 }
+  heartbeat { every: 60s }
+  println("message")
+
+Àṣẹ.`);
+  },
+  '.clear': () => {
+    process.stdout.write('\x1Bc');
+  },
+  '.sabbath': () => {
+    const day = new Date().getDay();
+    if (day === 6) {
+      console.log('[SABBATH] Saturday — rest is law. Heavy actions blocked.');
+    } else {
+      const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      console.log(`[SABBATH] ${days[day]} — active. No restrictions.`);
+    }
+  },
+  '.version': () => {
+    try {
+      const pkg = JSON.parse(
+        fs.readFileSync(
+          path.join(process.cwd(), 'package.json'), 'utf-8'
+        )
+      );
+      console.log(`Swibe v${pkg.version}`);
+    } catch {
+      console.log('Swibe v3.3');
+    }
+  },
+};
+
+function loadHistory() {
+  try {
+    if (fs.existsSync(HISTORY_FILE)) {
+      return JSON.parse(
+        fs.readFileSync(HISTORY_FILE, 'utf-8')
+      );
+    }
+  } catch {}
+  return [];
+}
+
+function saveHistory(history) {
+  try {
+    fs.mkdirSync(path.dirname(HISTORY_FILE), { recursive: true });
+    fs.writeFileSync(
+      HISTORY_FILE,
+      JSON.stringify(history.slice(-100), null, 2)
+    );
+  } catch {}
+}
+
+function getHint(input) {
+  if (!input || input.startsWith('.')) return '';
+  const match = HINTS.find(h =>
+    h.startsWith(input) && h !== input
+  );
+  return match ? match.slice(input.length) : '';
+}
+
+export async function startRepl() {
+  console.log(BANNER);
+
+  const history = loadHistory();
+  const std = new StandardLibrary();
+
+  let multilineBuffer = '';
+  let braceDepth = 0;
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '\x1b[36mswibe\x1b[0m \x1b[33m❯\x1b[0m ',
+    history: history,
+    historySize: 100,
+    completer: (line) => {
+      const completions = HINTS.filter(h => h.startsWith(line));
+      return [completions, line];
+    }
+  });
+
+  rl.prompt();
+
+  rl.on('line', async (line) => {
+    const trimmed = line.trim();
+
+    // Empty line
+    if (!trimmed) {
+      if (braceDepth > 0) {
+        multilineBuffer += '\n';
+      }
+      rl.prompt();
+      return;
+    }
+
+    // Dot commands
+    if (trimmed.startsWith('.')) {
+      if (trimmed === '.exit' || trimmed === '.quit') {
+        saveHistory(rl.history);
+        console.log('\nÀṣẹ. Sovereign agent signing off. 🕊️');
+        process.exit(0);
+      }
+
+      if (trimmed === '.history') {
+        rl.history.slice(0, 20).forEach((h, i) => {
+          console.log(`  ${i + 1}: ${h}`);
+        });
+        rl.prompt();
         return;
       }
 
-      this.history.push(input);
-
-      try {
-        await this.execute(input);
-      } catch (error) {
-        console.error(`Error: ${error.message}`);
+      if (trimmed === '.reset') {
+        Object.keys(std).forEach(k => {
+          if (k.startsWith('_hermetic')) delete std[k];
+        });
+        std._budget = null;
+        console.log('[REPL] VM state reset.');
+        rl.prompt();
+        return;
       }
 
-      this.prompt();
-    });
-  }
+      const cmd = DOT_COMMANDS[trimmed];
+      if (cmd) {
+        cmd();
+      } else {
+        console.log(`Unknown command: ${trimmed}. Type .help`);
+      }
+      rl.prompt();
+      return;
+    }
 
-  async execute(input) {
-    if (input === 'exit') {
-      console.log('Goodbye!');
-      this.rl.close();
+    // Multi-line handling — count braces
+    multilineBuffer += (multilineBuffer ? '\n' : '') + line;
+    braceDepth += (line.match(/\{/g) || []).length;
+    braceDepth -= (line.match(/\}/g) || []).length;
+
+    // If braces not balanced, wait for more input
+    if (braceDepth > 0) {
+      rl.setPrompt('\x1b[33m  ...\x1b[0m ');
+      rl.prompt();
+      return;
+    }
+
+    // Reset prompt
+    rl.setPrompt('\x1b[36mswibe\x1b[0m \x1b[33m❯\x1b[0m ');
+
+    const source = multilineBuffer;
+    multilineBuffer = '';
+    braceDepth = 0;
+
+    // Wrap bare statements in fn main()
+    const wrapped = source.includes('fn ')
+      ? source
+      : `fn main() {\n  ${source.split('\n').join('\n  ')}\n}`;
+
+    try {
+      // Compile and execute
+      const compiler = new Compiler(wrapped, 'javascript');
+      const code = await compiler.compile();
+
+      // Execute in stdlib context
+      const fn = new Function(
+        'std', 'console',
+        `return (async () => {\n${code}\nawait main();\n})()`
+      );
+      await fn(std, console);
+    } catch (err) {
+      // Show friendly errors
+      if (err.message?.includes('Unexpected token') ||
+          err.message?.includes('parse')) {
+        console.error(
+          `\x1b[31m[SYNTAX]\x1b[0m ${err.message}`
+        );
+      } else {
+        console.error(
+          `\x1b[31m[ERROR]\x1b[0m ${err.message}`
+        );
+      }
+    }
+
+    rl.prompt();
+  });
+
+  rl.on('close', () => {
+    saveHistory(rl.history);
+    console.log('\nÀṣẹ. 🕊️');
+    process.exit(0);
+  });
+
+  // Handle Ctrl+C gracefully
+  rl.on('SIGINT', () => {
+    if (multilineBuffer) {
+      multilineBuffer = '';
+      braceDepth = 0;
+      rl.setPrompt('\x1b[36mswibe\x1b[0m \x1b[33m❯\x1b[0m ');
+      console.log('\n[REPL] Cancelled.');
+      rl.prompt();
+    } else {
+      saveHistory(rl.history);
+      console.log('\nÀṣẹ. 🕊️');
       process.exit(0);
     }
-
-    if (input === 'help') {
-      this.showHelp();
-      return;
-    }
-
-    if (input === 'history') {
-      this.history.forEach((cmd, i) => console.log(`${i}: ${cmd}`));
-      return;
-    }
-
-    if (input.startsWith('compile ')) {
-      const code = input.substring(8);
-      await this.compileCode(code);
-      return;
-    }
-
-    if (input.startsWith('ai ')) {
-      const prompt = input.substring(3);
-      await this.generateWithAI(prompt);
-      return;
-    }
-
-    if (input.startsWith('rag ')) {
-      const query = input.substring(4);
-      await this.ragSearch(query);
-      return;
-    }
-
-    if (input.startsWith('load ')) {
-      const file = input.substring(5);
-      await this.loadFile(file);
-      return;
-    }
-
-    // Try to parse as Swibe code
-    try {
-      const lexer = new Lexer(input);
-      const tokens = lexer.tokenize();
-      const parser = new Parser(tokens);
-      const ast = parser.parse();
-
-      console.log('✓ Parsed successfully');
-      console.log(JSON.stringify(ast, null, 2).substring(0, 500) + '...');
-    } catch (error) {
-      console.error(`Parse error: ${error.message}`);
-    }
-  }
-
-  async compileCode(code) {
-    console.log('Compiling...');
-    const compiler = new Compiler(code, 'javascript');
-    try {
-      const compiled = await compiler.compile();
-      console.log('JavaScript output:');
-      console.log(compiled);
-    } catch (error) {
-      console.error(`Compilation error: ${error.message}`);
-    }
-  }
-
-  async generateWithAI(prompt) {
-    console.log('Generating code from prompt...');
-    try {
-      const code = await this.llm.generateCode(prompt, {
-        targetLanguage: 'swibe',
-      });
-      console.log('Generated code:');
-      console.log(code);
-    } catch (error) {
-      console.error(`Generation error: ${error.message}`);
-    }
-  }
-
-  async ragSearch(query) {
-    console.log('Searching knowledge base...');
-    try {
-      const results = await this.rag.search(query, 5);
-      console.log(`Found ${results.length} results:`);
-      results.forEach((r, i) => {
-        console.log(`${i + 1}. Score: ${r.score.toFixed(2)}`);
-        console.log(`   ${(r.data || r.key || '').toString().substring(0, 100)}...`);
-      });
-    } catch (error) {
-      console.error(`RAG error: ${error.message}`);
-    }
-  }
-
-  async loadFile(file) {
-    console.log(`Loading ${file}...`);
-    try {
-      const fs = await import('fs');
-      const content = fs.readFileSync(file, 'utf-8');
-      const compiler = new Compiler(content, 'javascript');
-      const compiled = await compiler.compile();
-      console.log('Compiled:');
-      console.log(compiled);
-    } catch (error) {
-      console.error(`Load error: ${error.message}`);
-    }
-  }
-
-  showHelp() {
-    console.log(`
-Swibe REPL Commands:
-  help              - Show this help
-  history           - Show command history
-  exit              - Exit REPL
-  
-  compile <code>    - Compile Swibe code to JavaScript
-  ai <prompt>       - Generate code from natural language
-  rag <query>       - Search knowledge base
-  load <file>       - Load and compile a .swibe file
-  
-Examples:
-  swibe> fn add(a: i32, b: i32) -> i32 { a + b }
-  swibe> ai create a fibonacci function
-  swibe> compile fn main() { print("hello") }
-  swibe> load examples/hello.swibe
-    `);
-  }
+  });
 }
 
-// Main
-async function main() {
-  const repl = new SwibeREPL();
-  repl.start();
-}
-
-// Run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(console.error);
+// Legacy compat — SwibeREPL class wraps startRepl
+class SwibeREPL {
+  start() {
+    return startRepl();
+  }
 }
 
 export { SwibeREPL };

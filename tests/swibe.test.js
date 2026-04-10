@@ -484,6 +484,57 @@ describe('Swibe v3.1 — Hermetic Ethics', () => {
   });
 });
 
+describe('Swibe v3.3 — REPL', () => {
+  it('repl module exports startRepl', async () => {
+    const mod = await import('../src/repl.js');
+    expect(typeof mod.startRepl).toBe('function');
+  });
+
+  it('repl history file path is correct', async () => {
+    const { default: path } = await import('node:path');
+    const { default: os } = await import('node:os');
+    const expectedPath = path.join(
+      os.homedir(), '.swibe', 'repl-history.json'
+    );
+    expect(expectedPath).toContain('.swibe');
+    expect(expectedPath).toContain('repl-history.json');
+  });
+
+  it('repl hints include all primitives', async () => {
+    const source = await import('node:fs').then(
+      fs => fs.default.readFileSync('src/repl.js', 'utf-8')
+    );
+    expect(source).toContain('think');
+    expect(source).toContain('swarm');
+    expect(source).toContain('ethics');
+    expect(source).toContain('birth');
+    expect(source).toContain('heartbeat');
+    expect(source).toContain('hermetic');
+  });
+
+  it('dot commands object has required commands', async () => {
+    // Parse the repl source to verify commands exist
+    const source = await import('node:fs').then(
+      fs => fs.default.readFileSync('src/repl.js', 'utf-8')
+    );
+    expect(source).toContain('.help');
+    expect(source).toContain('.clear');
+    expect(source).toContain('.sabbath');
+    expect(source).toContain('.version');
+    expect(source).toContain('.exit');
+    expect(source).toContain('.history');
+    expect(source).toContain('.reset');
+  });
+
+  it('sabbath detection uses getDay()', async () => {
+    const source = await import('node:fs').then(
+      fs => fs.default.readFileSync('src/repl.js', 'utf-8')
+    );
+    expect(source).toContain('getDay()');
+    expect(source).toContain('day === 6');
+  });
+});
+
 describe('Swibe v3.2 — Compiler Hardening', () => {
   it('Go backend has no Unhandled fallbacks', async () => {
     const src = `fn main() {

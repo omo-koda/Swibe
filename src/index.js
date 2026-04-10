@@ -7,7 +7,7 @@ import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
 import { Compiler } from './compiler.js';
 import { LLMIntegration, RAGIntegration, Agent } from './llm-integration.js';
-import { SwibeREPL } from './repl.js';
+import { SwibeREPL, startRepl } from './repl.js';
 import { DocGenerator } from './doc-generator.js';
 import { APIGenerator } from './api-generator.js';
 import { PackageManager } from './package-manager.js';
@@ -24,8 +24,7 @@ async function main() {
 
   // No arguments - start REPL
   if (args.length === 0) {
-    const repl = new SwibeREPL();
-    repl.start();
+    await startRepl();
     return;
   }
 
@@ -690,8 +689,7 @@ fn main() {
     }
 
     case 'repl': {
-      const repl = new SwibeREPL();
-      repl.start();
+      await startRepl();
       break;
     }
 
