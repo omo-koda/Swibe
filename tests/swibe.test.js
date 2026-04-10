@@ -484,6 +484,64 @@ describe('Swibe v3.1 — Hermetic Ethics', () => {
   });
 });
 
+describe('Swibe v3.4 — VSCode Extension', () => {
+  it('extension package.json has correct metadata', async () => {
+    const { default: fs } = await import('node:fs');
+    const pkg = JSON.parse(
+      fs.readFileSync(
+        'vscode-extension/package.json', 'utf-8'
+      )
+    );
+    expect(pkg.name).toBe('swibe-language');
+    expect(pkg.publisher).toBe('bino-elgua');
+    expect(pkg.contributes.languages[0].id).toBe('swibe');
+    expect(pkg.contributes.grammars).toBeDefined();
+    expect(pkg.contributes.snippets).toBeDefined();
+  });
+
+  it('syntax grammar covers all primitives', async () => {
+    const { default: fs } = await import('node:fs');
+    const grammar = JSON.parse(
+      fs.readFileSync(
+        'vscode-extension/syntaxes/swibe.tmLanguage.json',
+        'utf-8'
+      )
+    );
+    const grammarStr = JSON.stringify(grammar);
+    expect(grammarStr).toContain('think');
+    expect(grammarStr).toContain('swarm');
+    expect(grammarStr).toContain('ethics');
+    expect(grammarStr).toContain('heartbeat');
+    expect(grammarStr).toContain('hermetic');
+  });
+
+  it('snippets cover all major primitives', async () => {
+    const { default: fs } = await import('node:fs');
+    const snippets = JSON.parse(
+      fs.readFileSync(
+        'vscode-extension/snippets/swibe.json', 'utf-8'
+      )
+    );
+    expect(snippets['Think']).toBeDefined();
+    expect(snippets['Swarm']).toBeDefined();
+    expect(snippets['Ethics']).toBeDefined();
+    expect(snippets['OpenClaw agent']).toBeDefined();
+    expect(snippets['Hermetic Ethics']).toBeDefined();
+  });
+
+  it('language configuration has correct comment syntax', async () => {
+    const { default: fs } = await import('node:fs');
+    const config = JSON.parse(
+      fs.readFileSync(
+        'vscode-extension/language-configuration.json',
+        'utf-8'
+      )
+    );
+    expect(config.comments.lineComment).toBe('--');
+    expect(config.brackets).toContainEqual(['{', '}']);
+  });
+});
+
 describe('Swibe v3.3 — REPL', () => {
   it('repl module exports startRepl', async () => {
     const mod = await import('../src/repl.js');

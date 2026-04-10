@@ -3,100 +3,54 @@
   "scopeName": "source.swibe",
   "fileTypes": ["swibe"],
   "patterns": [
-    { "include": "#comments" },
-    { "include": "#strings" },
-    { "include": "#keywords" },
-    { "include": "#functions" },
-    { "include": "#types" },
-    { "include": "#numbers" },
-    { "include": "#operators" }
-  ],
-  "repository": {
-    "comments": {
-      "patterns": [
-        {
-          "name": "comment.line.double-slash.swibe",
-          "match": "//.*?$"
-        },
-        {
-          "name": "comment.block.swibe",
-          "begin": "/\\*",
-          "end": "\\*/"
-        }
-      ]
+    {
+      "name": "comment.line.swibe",
+      "match": "--.*$"
     },
-    "strings": {
-      "patterns": [
-        {
-          "name": "string.quoted.double.swibe",
-          "begin": "\"",
-          "end": "\"",
-          "patterns": [
-            { "name": "constant.character.escape.swibe", "match": "\\\\." }
-          ]
-        },
-        {
-          "name": "string.quoted.single.swibe",
-          "begin": "'",
-          "end": "'",
-          "patterns": [
-            { "name": "constant.character.escape.swibe", "match": "\\\\." }
-          ]
-        },
-        {
-          "name": "string.quoted.backtick.swibe",
-          "begin": "`",
-          "end": "`"
-        }
-      ]
+    {
+      "name": "keyword.control.swibe",
+      "match": "\\b(fn|if|else|loop|until|return|let|const)\\b"
     },
-    "keywords": {
-      "patterns": [
-        {
-          "name": "keyword.control.swibe",
-          "match": "\\b(fn|struct|enum|impl|trait|type|if|else|while|for|loop|break|continue|return|match|async|await|pub|mut|const)\\b"
-        },
-        {
-          "name": "keyword.ai.swibe",
-          "match": "%%|##|@|#\\[|\\]"
-        }
-      ]
+    {
+      "name": "keyword.primitive.swibe",
+      "match": "\\b(think|swarm|chain|plan|ethics|birth|budget|remember|evolve|heartbeat|observe|retrieve|share|dispatch|neural|meta-digital|secure|hybrid|skill|load|println|emit)\\b"
     },
-    "functions": {
-      "patterns": [
-        {
-          "name": "entity.name.function.swibe",
-          "match": "\\b(fn)\\s+([a-z_][a-z0-9_]*)\\b",
-          "captures": {
-            "1": { "name": "keyword.control.swibe" },
-            "2": { "name": "entity.name.function.swibe" }
-          }
-        }
-      ]
+    {
+      "name": "keyword.modifier.swibe",
+      "match": "\\b(harm-none|audit-trail|hermetic|mode|every|check|tokens|time|soul|rank|key|arweave|telephony|identity)\\b"
     },
-    "types": {
-      "patterns": [
-        {
-          "name": "entity.name.type.swibe",
-          "match": "\\b(i32|i64|f32|f64|str|bool|Option|Result|None|Some)\\b"
-        }
-      ]
+    {
+      "name": "string.quoted.double.swibe",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [{
+        "name": "constant.character.escape.swibe",
+        "match": "\\\\."
+      }]
     },
-    "numbers": {
-      "patterns": [
-        {
-          "name": "constant.numeric.swibe",
-          "match": "\\b([0-9]+\\.?[0-9]*)\\b"
-        }
-      ]
+    {
+      "name": "constant.numeric.swibe",
+      "match": "\\b[0-9]+(s|ms|k|M|B)?\\b"
     },
-    "operators": {
-      "patterns": [
-        {
-          "name": "keyword.operator.swibe",
-          "match": "(\\+|-|\\*|/|%|=|==|!=|<|>|<=|>=|&&|\\|\\||!|::|->)"
-        }
-      ]
+    {
+      "name": "constant.language.swibe",
+      "match": "\\b(true|false|null)\\b"
+    },
+    {
+      "name": "entity.name.function.swibe",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()"
+    },
+    {
+      "name": "variable.swibe",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+    },
+    {
+      "name": "punctuation.swibe",
+      "match": "[{}()\\[\\];,:]"
+    },
+    {
+      "name": "keyword.operator.swibe",
+      "match": "[+\\-*/<>=!&|]+"
     }
-  }
+  ]
 }

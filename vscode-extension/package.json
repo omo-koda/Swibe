@@ -1,56 +1,44 @@
 {
-  "name": "swibe",
-  "displayName": "Swibe Language",
-  "description": "AI-native programming language support for VSCode",
-  "version": "0.1.0",
-  "publisher": "swibe",
-  "license": "MIT",
-  "engines": {
-    "vscode": "^1.70.0"
-  },
-  "categories": [
-    "Programming Languages",
-    "Snippets",
-    "Formatters",
-    "Linters"
-  ],
+  "name": "swibe-language",
+  "displayName": "Swibe",
+  "description": "Sovereign Agent-Native Scripting Language — syntax highlighting, snippets, and LSP for Swibe",
+  "version": "3.0.5",
+  "publisher": "bino-elgua",
+  "engines": { "vscode": "^1.80.0" },
+  "categories": ["Programming Languages", "Snippets"],
   "keywords": [
-    "swibe",
-    "ai",
-    "programming language",
-    "compiler"
+    "swibe", "agent", "ai", "sovereign",
+    "llm", "openclaw", "techgnosis"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Bino-Elgua/Swibe"
+  },
+  "homepage": "https://github.com/Bino-Elgua/Swibe#readme",
+  "bugs": {
+    "url": "https://github.com/Bino-Elgua/Swibe/issues"
+  },
+  "license": "MIT",
+  "main": "./out/extension.js",
   "activationEvents": [
     "onLanguage:swibe"
   ],
-  "main": "./out/extension.js",
   "contributes": {
-    "languages": [
-      {
-        "id": "swibe",
-        "aliases": [
-          "Swibe",
-          "swibe"
-        ],
-        "extensions": [
-          ".swibe"
-        ],
-        "configuration": "./language-configuration.json"
-      }
-    ],
-    "grammars": [
-      {
-        "language": "swibe",
-        "scopeName": "source.swibe",
-        "path": "./syntaxes/swibe.tmLanguage.json"
-      }
-    ],
-    "snippets": [
-      {
-        "language": "swibe",
-        "path": "./snippets/swibe.json"
-      }
-    ],
+    "languages": [{
+      "id": "swibe",
+      "aliases": ["Swibe", "swibe"],
+      "extensions": [".swibe"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "swibe",
+      "scopeName": "source.swibe",
+      "path": "./syntaxes/swibe.tmLanguage.json"
+    }],
+    "snippets": [{
+      "language": "swibe",
+      "path": "./snippets/swibe.json"
+    }],
     "themes": [
       {
         "label": "Swibe Dark",
@@ -65,19 +53,16 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile",
-    "test": "node ./out/test/runTest.js"
+    "package": "vsce package",
+    "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
-    "@types/vscode": "^1.70.0",
-    "typescript": "^4.7.0",
-    "vscode-languageserver": "^9.0.1",
-    "vscode-languageserver-textdocument": "^1.0.12",
-    "vscode-test": "^1.6.1"
+    "@types/vscode": "^1.80.0",
+    "@vscode/vsce": "^2.0.0",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "vscode-languageclient": "^8.0.0",

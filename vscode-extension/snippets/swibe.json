@@ -1,108 +1,92 @@
 {
-  "Function": {
-    "prefix": "fn",
-    "body": [
-      "fn ${1:functionName}(${2:params}) -> ${3:ReturnType} {",
-      "  ${4:// implementation}",
-      "}"
-    ],
-    "description": "Function declaration"
+  "Think": {
+    "prefix": "think",
+    "body": ["think \"${1:your prompt}\""],
+    "description": "LLM reasoning with receipt"
   },
-  "Struct": {
-    "prefix": "struct",
+  "Swarm": {
+    "prefix": "swarm",
     "body": [
-      "struct ${1:StructName} {",
-      "  ${2:field}: ${3:Type},",
+      "swarm {",
+      "\t${1:think \"task\"}",
       "}"
     ],
-    "description": "Struct definition"
+    "description": "Multi-agent coordination"
   },
-  "Enum": {
-    "prefix": "enum",
+  "Ethics": {
+    "prefix": "ethics",
     "body": [
-      "enum ${1:EnumName} {",
-      "  ${2:Variant1},",
-      "  ${2:Variant2},",
-      "}"
+      "ethics { ${1:harm-none} }"
     ],
-    "description": "Enumeration type"
+    "description": "Ethics enforcement"
   },
-  "If Statement": {
-    "prefix": "if",
+  "Hermetic Ethics": {
+    "prefix": "hermetic",
     "body": [
-      "if ${1:condition} {",
-      "  ${2:// true branch}",
-      "} else {",
-      "  ${3:// false branch}",
+      "ethics {",
+      "\tmode: \"hermetic\"",
+      "\tharm-none",
+      "\taudit-trail",
       "}"
     ],
-    "description": "If-else conditional"
+    "description": "7 Hermetic Principles enforcement"
   },
-  "For Loop": {
-    "prefix": "for",
+  "Birth": {
+    "prefix": "birth",
     "body": [
-      "for ${1:item} in ${2:iterable} {",
-      "  ${3:// loop body}",
+      "birth {",
+      "\tidentity: \"bipọn39\"",
       "}"
     ],
-    "description": "For loop"
+    "description": "Sovereign agent birth"
   },
-  "While Loop": {
-    "prefix": "while",
+  "Budget": {
+    "prefix": "budget",
     "body": [
-      "while ${1:condition} {",
-      "  ${2:// loop body}",
-      "}"
+      "budget { tokens: ${1:10000}; time: \"${2:30s}\" }"
     ],
-    "description": "While loop"
+    "description": "Resource budget"
   },
-  "Match": {
-    "prefix": "match",
-    "body": [
-      "match ${1:value} {",
-      "  ${2:pattern1} => ${3:result1},",
-      "  ${4:pattern2} => ${5:result2},",
-      "}"
-    ],
-    "description": "Pattern matching"
+  "Remember": {
+    "prefix": "remember",
+    "body": ["remember { \"${1:key}\" }"],
+    "description": "Persistent memory"
   },
-  "Prompt": {
-    "prefix": "%%",
+  "Evolve": {
+    "prefix": "evolve",
     "body": [
-      "fn ${1:functionName}() {",
-      "  %% ${2:describe what you want the AI to do}",
-      "}"
+      "evolve { soul: \"${1:Ọbàtálá}\", rank: ${2:1} }"
     ],
-    "description": "AI prompt function"
+    "description": "Soul evolution"
   },
-  "LLM Attribute": {
-    "prefix": "#[llm",
+  "Heartbeat": {
+    "prefix": "heartbeat",
     "body": [
-      "#[llm(model=\"${1:claude}\", temperature=${2:0.7})]",
-      "fn ${3:functionName}() {",
-      "  ${4:// implementation}",
-      "}"
+      "heartbeat { every: ${1:60s}; check: \"${2:any updates?}\" }"
     ],
-    "description": "LLM configuration"
+    "description": "Autonomous scheduling"
   },
-  "Agent Attribute": {
-    "prefix": "#[agent",
+  "Main function": {
+    "prefix": "fn main",
     "body": [
-      "#[agent(tools=[${1:\"tool1\", \"tool2\"}}])]",
-      "fn ${2:functionName}() {",
-      "  ${3:// agent logic}",
+      "fn main() {",
+      "\t${1:think \"hello\"}",
       "}"
     ],
-    "description": "Agent definition"
+    "description": "Main function"
   },
-  "Test": {
-    "prefix": "#[test",
+  "OpenClaw agent": {
+    "prefix": "openclaw",
     "body": [
-      "#[test]",
-      "fn ${1:test_name}() {",
-      "  assert!(${2:condition}, \"message\");",
+      "fn main() {",
+      "\tbirth { identity: \"bipọn39\" }",
+      "\tethics { harm-none }",
+      "\tbudget { tokens: 50000; time: \"300s\" }",
+      "\tthink \"${1:What can I help with?}\"",
+      "\tremember { \"${2:session}\" }",
+      "\theartbeat { every: 300s; check: \"any tasks?\" }",
       "}"
     ],
-    "description": "Test function"
+    "description": "Full OpenClaw agent template"
   }
 }
