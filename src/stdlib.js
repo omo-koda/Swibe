@@ -361,6 +361,45 @@ class StandardLibrary {
     return { enforced: rules.map(r => r.rule) };
   }
 
+  async heartbeat(config = {}) {
+    const ms = config.every || 60000;
+    const check = config.check || 'any updates?';
+
+    console.log(`[HEARTBEAT] Starting: every ${ms/1000}s`);
+
+    // Immediate first check
+    const day = new Date().getDay();
+    if (day === 6) {
+      console.log('[HEARTBEAT] Sabbath — resting');
+      return { started: true, every: ms, check };
+    }
+
+    const result = await this.think(check);
+    console.log(`[HEARTBEAT] Check: ${result.content?.slice(0,50)}`);
+
+    // Set recurring interval
+    setInterval(async () => {
+      const d = new Date().getDay();
+      if (d === 6) {
+        console.log('[HEARTBEAT] Sabbath — skipping');
+        return;
+      }
+
+      if (this._budget) {
+        const elapsed = Date.now() - this._budget.startTime;
+        if (elapsed > this._budget.maxMs) {
+          console.log('[HEARTBEAT] Budget exceeded — stopping');
+          return;
+        }
+      }
+
+      const r = await this.think(check);
+      console.log(`[HEARTBEAT] ${r.content?.slice(0,50)}`);
+    }, ms);
+
+    return { started: true, every: ms, check };
+  }
+
   async refuse_if(condition) {
     if (typeof condition === 'boolean' && condition) {
       throw new Error("Action refused by boolean condition.");

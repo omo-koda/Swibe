@@ -88,6 +88,25 @@ async function main() {
         fs.writeFileSync(moveFile, code);
         fs.writeFileSync(tomlFile, moveToml);
         console.log(`[MOVE] Generated sources/soul.move and Move.toml in ${outputDir}`);
+      } else if (target === 'openclaw') {
+        const outDir = './openclaw-out';
+        fs.mkdirSync(outDir, { recursive: true });
+        for (const [filename, content] of Object.entries(code.files)) {
+          fs.writeFileSync(
+            path.join(outDir, filename),
+            content
+          );
+          console.log(`[OPENCLAW] Generated: ${filename}`);
+        }
+        console.log('');
+        console.log('[OPENCLAW] Agent ready for deployment.');
+        console.log('[OPENCLAW] Install: openclaw skill install ./openclaw-out');
+        console.log('[OPENCLAW] Start:   openclaw start');
+        console.log('');
+        console.log('Files generated in ./openclaw-out/:');
+        console.log('  SKILL.md  — OpenClaw skill definition');
+        console.log('  agent.js  — Runtime implementation');
+        console.log('  SOUL.md   — Sovereign identity');
       } else if (target === 'hybrid') {
         const path = await import('node:path');
         const outputDir = path.dirname(file);

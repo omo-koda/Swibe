@@ -357,3 +357,67 @@ describe('Swibe v2.0 Phase D — Plugins', () => {
     expect(result.mock).toBe(true);
   });
 });
+
+describe('Swibe OpenClaw Integration', () => {
+  it('compiles to openclaw target', async () => {
+    const src = `fn main() {
+      think "hello openclaw"
+      ethics { harm-none }
+    }`;
+    const c = new Compiler(src, 'openclaw');
+    const result = await c.compile();
+    expect(result.files).toBeDefined();
+    expect(result.files['SKILL.md']).toBeDefined();
+    expect(result.files['agent.js']).toBeDefined();
+    expect(result.files['SOUL.md']).toBeDefined();
+  });
+
+  it('SKILL.md contains capabilities', async () => {
+    const src = `fn main() {
+      think "test"
+      swarm { think "worker" }
+      ethics { harm-none }
+    }`;
+    const c = new Compiler(src, 'openclaw');
+    const result = await c.compile();
+    expect(result.files['SKILL.md']).toContain('think');
+    expect(result.files['SKILL.md']).toContain('swarm');
+    expect(result.files['SKILL.md']).toContain('ethics');
+  });
+
+  it('SOUL.md contains identity', async () => {
+    const src = `fn main() { think "soul" }`;
+    const c = new Compiler(src, 'openclaw');
+    const result = await c.compile();
+    expect(result.files['SOUL.md']).toContain('BIPỌ̀N39');
+    expect(result.files['SOUL.md']).toContain('Ed25519');
+    expect(result.files['SOUL.md']).toContain('Sabbath');
+  });
+
+  it('agent.js contains gateway code', async () => {
+    const src = `fn main() { think "gateway" }`;
+    const c = new Compiler(src, 'openclaw');
+    const result = await c.compile();
+    expect(result.files['agent.js']).toContain('18789');
+    expect(result.files['agent.js']).toContain('WebSocketServer');
+  });
+
+  it('heartbeat compiles correctly', async () => {
+    const src = `fn main() {
+      heartbeat { every: 60s; check: "updates?" }
+    }`;
+    const c = new Compiler(src, 'javascript');
+    const code = await c.compile();
+    expect(code).toContain('std.heartbeat');
+  });
+
+  it('heartbeat runtime starts', async () => {
+    const { StandardLibrary } = await import('../src/stdlib.js');
+    const std = new StandardLibrary();
+    const result = await std.heartbeat({
+      every: 999999,
+      check: 'test check'
+    });
+    expect(result.started).toBe(true);
+  });
+});

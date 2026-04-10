@@ -145,6 +145,11 @@ class Compiler {
       case 'ruby': return genRuby(node);
       case 'perl': return genPerl(node);
       case 'python': return this.genPython(node);
+      case 'openclaw': {
+        const { OpenClawGenerator } = await import('./backends/openclaw.js');
+        const gen = new OpenClawGenerator(this.ast, this.source);
+        return gen.generate();
+      }
       case 'wasm': {
         const { WasmGenerator } = await import('./wasm-generator.js');
         const gen = new WasmGenerator(this.ast);
@@ -410,6 +415,21 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
           }))
         );
         return `await std.ethics(${rulesJson})`;
+      }
+      case 'HeartbeatStatement': {
+        const every = node.config?.every
+          ? this.genJavaScript(node.config.every)
+          : '"60s"';
+        const check = node.config?.check
+          ? this.genJavaScript(node.config.check)
+          : '"any updates?"';
+        const ms = every.includes('s')
+          ? parseInt(every) * 1000 || 60000
+          : parseInt(every) || 60000;
+        return `await std.heartbeat({
+  every: ${ms},
+  check: ${check}
+})`;
       }
       default: return `/* Unhandled: ${node.type} */`;
     }

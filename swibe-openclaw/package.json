@@ -1,0 +1,15 @@
+{
+  "name": "@bino-elgua/swibe-openclaw",
+  "version": "1.0.0",
+  "description": "OpenClaw integration for Swibe sovereign agent language",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "swibe-openclaw": "./cli.js"
+  },
+  "keywords": [
+    "swibe", "openclaw", "agent", "sovereign", "ai"
+  ],
+  "author": "Bínò ÈL Guà",
+  "license": "MIT"
+}

@@ -258,6 +258,11 @@ class Parser {
       return this.parseEthicsStatement();
     }
 
+    // Heartbeat statement
+    if (token.type === TokenType.HEARTBEAT) {
+      return this.parseHeartbeatStatement();
+    }
+
     // Call tool statement
     if (token.type === TokenType.CALL_TOOL) {
       return this.parseCallToolStatement();
@@ -461,6 +466,38 @@ class Parser {
     return {
       type: 'EthicsStatement',
       rules
+    };
+  }
+
+  parseHeartbeatStatement() {
+    this.expect(TokenType.HEARTBEAT);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance(); continue;
+      }
+      const keyToken = this.current();
+      this.advance();
+      const key = keyToken.value;
+      if (this.current().type === TokenType.COLON)
+        this.advance();
+      let val = this.parseExpression();
+      // Handle time suffix: 60s, 300s, 100ms etc
+      if (val.type === 'Number' && this.current().type === TokenType.IDENTIFIER &&
+          ['s', 'ms', 'm'].includes(this.current().value)) {
+        const suffix = this.current().value;
+        this.advance();
+        val = new ASTNode('String', { value: val.value + suffix });
+      }
+      config[key] = val;
+      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON)
+        this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return {
+      type: 'HeartbeatStatement',
+      config
     };
   }
 

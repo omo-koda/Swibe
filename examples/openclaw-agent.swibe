@@ -1,0 +1,35 @@
+-- OpenClaw Agent — Full channel integration
+-- Deployed via: swibe compile --target openclaw
+-- Then: openclaw skill install ./openclaw-out
+
+fn main() {
+  println("🌐 OpenClaw Sovereign Agent Starting...")
+  println("=====================================")
+
+  -- Declare sovereign identity
+  birth {
+    telephony: "telnyx"
+    identity: "bipọn39"
+  }
+
+  -- Ethics enforced on all channels
+  ethics { harm-none; audit-trail }
+
+  -- Budget for this session
+  budget { tokens: 50000; time: "300s" }
+
+  -- Think and respond
+  think "What sovereign actions can I take today?"
+
+  -- Remember this session across channels
+  remember { "openclaw-session" }
+
+  -- Evolve soul
+  evolve { soul: "Ọbàtálá", rank: 1 }
+
+  -- Heartbeat — proactive every 5 minutes
+  heartbeat { every: 300s; check: "any new tasks?" }
+
+  println("")
+  println("Àṣẹ. Sovereign agent live on all channels. 🕊️")
+}
