@@ -80,6 +80,21 @@ receipt_statement = "receipt" [ expression ] ";" ;
 seal_statement = "seal" ";" ;
 walrus_statement = "walrus" [ expression ] ";" ;
 
+(* Phase 2: Tool System + MCP + Permissions *)
+
+permission_statement = "permission" "{" { permission_rule } "}" ;
+permission_rule = identifier ":" ( "auto" | "ask" | "plan" | "refuse" ) [ ";" ] ;
+
+mcp_statement = "mcp" "{" { mcp_field } "}" ;
+mcp_field = identifier ":" expression [ ";" ] ;
+
+team_statement = "team" [ string ] "{" { team_role | team_field } "}" ;
+team_role = identifier ":" expression [ "," ] ;
+team_field = "coordination" ":" expression [ ";" ] ;
+
+edit_statement = "edit" expression "{" { edit_field } "}" ;
+edit_field = ( "replace" | "with" | "context_lines" ) ":" expression [ ";" ] ;
+
 (* Expressions *)
 
 expression = assignment ;

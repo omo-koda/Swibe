@@ -463,6 +463,35 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
   check: ${check}
 })`;
       }
+      case 'PermissionStatement': {
+        const rules = (node.rules || []).map(r => {
+          const val = typeof r.value === 'object' ? this.genJavaScript(r.value) : `"${r.value}"`;
+          return `  ${r.action}: ${val}`;
+        });
+        return `std._permissions = {\n${rules.join(',\n')}\n};\nconsole.log('[PERMISSION] Matrix loaded:', Object.keys(std._permissions).length, 'rules');`;
+      }
+      case 'MCPStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.mcp({\n${entries.join(',\n')}\n});`;
+      }
+      case 'TeamStatement': {
+        const name = node.name || 'team';
+        const roles = Object.entries(node.roles || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        const coord = typeof node.coordination === 'string'
+          ? node.coordination
+          : this.genJavaScript(node.coordination);
+        return `const ${name.replace(/[^a-zA-Z0-9_]/g, '_')} = await std.team({\n  name: "${name}",\n  coordination: ${typeof coord === 'string' && !coord.startsWith('"') ? `"${coord}"` : coord},\n  roles: {\n  ${roles.join(',\n  ')}\n  }\n});`;
+      }
+      case 'EditStatement': {
+        const file = this.genJavaScript(node.file);
+        const replace = node.config?.replace ? this.genJavaScript(node.config.replace) : '""';
+        const withStr = node.config?.with ? this.genJavaScript(node.config.with) : '""';
+        return `await std.editFile(${file}, ${replace}, ${withStr});`;
+      }
       default: return `/* Unhandled: ${node.type} */`;
     }
   }

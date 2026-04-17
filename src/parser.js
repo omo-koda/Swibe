@@ -263,6 +263,26 @@ class Parser {
       return this.parseHeartbeatStatement();
     }
 
+    // Permission statement
+    if (token.type === TokenType.PERMISSION) {
+      return this.parsePermissionStatement();
+    }
+
+    // MCP statement
+    if (token.type === TokenType.MCP) {
+      return this.parseMCPStatement();
+    }
+
+    // Team statement
+    if (token.type === TokenType.TEAM) {
+      return this.parseTeamStatement();
+    }
+
+    // Edit statement
+    if (token.type === TokenType.EDIT) {
+      return this.parseEditStatement();
+    }
+
     // Call tool statement
     if (token.type === TokenType.CALL_TOOL) {
       return this.parseCallToolStatement();
@@ -352,11 +372,15 @@ class Parser {
     if (this.current().type === TokenType.LBRACE) {
       this.advance(); // consume {
       while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
-        const key = this.expect(TokenType.IDENTIFIER).value;
+        // Config keys can be keywords (loop, budget, plan, etc.) or identifiers
+        const keyToken = this.current();
+        const key = keyToken.value;
+        this.advance();
         this.expect(TokenType.COLON);
         const val = this.parseExpression();
         config[key] = val;
         if (this.current().type === TokenType.COMMA) this.advance();
+        if (this.current().type === TokenType.SEMICOLON) this.advance();
       }
       this.expect(TokenType.RBRACE);
     }
@@ -918,6 +942,107 @@ class Parser {
     const name = this.expect(TokenType.STRING).value;
     const args = this.parseExpression(); // Expecting a DictLiteral or other expression
     return new ASTNode('CallToolStatement', { name, args });
+  }
+
+  parsePermissionStatement() {
+    this.expect(TokenType.PERMISSION);
+    this.expect(TokenType.LBRACE);
+    const rules = [];
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      // Action names may be keywords (think, chain, birth, mint, seal, etc.)
+      const actionToken = this.current();
+      let action;
+      if (actionToken.type === TokenType.IDENTIFIER || actionToken.value) {
+        action = actionToken.value;
+        this.advance();
+      } else {
+        throw new Error(`Expected action name in permission block at ${actionToken.line}:${actionToken.column}`);
+      }
+      // Handle underscored names: file_write, file_edit, call_tool
+      while (this.current().type === TokenType.IDENTIFIER && this.previous()?.value === '_') {
+        action += this.current().value;
+        this.advance();
+      }
+      this.expect(TokenType.COLON);
+      const value = this.parseExpression();
+      rules.push({ action, value });
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('PermissionStatement', { rules });
+  }
+
+  parseMCPStatement() {
+    this.expect(TokenType.MCP);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      const key = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('MCPStatement', { config });
+  }
+
+  parseTeamStatement() {
+    this.expect(TokenType.TEAM);
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.expect(TokenType.STRING).value;
+    }
+    this.expect(TokenType.LBRACE);
+    const roles = {};
+    let coordination = 'hierarchical';
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON || this.current().type === TokenType.COMMA) {
+        this.advance();
+        continue;
+      }
+      const key = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      if (key === 'coordination') {
+        coordination = this.parseExpression();
+      } else {
+        // Role definition
+        roles[key] = this.parseExpression();
+      }
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('TeamStatement', { name, roles, coordination });
+  }
+
+  parseEditStatement() {
+    this.expect(TokenType.EDIT);
+    const filePath = this.parseExpression();
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      const key = this.expect(TokenType.IDENTIFIER).value;
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('EditStatement', { file: filePath, config });
   }
 
   parsePattern() {

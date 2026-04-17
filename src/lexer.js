@@ -74,6 +74,10 @@ const TokenType = {
   ETHICS: 'ETHICS',
   SHARE: 'SHARE',
   HEARTBEAT: 'HEARTBEAT',
+  PERMISSION: 'PERMISSION',
+  MCP: 'MCP',
+  TEAM: 'TEAM',
+  EDIT: 'EDIT',
 
   // Operators
   PLUS: 'PLUS',
@@ -323,7 +327,11 @@ class Lexer {
     evolve: TokenType.EVOLVE,
     ethics: TokenType.ETHICS,
     share: TokenType.SHARE,
-    heartbeat: TokenType.HEARTBEAT,  };
+    heartbeat: TokenType.HEARTBEAT,
+    permission: TokenType.PERMISSION,
+    mcp: TokenType.MCP,
+    team: TokenType.TEAM,
+    edit: TokenType.EDIT,  };
 
   addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);

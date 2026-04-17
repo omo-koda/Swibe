@@ -1,0 +1,62 @@
+-- Next Phase Demo: Permission System + MCP + Think Loops + Team Coordination
+-- Swibe v3.1 — Crown Architect: Bino EL Gua Omo Koda Ase
+
+-- 1. Ethics declaration (required before sensitive operations)
+ethics {
+  harm_none: true;
+  sovereign_data: true;
+  receipt_chain: true
+}
+
+-- 2. Permission matrix — Swibe-native granular access control
+permission {
+  think: "auto";
+  chain: "auto";
+  bash: "plan";
+  mint: "ask";
+  birth: "ask";
+  seal: "ask"
+}
+
+-- 3. MCP integration — connect to tool servers
+mcp {
+  server: "filesystem";
+  transport: "stdio"
+}
+
+-- 4. Think with agentic loop — iterates until goal achieved
+think "Review the codebase and find any security issues" {
+  loop: true,
+  max_iterations: 5
+}
+
+-- 5. File edit — partial replacement, not full overwrite
+edit "src/main.swibe" {
+  replace: "old_function()";
+  with: "new_function()"
+}
+
+-- 6. Team coordination — role-based multi-agent
+team "DevTeam" {
+  architect: "designs the system architecture";
+  coder: "implements the design";
+  reviewer: "audits for ethics and quality";
+  coordination: "hierarchical"
+}
+
+-- 7. Budget enforcement
+budget {
+  tokens: 100000;
+  time: "300s"
+}
+
+-- 8. Enhanced remember
+remember {
+  "session_context"
+}
+
+-- 9. Skill with parameterized template
+skill SecurityAudit {
+  prompt: "Audit code for OWASP top 10 vulnerabilities",
+  tools: ["read_file", "list_files"]
+}
