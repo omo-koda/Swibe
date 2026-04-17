@@ -1,6 +1,6 @@
 /**
  * Swibe Language Lexer
- * Tokenizes Vibe source code
+ * Tokenizes Swibe source code
  */
 
 const TokenType = {

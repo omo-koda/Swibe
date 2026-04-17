@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
 /**
- * LLM Integration for Vibe
+ * LLM Integration for Swibe
  * Supports Claude, Ollama, HuggingFace, Grok, and AI Tools
  */
 

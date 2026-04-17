@@ -1,8 +1,8 @@
-![Version](https://img.shields.io/badge/version-v1.3.4-blue)
+![Version](https://img.shields.io/badge/version-v3.0.7-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Layer](https://img.shields.io/badge/layer-Language-lightgrey)
-[![npm](https://img.shields.io/badge/npm-v1.3.4-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
-# Swibe: Agent-Native Scripting (v1.3.4)
+[![npm](https://img.shields.io/badge/npm-v3.0.7-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
+# Swibe: Agent-Native Scripting (v3.0.7)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
@@ -16,33 +16,34 @@ Swibe is a sovereign programming language where agents, prompts, neural layers, 
 | v1.0 | ✅ Complete | Agent runtime, sovereign vault, RAG |
 | v1.1 | ✅ Complete | Hybrid compiler, swarm OTP, plugin system |
 | v1.2 | ✅ Complete | Python/R/Lisp/Matlab/Wolfram backends, vitest 44/44 |
-| **v1.3 ✅** | ✅ **Current** | VSCode LSP server, PWA real LLM, think real primitive |
-| **v1.4** | 🔜 Next | Documentation site, VSCode marketplace, registry.swibe.dev |
-| v2.0 | 🌐 Horizon | Sovereign agent economy, on-chain receipts |
+| v1.3 | ✅ Complete | VSCode LSP server, PWA real LLM, think real primitive |
+| v2.x | ✅ Complete | Hybrid compiler, plugin/runtime expansion, wider backend coverage |
+| **v3.0.7 ✅** | ✅ **Current** | JS-first runtime, 39+ backend emitters, sovereign runtime/tooling |
+| **Next** | 🔜 Planned | Documentation site, VSCode marketplace, registry.swibe.dev |
 
 ## 🌀 Major Primitives (v1.1)
 
 | Primitive | Ritual Purpose |
 |---|---|
 | `think` | LLM-native reasoning with SHA-256 receipt sealing. |
-| `swarm` | Multi-agent coordination via BEAM (Elixir/OTP), Go, or Rust. |
+| `swarm` | Multi-agent coordination; JS uses lightweight async coordination, other backends can map to richer runtimes. |
 | `neural` | High-performance neural layer simulation (86B internal neurons). |
 | `meta-digital` | High-stakes chained skill execution with ethical `refuse_if` filters. |
-| `secure { }` | Privacy-first sandboxed execution block. |
+| `secure { }` | Restricted JS `vm` execution context in the current runtime. |
 | `app { }` | Declare and birth full applications in one breath. |
 | `loop until` | Self-healing execution — runs until a goal is verified. |
 | `hybrid` | NEW in v1.1: Multi-target orchestration (e.g. BEAM for logic, Rust for speed). |
 | `%%` | Prompt-splice — natural language as valid, compiled syntax. |
 
 ## 🚀 33+ Compilation Targets
-Swibe now supports a hybrid compiler that can split a single source into multiple specialized targets:
+Swibe supports a hybrid compiler that can split a single source into multiple specialized targets:
 - **BEAM (Elixir/OTP)**: Fault-tolerant orchestration and agent supervisors.
 - **System (Rust/Go)**: High-speed safe enforcers.
 - **Frontend (TS/WASM)**: Web-playground and PWA distribution.
 - **Cloud (Lambda/FastAPI)**: Serverless agent endpoints.
 
 ## 🛡️ Sovereign Identity
-v1.1 introduces persistent RAG storage and bip-39 ritual phrases for every agent. Every `think` command produces a verifiable SHA-256 receipt, and every `swarm` is monitored by an OTP Supervisor tree.
+Swibe includes persistent RAG-style storage and bip-39 ritual phrases for agents. Every `think` command produces a SHA-256 receipt. Rich swarm supervision is backend-dependent rather than guaranteed by the default JS runtime.
 
 ## 🧠 LLM Providers
 Swibe supports multiple LLM backends using a provider chain.
@@ -102,6 +103,13 @@ Any ecosystem can implement the `SwibePlugin` contract:
 
 ```bash
 npm i -g @bino-elgua/swibe
+```
+
+For local development and tests:
+
+```bash
+npm install
+npm test
 ```
 
 ## 🌍 Quick Example

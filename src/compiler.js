@@ -6,6 +6,8 @@
 import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
 import { LLMIntegration } from './llm-integration.js';
+import { IRGenerator } from './ir-generator.js';
+import { TypeInference } from './type-inference.js';
 import { TypeInferencer } from './typeinference.js';
 import { genElixir } from './backends/elixir.js';
 import { genPony } from './backends/pony.js';
@@ -45,11 +47,25 @@ import { genRuby } from './backends/ruby.js';
 import { genPerl } from './backends/perl.js';
 
 class Compiler {
-  constructor(source, targetLanguage = 'javascript') {
+  constructor(source, targetLanguage = 'javascript', options = {}) {
     this.source = source;
     this.targetLanguage = targetLanguage;
     this.llm = new LLMIntegration();
     this.ast = null;
+    this.options = {
+      strictInternalPasses: false,
+      ...options,
+    };
+    this.warnings = [];
+  }
+
+  _warn(pass, error) {
+    const message = `[COMPILER:${pass}] ${error.message}`;
+    this.warnings.push(message);
+    if (this.options.strictInternalPasses) {
+      throw error;
+    }
+    console.warn(message);
   }
 
   async compile() {
@@ -63,15 +79,15 @@ class Compiler {
       const irAst = ir.generate(ast);
       // Wire IR generator in a non-destructive way for compatibility
       ast = (irAst && irAst.type) ? irAst : ast;
-    } catch (_e) {
-      // silently catch IR generation errors
+    } catch (error) {
+      this._warn('IR', error);
     }
 
     try {
       const typeInference = new TypeInference();
       typeInference.infer(ast);
-    } catch (_e) {
-      // silently catch type inference errors
+    } catch (error) {
+      this._warn('TYPE-INFERENCE', error);
     }
 
     try {
@@ -81,8 +97,8 @@ class Compiler {
         console.warn('[TYPE] Warnings:', typeResult.errors);
       }
       this._types = typeResult.types;
-    } catch (_e) {
-      // silently catch type inferencer errors
+    } catch (error) {
+      this._warn('TYPE-INFERENCER', error);
     }
 
     this.ast = ast;

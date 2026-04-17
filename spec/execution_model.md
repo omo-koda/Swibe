@@ -11,13 +11,19 @@ Functions in Swibe are deterministic by default when operating on pure data. How
 Skills encapsulate prompts and logic for agents. They are non-deterministic by nature as they involve LLM interactions. The execution model treats a skill as a stateful transition where the input is a prompt context and the output is a receipt-sealed action.
 
 ### `swarm` (Agent Coordination)
-Swarms execute as concurrent, fault-tolerant groups. In the Elixir backend, this maps to OTP Supervision trees. Determinism is not guaranteed for execution order, but the "consensus" of the swarm is finalized via a collective receipt.
+Swarms represent concurrent agent coordination. In the default JavaScript target,
+the compiler currently lowers `swarm` to lightweight async coordination rather
+than a full supervisor runtime. In the Elixir backend, the intended model is OTP
+Supervision trees. Determinism is not guaranteed for execution order.
 
 ### `think` (LLM Inference)
 The `think` primitive is explicitly non-deterministic. Every `think` call generates a SHA-256 receipt that includes the prompt, the response, and the model metadata, allowing for post-hoc verification of the "thought" process.
 
 ### `secure` (Sandboxed Blocks)
-The `secure{}` block enforces strict resource and capability isolation. Code inside a `secure` block cannot access the network, file system, or global state unless explicitly granted via a tool-call bridge. It is the primary mechanism for safe execution of untrusted or AI-generated code.
+The `secure{}` block narrows the available runtime surface. In the current JS
+runtime it compiles to `sandbox_run(...)`, which uses a Node `vm` context with a
+restricted builtin set and a timeout. It should be treated as safer execution,
+not as a complete hardened sandbox for hostile code.
 
 ### `meta-digital` (Ethical Guardrails)
 Meta-digital blocks execute as a sequential chain of "breaths" or steps. Each step must pass the defined `ethics` guard (an automated audit) before the next step begins. It provides a high-level deterministic flow for otherwise non-deterministic agent actions.
@@ -38,7 +44,9 @@ Channels provide synchronized communication between agents or concurrent blocks.
 Resources follow linear logic: they must be consumed exactly once. This ensures that critical assets (like file handles or blockchain tokens) are never duplicated or leaked. The compiler enforces these rules at the static analysis phase.
 
 ### `app` (Autonomous Applications)
-The `app` primitive defines a top-level autonomous system. Its execution involves spinning up the necessary swarms, setting up RAG persistence, and deploying the resulting interfaces to the specified platform.
+The `app` primitive defines a top-level autonomous system. Its implementation is
+currently target-dependent and, in the JS runtime, builds on the same `swarm`,
+RAG, and builtin runtime surfaces described above.
 
 ### `mint`, `receipt`, `seal`, `walrus` (Sovereign Blockchain)
 These primitives interact with the Sui blockchain (via the Omokoda soul module). `mint` creates on-chain assets, `receipt` emits events for verification, `seal` handles key derivation, and `walrus` manages decentralized blob storage. These operations are deterministic in their effect on the blockchain state.

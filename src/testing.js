@@ -1,5 +1,5 @@
 /**
- * Vibe Testing Framework
+ * Swibe Testing Framework
  * Supports #[test] macros, assertions, benchmarking
  */
 

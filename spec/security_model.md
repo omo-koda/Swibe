@@ -4,36 +4,52 @@ Swibe is designed for the safe execution of autonomous agents and AI-generated c
 
 ## The `secure{}` Sandbox
 
-The `secure{}` block provides a multi-layered sandbox that isolates execution from the host system and the rest of the Swibe runtime.
+In the current JavaScript runtime, `secure{}` provides a constrained Node `vm`
+execution context plus a narrowed builtin surface. It is useful for reducing
+ambient access, but it is not a hardened security boundary for hostile code.
 
 ### 1. Node.js `vm` Isolation (JavaScript Target)
-In the JavaScript/Node.js backend, `secure{}` utilizes the native `vm` module to create a new, isolated context.
-- **Global Object:** The global object is replaced with a minimal set of safe primitives. Standard Node.js globals like `process`, `require`, `module`, and `exports` are removed.
-- **Context Separation:** Code inside the block cannot access variables or functions defined outside unless they are explicitly passed into the context via a "bridge".
+In the JavaScript/Node.js backend, `secure{}` uses the native `vm` module to
+create an isolated context.
+- **Global Object:** The context exposes only a curated subset of Swibe
+  builtins such as `println`, crypto helpers, and `rag`.
+- **Context Separation:** Code inside the block cannot directly access module
+  scope from the caller unless it is passed through the runtime bridge.
 
 ### 2. Resource Limits
-To prevent Denial of Service (DoS) attacks from untrusted code, `secure{}` enforces the following limits:
-- **CPU Time:** Execution is interrupted if the CPU time exceeds a predefined threshold (default: 5000ms).
-- **Memory Usage:** The memory allocated to the sandboxed context is capped.
-- **Recursion Depth:** The parser and runtime limit the depth of the call stack.
+The current JS runtime enforces a `vm` timeout and parser/runtime depth limits.
+- **CPU Time:** `sandbox_run` applies a 5000ms timeout to `vm.runInContext`.
+- **Memory Usage:** There is no hard process-level memory cap enforced by the
+  current JS runtime.
+- **Recursion Depth:** Parser and runtime depth checks exist, but they are not a
+  full substitute for process isolation.
 
 ### 3. Network Rules
-By default, code within a `secure{}` block is "air-gapped":
-- **Zero Ingress/Egress:** Direct access to the `http` and `net` modules is disabled.
-- **Tool-Call Only:** Any network interaction must happen through an authorized tool call registered with the Swibe runtime. These tool calls are audited and can be rate-limited or blocked based on ethical guardrails.
+By default, the JS sandbox context does not expose `http`, `net`, or `fetch`.
+- **Zero direct module access:** Direct access to Node networking modules is not
+  available inside the provided context.
+- **Runtime caveat:** This is a runtime-surface restriction, not a formal
+  container boundary.
 
 ### 4. File System Access
-The host file system is completely hidden from the `secure{}` block:
-- **No `fs` access:** The `fs` module is not provided.
-- **Virtual RAG Storage:** If the code needs to persist data, it must use the `rag` module, which maps to a virtual, scoped storage area managed by the agent's identity.
+The JS sandbox context does not expose `fs` directly.
+- **No `fs` access in context:** File APIs are not injected into the sandbox.
+- **Scoped persistence via runtime bridge:** Persistence currently happens
+  through the provided `rag` API, which writes into Swibe-managed storage.
 
 ### 5. Identity-Based Permissions
-Every `secure{}` block is associated with a Swibe identity (BIP-39 ritual phrase). Permissions are tied to this identity:
-- **Capability-Based Security:** Code must possess a specific "token" or "capability" to perform effectful operations like minting tokens or storage blobs.
-- **Audit Trails:** All actions within a `secure{}` block that interact with the outside world (via tools) are recorded in a SHA-256 sealed receipt.
+Swibe associates effectful operations with runtime identity and receipt flows,
+but capability enforcement is partial in the current JS runtime.
+- **Receipt trails:** `think` and related runtime operations produce SHA-256
+  receipt data.
+- **Capability model:** This is an architectural direction; the current JS
+  runtime does not yet enforce a complete capability token model across all
+  primitives.
 
 ## Multi-Target Security
-While the JavaScript target uses `vm`, other targets implement `secure{}` using native isolation mechanisms:
-- **Rust:** Maps to `std::thread` with restricted capabilities and potentially WASM-based isolation for untrusted logic.
-- **Move:** Naturally secure due to the Move VM's linear type system and lack of dynamic dispatch, preventing reentrancy and unauthorized resource access.
-- **Elixir:** Uses separate OTP processes with restricted message-passing capabilities and custom reducers to limit resource consumption.
+Backends may map `secure{}` differently, but those guarantees are backend-
+specific and should be treated as codegen intent unless verified in the target
+runtime.
+- **Rust:** Intended to map to restricted execution or WASM-style isolation.
+- **Move:** Benefits from the Move VM model for resource safety.
+- **Elixir:** Intended to rely on OTP process separation and supervision.
