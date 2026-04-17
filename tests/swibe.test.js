@@ -484,6 +484,61 @@ describe('Swibe v3.1 — Hermetic Ethics', () => {
   });
 });
 
+describe('Swibe v3.6+v3.7 — Registry + Docs', () => {
+  it('registry worker.js exists and has endpoints', async () => {
+    const { default: fs } = await import('node:fs');
+    const worker = fs.readFileSync(
+      'registry/worker.js', 'utf-8'
+    );
+    expect(worker).toContain('/packages');
+    expect(worker).toContain('/plugins');
+    expect(worker).toContain('/search');
+    expect(worker).toContain('@bino-elgua/swibe');
+  });
+
+  it('registry has swibe-openclaw package', async () => {
+    const { default: fs } = await import('node:fs');
+    const worker = fs.readFileSync(
+      'registry/worker.js', 'utf-8'
+    );
+    expect(worker).toContain('swibe-openclaw');
+  });
+
+  it('docs index.html exists and has content', async () => {
+    const { default: fs } = await import('node:fs');
+    const html = fs.readFileSync(
+      'docs/index.html', 'utf-8'
+    );
+    expect(html).toContain('Swibe');
+    expect(html).toContain('think');
+    expect(html).toContain('npm i -g @bino-elgua/swibe');
+    expect(html).toContain('OpenClaw');
+  });
+
+  it('docs covers all major primitives', async () => {
+    const { default: fs } = await import('node:fs');
+    const html = fs.readFileSync(
+      'docs/index.html', 'utf-8'
+    );
+    const primitives = [
+      'think','swarm','ethics','birth',
+      'heartbeat','remember','evolve','budget'
+    ];
+    primitives.forEach(p => {
+      expect(html).toContain(p);
+    });
+  });
+
+  it('registry wrangler.toml is valid', async () => {
+    const { default: fs } = await import('node:fs');
+    const toml = fs.readFileSync(
+      'registry/wrangler.toml', 'utf-8'
+    );
+    expect(toml).toContain('swibe-registry');
+    expect(toml).toContain('worker.js');
+  });
+});
+
 describe('Swibe v3.4 — VSCode Extension', () => {
   it('extension package.json has correct metadata', async () => {
     const { default: fs } = await import('node:fs');

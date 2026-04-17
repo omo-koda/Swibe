@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swibe — Sovereign Agent-Native Scripting</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #1e1e2e;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --code-bg: #1e1e2e;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+    }
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: rgba(10,10,15,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      margin-left: 2rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #7c3aed, #06b6d4, #10b981);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+    }
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin-bottom: 2rem;
+    }
+    .badges {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 3rem;
+    }
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.8rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .cta-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      padding: 0.875rem 2rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: #6d28d9; }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .install-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem 2rem;
+      font-family: monospace;
+      font-size: 1rem;
+      color: var(--accent2);
+      margin-top: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .copy-btn {
+      background: var(--border);
+      border: none;
+      color: var(--muted);
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.4rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .copy-btn:hover { background: var(--accent); color: white; }
+    section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+    section h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+    section p {
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+    .primitives-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+    .primitive-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+    .primitive-card:hover { border-color: var(--accent); }
+    .primitive-card h3 {
+      font-family: monospace;
+      color: var(--accent2);
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+    .primitive-card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+    .code-block pre {
+      font-family: monospace;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .kw { color: #7c3aed; }
+    .str { color: #10b981; }
+    .comment { color: #475569; font-style: italic; }
+    .fn { color: #06b6d4; }
+    .targets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.75rem;
+    }
+    .target-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">🌀 Swibe</div>
+  <div class="nav-links">
+    <a href="#primitives">Primitives</a>
+    <a href="#targets">Targets</a>
+    <a href="#examples">Examples</a>
+    <a href="https://github.com/Bino-Elgua/Swibe">GitHub</a>
+    <a href="https://www.npmjs.com/package/@bino-elgua/swibe">npm</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Swibe</h1>
+  <p>Sovereign Agent-Native Scripting Language.<br>
+  Build autonomous AI agents with first-class LLM primitives,
+  cryptographic identity, and sovereign ethics.</p>
+
+  <div class="badges">
+    <span class="badge">v3.0.6</span>
+    <span class="badge">39+ targets</span>
+    <span class="badge">92 tests</span>
+    <span class="badge">MIT</span>
+    <span class="badge">OpenClaw ready</span>
+  </div>
+
+  <div class="cta-group">
+    <a href="https://github.com/Bino-Elgua/Swibe"
+       class="btn btn-primary">Get Started</a>
+    <a href="#examples"
+       class="btn btn-secondary">See Examples</a>
+  </div>
+
+  <div class="install-box">
+    <span>npm i -g @bino-elgua/swibe</span>
+    <button class="copy-btn" onclick="navigator.clipboard.writeText('npm i -g @bino-elgua/swibe')">copy</button>
+  </div>
+</div>
+
+<section id="primitives">
+  <h2>Language Primitives</h2>
+  <p>Every Swibe primitive is a first-class citizen
+     — no libraries required.</p>
+
+  <div class="primitives-grid">
+    <div class="primitive-card">
+      <h3>think</h3>
+      <p>LLM reasoning with SHA-256 receipt sealing.
+         Works with Ollama, Claude, or OpenRouter.</p>
+    </div>
+    <div class="primitive-card">
+      <h3>swarm</h3>
+      <p>Multi-agent coordination. Parallel execution
+         with circuit breaker and shared state.</p>
+    </div>
+    <div class="primitive-card">
+      <h3>ethics</h3>
+      <p>Runtime ethics enforcement. harm-none,
+         audit-trail, or full hermetic mode.</p>
+    </div>
+    <div class="primitive-card">
+      <h3>birth</h3>
+      <p>Sovereign agent identity via BIPỌ̀N39.
+         Ed25519 keypair at first breath.</p>
+    </div>
+    <div class="primitive-card">
+      <h3>heartbeat</h3>
+      <p>Autonomous proactive scheduling.
+         Sabbath-aware. No cron needed.</p>
+    </div>
+    <div class="primitive-card">
+      <h3>remember</h3>
+      <p>Persistent memory across sessions.
+         SHA-256 keyed vault storage.</p>
+    </div>
+    <div class="primitive-card">
+      <h3>evolve</h3>
+      <p>Soul evolution. Agent grows with
+         every completed breath.</p>
+    </div>
+    <div class="primitive-card">
+      <h3>budget</h3>
+      <p>Resource controls. Token limits,
+         time limits, backpressure.</p>
+    </div>
+    <div class="primitive-card">
+      <h3>chain</h3>
+      <p>Sequential reasoning steps.
+         Output of one feeds next.</p>
+    </div>
+  </div>
+</section>
+
+<section id="examples">
+  <h2>Examples</h2>
+  <p>Write declarative agentic code in seconds.</p>
+
+  <h3 style="margin-bottom:1rem;color:var(--accent2)">
+    Hello Agent</h3>
+  <div class="code-block">
+    <pre><span class="comment">-- sovereign-agent.swibe</span>
+<span class="kw">fn</span> <span class="fn">main</span>() {
+  <span class="kw">ethics</span> { harm-none }
+  <span class="kw">think</span> <span class="str">"What can I help with today?"</span>
+  <span class="kw">remember</span> { <span class="str">"session"</span> }
+}</pre>
+  </div>
+
+  <h3 style="margin:2rem 0 1rem;color:var(--accent2)">
+    OpenClaw Deploy</h3>
+  <div class="code-block">
+    <pre><span class="comment">-- Deploy to WhatsApp, Telegram, Slack</span>
+<span class="kw">fn</span> <span class="fn">main</span>() {
+  <span class="kw">birth</span> { identity: <span class="str">"bipọn39"</span> }
+  <span class="kw">ethics</span> { harm-none; audit-trail }
+  <span class="kw">budget</span> { tokens: 50000; time: <span class="str">"300s"</span> }
+  <span class="kw">think</span> <span class="str">"Ready on all channels"</span>
+  <span class="kw">heartbeat</span> { every: 300s; check: <span class="str">"any tasks?"</span> }
+}</pre>
+  </div>
+
+  <div class="code-block" style="margin-top:1rem">
+    <pre>swibe compile agent.swibe --target openclaw
+openclaw skill install ./openclaw-out
+openclaw start</pre>
+  </div>
+
+  <h3 style="margin:2rem 0 1rem;color:var(--accent2)">
+    Hermetic Ethics</h3>
+  <div class="code-block">
+    <pre><span class="kw">fn</span> <span class="fn">main</span>() {
+  <span class="kw">ethics</span> {
+    mode: <span class="str">"hermetic"</span>
+    harm-none
+    audit-trail
+    gender: <span class="str">"mint,phone"</span>
+  }
+  <span class="kw">think</span> <span class="str">"7 principles enforced at runtime"</span>
+}</pre>
+  </div>
+</section>
+
+<section id="targets">
+  <h2>39+ Compilation Targets</h2>
+  <p>One .swibe file compiles to any backend.</p>
+  <div class="targets-grid">
+    <div class="target-chip">JavaScript</div>
+    <div class="target-chip">TypeScript</div>
+    <div class="target-chip">Rust</div>
+    <div class="target-chip">Go</div>
+    <div class="target-chip">Python</div>
+    <div class="target-chip">Elixir</div>
+    <div class="target-chip">Sui Move</div>
+    <div class="target-chip">Julia</div>
+    <div class="target-chip">Nim</div>
+    <div class="target-chip">Zig</div>
+    <div class="target-chip">Haskell</div>
+    <div class="target-chip">OCaml</div>
+    <div class="target-chip">F#</div>
+    <div class="target-chip">Clojure</div>
+    <div class="target-chip">Scala</div>
+    <div class="target-chip">OpenClaw</div>
+    <div class="target-chip">WASM</div>
+    <div class="target-chip">+ 22 more</div>
+  </div>
+</section>
+
+<footer>
+  <p>Built by <a href="https://github.com/Bino-Elgua">Bínò ÈL Guà</a>
+  · <a href="https://github.com/Bino-Elgua/Swibe">GitHub</a>
+  · <a href="https://www.npmjs.com/package/@bino-elgua/swibe">npm</a>
+  · MIT License</p>
+  <p style="margin-top:0.5rem;font-size:0.8rem">
+    Àṣẹ. 🕊️🤍🗿</p>
+</footer>
+
+</body>
+</html>
