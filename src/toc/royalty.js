@@ -1,7 +1,8 @@
 /**
  * Swibe ToC Royalty Engine — Phase 7
- * Creators earn Àṣẹ (10%) on every job their agents complete
- * Earnings locked 7 days (Sabbath vesting cycle)
+ * Creator royalty tracking at the agent layer.
+ * Actual Àṣẹ royalty distribution happens at OSOVM (op_job_payment).
+ * Swibe tracks creator→agent relationships and royalty percentages.
  */
 
 import { EventEmitter } from 'events';

@@ -1,6 +1,10 @@
 /**
  * Swibe ToC Wallet — Phase 7: Agent Wallets with Neural Birth Endowment
  * Every agent born receives 86B Dopamine + 86M Synapse (neural layer mapping)
+ *
+ * Birth endowment is triggered by OSOVM op_agent_birth (0x3e).
+ * The VM locks 10 Àṣẹ from the creator and emits the endowment signal.
+ * Swibe applies the signal — agents never mint their own tokens.
  */
 
 import { EventEmitter } from 'events';
@@ -10,6 +14,9 @@ const BIRTH_ENDOWMENT = {
   [TOKEN_TYPE.TOC_D]: 86_000_000_000,
   [TOKEN_TYPE.TOC_S]: 86_000_000,
 };
+
+/** Fixed Àṣẹ cost per agent birth — enforced at OSOVM, referenced here */
+export const AGENT_BIRTH_FEE_ASE = 10;
 
 export class Wallet extends EventEmitter {
   constructor(ownerId, ownerType = 'agent', ledger = null) {
@@ -23,16 +30,27 @@ export class Wallet extends EventEmitter {
     this.cooldowns = {};
   }
 
-  birth() {
+  /**
+   * Apply birth endowment from OSOVM signal.
+   * Called when OSOVM op_agent_birth (0x3e) succeeds — VM locked 10 Àṣẹ,
+   * now Swibe mints the neural endowment. Agent never self-mints.
+   * @param {object} vmSignal - Optional signal from OSOVM with endowment amounts
+   */
+  birth(vmSignal = null) {
     if (this.ownerType !== 'agent') {
       throw new Error('Only agents receive birth endowment');
     }
-    this.ledger.mint(this.ownerId, TOKEN_TYPE.TOC_D, BIRTH_ENDOWMENT[TOKEN_TYPE.TOC_D]);
-    this.ledger.mint(this.ownerId, TOKEN_TYPE.TOC_S, BIRTH_ENDOWMENT[TOKEN_TYPE.TOC_S]);
+    const dopamine = vmSignal?.dopamine_endowment || BIRTH_ENDOWMENT[TOKEN_TYPE.TOC_D];
+    const synapse = vmSignal?.synapse_endowment || BIRTH_ENDOWMENT[TOKEN_TYPE.TOC_S];
+    // Mint from VM signal — these are the only tokens minted at birth, ever
+    this.ledger.mint(this.ownerId, TOKEN_TYPE.TOC_D, dopamine, 'vm_birth');
+    this.ledger.mint(this.ownerId, TOKEN_TYPE.TOC_S, synapse, 'vm_birth');
     this.emit('birth', {
       ownerId: this.ownerId,
-      dopamine: BIRTH_ENDOWMENT[TOKEN_TYPE.TOC_D],
-      synapse: BIRTH_ENDOWMENT[TOKEN_TYPE.TOC_S],
+      dopamine,
+      synapse,
+      source: 'osovm_agent_birth',
+      aseLocked: AGENT_BIRTH_FEE_ASE,
     });
     return this;
   }
@@ -49,9 +67,14 @@ export class Wallet extends EventEmitter {
     };
   }
 
-  receive(token, amount) {
-    this.ledger.mint(this.ownerId, token, amount);
-    this.emit('receive', { token, amount });
+  receive(token, amount, source = 'internal') {
+    this.ledger.mint(this.ownerId, token, amount, source);
+    this.emit('receive', { token, amount, source });
+  }
+
+  receiveFromVM(dopamineAmount) {
+    this.ledger.mint(this.ownerId, TOKEN_TYPE.TOC_D, dopamineAmount, 'vm_conversion');
+    this.emit('vm_conversion', { dopamine: dopamineAmount });
   }
 
   spend(token, amount) {
@@ -128,12 +151,12 @@ export class WalletRegistry {
     this.wallets = new Map();
   }
 
-  createAgent(agentId) {
+  createAgent(agentId, vmSignal = null) {
     if (this.wallets.has(agentId)) {
       throw new Error(`Wallet already exists for ${agentId}`);
     }
     const wallet = new Wallet(agentId, 'agent', this.ledger);
-    wallet.birth();
+    wallet.birth(vmSignal);
     this.wallets.set(agentId, wallet);
     return wallet;
   }

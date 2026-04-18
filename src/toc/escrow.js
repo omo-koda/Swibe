@@ -1,7 +1,8 @@
 /**
  * Swibe ToC Escrow — Phase 7
- * Job payment locking: human escrows Àṣẹ, released on verification
- * False jobs lose escrow to protocol burn
+ * Job state tracking at the agent layer.
+ * Àṣẹ escrow is enforced at the VM layer (OSOVM op_job_payment).
+ * Swibe tracks job lifecycle and receives Dopamine conversion signals.
  */
 
 import { EventEmitter } from 'events';

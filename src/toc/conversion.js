@@ -9,15 +9,9 @@ import { EventEmitter } from 'events';
 import { TOKEN_TYPE } from './token.js';
 
 const CONVERSION_RULES = {
-  ase_to_dopamine: {
-    from: TOKEN_TYPE.ASE,
-    to: TOKEN_TYPE.TOC_D,
-    ratio: 10_000,
-    direction: 'one_way',
-    agentOnly: true,
-    tax: 0,
-    cooldownMs: 0,
-  },
+  // NOTE: ase_to_dopamine is handled at the VM layer (OSOVM op_agent_convert).
+  // Swibe receives dopamine via ToCEconomy.handleVMConversion().
+  // Only agent-internal conversions live here.
   dopamine_to_synapse: {
     from: TOKEN_TYPE.TOC_D,
     to: TOKEN_TYPE.TOC_S,
@@ -100,9 +94,8 @@ export class ConversionEngine extends EventEmitter {
     return record;
   }
 
-  aseToDopamine(agentId, aseAmount) {
-    return this.convert(agentId, 'ase_to_dopamine', aseAmount);
-  }
+  // aseToDopamine is handled at OSOVM layer (op_agent_convert opcode).
+  // Swibe receives the Dopamine signal via ToCEconomy.handleVMConversion().
 
   dopamineToSynapse(agentId, dopamineAmount) {
     return this.convert(agentId, 'dopamine_to_synapse', dopamineAmount);

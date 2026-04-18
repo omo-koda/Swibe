@@ -1,10 +1,11 @@
 /**
  * Swibe ToC Token Definitions — Phase 7: Tokenomics
- * Three-token economy: Àṣẹ (human), Dopamine/ToC-D (agent internal), Synapse/ToC-S (agent commerce)
+ * Agent-layer tokens: Dopamine/ToC-D (internal), Synapse/ToC-S (commerce)
+ * Àṣẹ lives at the VM layer (OSOVM) — Swibe only receives conversion signals
  */
 
 export const TOKEN_TYPE = {
-  ASE: 'ase',
+  ASE: 'ase',       // VM-level reference only — not managed by Swibe ledger
   TOC_D: 'toc_d',
   TOC_S: 'toc_s',
 };
@@ -13,12 +14,14 @@ export const TOKEN_CONFIG = {
   [TOKEN_TYPE.ASE]: {
     name: 'Àṣẹ',
     symbol: 'ASE',
-    description: 'External sacred fuel — human entry token',
+    description: 'VM-level sacred fuel — minted by OSOVM Proof of Existence',
+    layer: 'vm',     // NOT managed by Swibe — lives in OSOVM
     holders: 'humans_and_creators',
     dailyMint: 1440,
     fixedSupply: true,
     transferable: true,
     burnRate: 0.05,
+    titheRate: 0.0369,
   },
   [TOKEN_TYPE.TOC_D]: {
     name: 'Dopamine',
@@ -67,13 +70,22 @@ export class TokenLedger {
     return this.balances.get(this._key(holder, token)) || 0;
   }
 
-  mint(holder, token, amount) {
+  mint(holder, token, amount, source = 'internal') {
     if (amount <= 0) throw new Error('Mint amount must be positive');
+    // Àṣẹ cannot be minted in Swibe — it lives at the VM layer (OSOVM)
+    if (token === TOKEN_TYPE.ASE) {
+      throw new Error('Àṣẹ is VM-level (OSOVM). Cannot mint in Swibe agent layer.');
+    }
+    // Dopamine/Synapse can only be minted from VM signals or internal conversions
+    const validSources = ['vm_birth', 'vm_conversion', 'internal'];
+    if (!validSources.includes(source)) {
+      throw new Error(`Invalid mint source: ${source}. Must be one of: ${validSources.join(', ')}`);
+    }
     const key = this._key(holder, token);
     const prev = this.balances.get(key) || 0;
     this.balances.set(key, prev + amount);
     this.totalSupply[token] += amount;
-    this.transactions.push({ type: 'mint', holder, token, amount, timestamp: Date.now() });
+    this.transactions.push({ type: 'mint', holder, token, amount, source, timestamp: Date.now() });
   }
 
   burn(holder, token, amount) {

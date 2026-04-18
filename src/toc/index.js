@@ -26,39 +26,59 @@ export class ToCEconomy {
     this.escrow = new EscrowEngine(this.wallets, this.royalty);
   }
 
-  spawnAgent(agentId, creatorId = null, royaltyPercent = 10) {
-    const wallet = this.wallets.createAgent(agentId);
+  /**
+   * Spawn an agent from a VM birth signal.
+   * OSOVM op_agent_birth (0x3e) locks 10 Àṣẹ and emits the endowment signal.
+   * Swibe creates the wallet and applies 86B Dopamine + 86M Synapse.
+   * @param {string} agentId - Unique agent identifier
+   * @param {string} creatorId - Creator who paid the 10 Àṣẹ birth fee
+   * @param {number} royaltyPercent - Creator royalty % (default 10)
+   * @param {object} vmSignal - Optional OSOVM birth signal with endowment amounts
+   */
+  spawnAgent(agentId, creatorId = null, royaltyPercent = 10, vmSignal = null) {
+    const wallet = this.wallets.createAgent(agentId, vmSignal);
     if (creatorId) {
       this.royalty.registerCreator(creatorId, agentId, { percentage: royaltyPercent });
     }
     return wallet;
   }
 
-  registerHuman(userId, initialAse = 0) {
+  registerHuman(userId) {
+    // Humans hold Àṣẹ at the VM layer (OSOVM), not in Swibe.
+    // This registers a reference for royalty claims only.
     const wallet = this.wallets.createHuman(userId);
-    if (initialAse > 0) {
-      wallet.receive('ase', initialAse);
-    }
     return wallet;
   }
 
-  postJob(humanId, agentId, aseAmount, description = '') {
-    return this.escrow.create(humanId, agentId, aseAmount, description);
+  /**
+   * Handle VM conversion signal: OSOVM burned Àṣẹ, Swibe mints Dopamine.
+   * This is the bridge between VM-level Àṣẹ and agent-level Dopamine.
+   * Agent never holds Àṣẹ — it arrives as Dopamine.
+   */
+  handleVMConversion(agentId, dopamineAmount) {
+    const wallet = this.wallets.get(agentId);
+    if (!wallet) throw new Error(`No agent wallet for ${agentId}`);
+    wallet.receiveFromVM(dopamineAmount);
+    return { agentId, dopamine: dopamineAmount, source: 'osovm' };
   }
 
-  completeJob(escrowId) {
-    return this.escrow.release(escrowId);
+  /**
+   * Handle VM job payment signal: OSOVM processed the Àṣẹ split,
+   * Swibe receives the Dopamine conversion signal for the agent.
+   */
+  handleJobComplete(agentId, dopamineSignal) {
+    return this.handleVMConversion(agentId, dopamineSignal);
   }
 
   getStatus() {
     return {
       supply: this.wallets.getSupply(),
       burned: this.wallets.getBurned(),
-      activeEscrows: this.escrow.getActive().length,
       totalStaked: {
-        ase: this.staking.totalStaked('ase'),
+        toc_d: this.staking.totalStaked('toc_d'),
         toc_s: this.staking.totalStaked('toc_s'),
       },
+      note: 'Àṣẹ supply tracked at OSOVM layer, not here',
     };
   }
 }
