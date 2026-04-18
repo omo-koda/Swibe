@@ -492,6 +492,24 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
         const withStr = node.config?.with ? this.genJavaScript(node.config.with) : '""';
         return `await std.editFile(${file}, ${replace}, ${withStr});`;
       }
+      case 'BridgeStatement': {
+        const name = node.name || 'bridge';
+        const varName = name.replace(/[^a-zA-Z0-9_]/g, '_');
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `const ${varName} = await std.bridge({\n  name: "${name}",\n${entries.join(',\n')}\n});`;
+      }
+      case 'SessionStatement': {
+        const action = node.config?.action
+          ? this.genJavaScript(node.config.action)
+          : '"create"';
+        const name = node.name ? `"${node.name}"` : 'null';
+        const entries = Object.entries(node.config || {})
+          .filter(([k]) => k !== 'action')
+          .map(([k, v]) => `  ${k}: ${this.genJavaScript(v)}`);
+        return `await std.session(${action}, ${name}, {\n${entries.join(',\n')}\n});`;
+      }
       default: return `/* Unhandled: ${node.type} */`;
     }
   }

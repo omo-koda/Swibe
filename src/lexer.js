@@ -78,6 +78,8 @@ const TokenType = {
   MCP: 'MCP',
   TEAM: 'TEAM',
   EDIT: 'EDIT',
+  BRIDGE: 'BRIDGE',
+  SESSION: 'SESSION',
 
   // Operators
   PLUS: 'PLUS',
@@ -331,7 +333,9 @@ class Lexer {
     permission: TokenType.PERMISSION,
     mcp: TokenType.MCP,
     team: TokenType.TEAM,
-    edit: TokenType.EDIT,  };
+    edit: TokenType.EDIT,
+    bridge: TokenType.BRIDGE,
+    session: TokenType.SESSION,  };
 
   addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);

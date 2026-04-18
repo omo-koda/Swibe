@@ -1,8 +1,8 @@
 {
   "name": "swibe-language",
   "displayName": "Swibe",
-  "description": "Sovereign Agent-Native Scripting Language — syntax highlighting, snippets, and LSP for Swibe",
-  "version": "3.0.5",
+  "description": "Sovereign Agent-Native Scripting Language — syntax highlighting, LSP, IDE bridge, session management for Swibe",
+  "version": "3.1.0",
   "publisher": "bino-elgua",
   "engines": { "vscode": "^1.80.0" },
   "categories": ["Programming Languages", "Snippets"],
@@ -50,6 +50,24 @@
         "uiTheme": "vs",
         "path": "./themes/swibe-light.json"
       }
+    ],
+    "commands": [
+      { "command": "swibe.openRepl",         "title": "Swibe: Open REPL" },
+      { "command": "swibe.compile",          "title": "Swibe: Compile File" },
+      { "command": "swibe.run",              "title": "Swibe: Run File" },
+      { "command": "swibe.compileOpenClaw",  "title": "Swibe: Compile to OpenClaw" },
+      { "command": "swibe.bridgeConnect",    "title": "Swibe: Connect Bridge" },
+      { "command": "swibe.bridgeDisconnect", "title": "Swibe: Disconnect Bridge" },
+      { "command": "swibe.sessionCreate",    "title": "Swibe: Create Session" },
+      { "command": "swibe.sessionResume",    "title": "Swibe: Resume Session" },
+      { "command": "swibe.sessionPanel",     "title": "Swibe: Session Panel" },
+      { "command": "swibe.evalSelection",    "title": "Swibe: Evaluate Selection" },
+      { "command": "swibe.format",           "title": "Swibe: Format Document" }
+    ],
+    "keybindings": [
+      { "command": "swibe.evalSelection",   "key": "ctrl+shift+e", "when": "editorLangId == swibe" },
+      { "command": "swibe.compile",          "key": "ctrl+shift+b", "when": "editorLangId == swibe" },
+      { "command": "swibe.openRepl",         "key": "ctrl+shift+r", "when": "editorLangId == swibe" }
     ]
   },
   "scripts": {

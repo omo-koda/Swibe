@@ -283,6 +283,16 @@ class Parser {
       return this.parseEditStatement();
     }
 
+    // Bridge statement
+    if (token.type === TokenType.BRIDGE) {
+      return this.parseBridgeStatement();
+    }
+
+    // Session statement
+    if (token.type === TokenType.SESSION) {
+      return this.parseSessionStatement();
+    }
+
     // Call tool statement
     if (token.type === TokenType.CALL_TOOL) {
       return this.parseCallToolStatement();
@@ -1043,6 +1053,62 @@ class Parser {
     }
     this.expect(TokenType.RBRACE);
     return new ASTNode('EditStatement', { file: filePath, config });
+  }
+
+  parseBridgeStatement() {
+    this.expect(TokenType.BRIDGE);
+    // Optional name: bridge "MyBridge" { ... }
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.current().value;
+      this.advance();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      // Accept keywords as keys (transport, port, session, etc.)
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('BridgeStatement', { name, config });
+  }
+
+  parseSessionStatement() {
+    this.expect(TokenType.SESSION);
+    // session "name" { ... } or session { action: "resume", id: "..." }
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.current().value;
+      this.advance();
+    } else if (this.current().type === TokenType.IDENTIFIER) {
+      name = this.current().value;
+      this.advance();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('SessionStatement', { name, config });
   }
 
   parsePattern() {

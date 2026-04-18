@@ -95,6 +95,14 @@ team_field = "coordination" ":" expression [ ";" ] ;
 edit_statement = "edit" expression "{" { edit_field } "}" ;
 edit_field = ( "replace" | "with" | "context_lines" ) ":" expression [ ";" ] ;
 
+(* Phase 3: IDE Bridge + Session Management *)
+
+bridge_statement = "bridge" [ string ] "{" { bridge_field } "}" ;
+bridge_field = identifier ":" expression [ ";" ] ;
+
+session_statement = "session" [ string | identifier ] "{" { session_field } "}" ;
+session_field = identifier ":" expression [ ";" ] ;
+
 (* Expressions *)
 
 expression = assignment ;

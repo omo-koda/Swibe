@@ -1,0 +1,68 @@
+-- Phase 3 Demo: IDE Bridge + Session Management + REPL Integration
+-- Swibe v3.1 — Crown Architect: Bino EL Gua Omo Koda Ase
+
+-- 1. Ethics declaration (required before sensitive operations)
+ethics {
+  harm_none: true;
+  sovereign_data: true;
+  receipt_chain: true
+}
+
+-- 2. Permission matrix — gates bridge and tool access
+permission {
+  think: "auto";
+  chain: "auto";
+  bridge: "auto";
+  session: "auto";
+  bash: "plan";
+  edit: "ask";
+  mint: "ask"
+}
+
+-- 3. IDE Bridge — bidirectional communication with VSCode/JetBrains
+bridge "sovereign-ide" {
+  transport: "tcp";
+  port: 6271
+}
+
+-- 4. Session management — persistent across IDE restarts
+session "dev-sprint" {
+  action: "create"
+}
+
+-- 5. Think with agentic loop — iterates with IDE feedback
+think "Review the codebase and find any security issues" {
+  loop: true,
+  max_iterations: 5
+}
+
+-- 6. Budget enforcement — prevents runaway loops
+budget {
+  tokens: 100000;
+  time: "300s"
+}
+
+-- 7. MCP integration — tool server connected through bridge
+mcp {
+  server: "filesystem";
+  transport: "stdio"
+}
+
+-- 8. Team coordination — roles communicate through bridge
+team "DevTeam" {
+  architect: "designs system architecture";
+  coder: "implements the design";
+  reviewer: "audits for ethics and quality";
+  coordination: "hierarchical"
+}
+
+-- 9. Session resume example
+session "dev-sprint" {
+  action: "resume"
+}
+
+-- 10. File edit — partial replacement with session tracking
+edit "src/main.swibe" {
+  replace: "old_function()";
+  with: "new_function()"
+}

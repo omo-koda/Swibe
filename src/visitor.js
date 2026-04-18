@@ -94,13 +94,30 @@ export class EthicsValidator extends ASTVisitor {
     }
   }
 
+  visitBridgeStatement(node) {
+    // Bridge requires permissions — it opens external connections
+    if (!this._hasPermissions) {
+      this.violations.push({
+        type: 'bridge_without_permissions',
+        message: 'IDE bridge requires a permission {} block',
+        node: node,
+      });
+    }
+  }
+
+  visitSessionStatement(node) {
+    // Sessions are safe operations — no violation needed
+    // But track that sessions are in use for downstream analysis
+    this._hasSessions = true;
+  }
+
   /**
    * Resolve the permission mode for a given action.
    * Falls back to 'ask' if no explicit rule.
    */
   resolvePermission(action) {
     if (this._permissionMatrix[action]) return this._permissionMatrix[action];
-    const safeActions = ['think', 'chain', 'plan', 'retrieve', 'remember', 'observe', 'heartbeat', 'receipt'];
+    const safeActions = ['think', 'chain', 'plan', 'retrieve', 'remember', 'observe', 'heartbeat', 'receipt', 'session'];
     if (safeActions.includes(action)) return 'auto';
     return 'ask';
   }
