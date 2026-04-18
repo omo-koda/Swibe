@@ -308,6 +308,26 @@ class Parser {
       return this.parseCoordinateStatement();
     }
 
+    // Witness statement (multimodal perception)
+    if (token.type === TokenType.WITNESS) {
+      return this.parseWitnessStatement();
+    }
+
+    // Pilot statement (computer control)
+    if (token.type === TokenType.PILOT) {
+      return this.parsePilotStatement();
+    }
+
+    // Viewport statement (screen understanding)
+    if (token.type === TokenType.VIEWPORT) {
+      return this.parseViewportStatement();
+    }
+
+    // Gestalt statement (parallel tool execution)
+    if (token.type === TokenType.GESTALT) {
+      return this.parseGestaltStatement();
+    }
+
     // Call tool statement
     if (token.type === TokenType.CALL_TOOL) {
       return this.parseCallToolStatement();
@@ -1194,6 +1214,92 @@ class Parser {
     }
     this.expect(TokenType.RBRACE);
     return new ASTNode('CoordinateStatement', { task, config });
+  }
+
+  parseWitnessStatement() {
+    this.expect(TokenType.WITNESS);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('WitnessStatement', { config });
+  }
+
+  parsePilotStatement() {
+    this.expect(TokenType.PILOT);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('PilotStatement', { config });
+  }
+
+  parseViewportStatement() {
+    this.expect(TokenType.VIEWPORT);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('ViewportStatement', { config });
+  }
+
+  parseGestaltStatement() {
+    this.expect(TokenType.GESTALT);
+    this.expect(TokenType.LBRACE);
+    const concurrent = [];
+    let merge = 'unified_context';
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      if (key === 'merge') {
+        merge = this.parseExpression();
+      } else {
+        const val = this.parseExpression();
+        concurrent.push({ action: key, value: val });
+      }
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('GestaltStatement', { concurrent, merge });
   }
 
   parsePattern() {

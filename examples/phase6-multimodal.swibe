@@ -1,0 +1,75 @@
+-- Phase 6 Demo: Multimodal Perception + Computer Control
+-- Swibe v3.2 — Crown Architect: Bino EL Gua Omo Koda Ase
+
+-- 1. Ethics (required for pilot/witness)
+ethics {
+  harm_none: true;
+  sovereign_data: true;
+  receipt_chain: true
+}
+
+-- 2. Permission matrix (required for witness/pilot/viewport)
+permission {
+  think: "auto";
+  witness: "auto";
+  pilot: "ask";
+  viewport: "auto";
+  gestalt: "auto";
+  bash: "plan"
+}
+
+-- 3. Budget
+budget {
+  tokens: 300000;
+  time: "900s";
+  cost_usd: 8
+}
+
+-- 4. Witness — multimodal perception
+witness {
+  modalities: "image,audio,document";
+  fusion: "unified_context";
+  max_concurrent: 4
+}
+
+-- 5. Pilot — browser control
+pilot {
+  mode: "browser";
+  safe_mode: true;
+  max_actions: 50;
+  timeout: 30000
+}
+
+-- 6. Viewport — screen understanding
+viewport {
+  width: 1920;
+  height: 1080;
+  scale: 1;
+  accessibility: true;
+  ocr: true
+}
+
+-- 7. Gestalt — parallel tool execution
+gestalt {
+  search: "find all security vulnerabilities";
+  analyze: "review code patterns";
+  scan: "check dependency versions";
+  merge: "unified_context"
+}
+
+-- 8. Think with multimodal context
+think "Analyze the screenshot and describe UI elements" {
+  loop: false
+}
+
+-- 9. Gestalt with first-wins merge
+gestalt {
+  fast_model: "quick analysis with haiku";
+  deep_model: "thorough analysis with opus";
+  merge: "first_wins"
+}
+
+-- 10. Remember multimodal results
+remember {
+  "perception_results"
+}

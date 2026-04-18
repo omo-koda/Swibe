@@ -83,6 +83,10 @@ const TokenType = {
   POLICY: 'POLICY',
   ANALYTICS: 'ANALYTICS',
   COORDINATE: 'COORDINATE',
+  WITNESS: 'WITNESS',
+  PILOT: 'PILOT',
+  VIEWPORT: 'VIEWPORT',
+  GESTALT: 'GESTALT',
 
   // Operators
   PLUS: 'PLUS',
@@ -341,7 +345,12 @@ class Lexer {
     session: TokenType.SESSION,
     policy: TokenType.POLICY,
     analytics: TokenType.ANALYTICS,
-    coordinate: TokenType.COORDINATE,  };
+    coordinate: TokenType.COORDINATE,
+    witness: TokenType.WITNESS,
+    pilot: TokenType.PILOT,
+    viewport: TokenType.VIEWPORT,
+    gestalt: TokenType.GESTALT,
+  };
 
   addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);

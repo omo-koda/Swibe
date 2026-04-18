@@ -75,6 +75,14 @@ const SWIBE_KEYWORDS: CompletionItem[] = [
     documentation: 'policy { max_tokens_per_user: 100000; forbidden: ["rm_rf"] }' },
   { label: 'analytics',  kind: CompletionItemKind.Keyword, detail: 'A/B testing and metrics',
     documentation: 'analytics "model_test" { variants: ["claude", "llama3"] }' },
+  { label: 'witness',    kind: CompletionItemKind.Keyword, detail: 'Multimodal perception',
+    documentation: 'witness { modalities: "image,audio"; fusion: "unified_context" }' },
+  { label: 'pilot',      kind: CompletionItemKind.Keyword, detail: 'Computer control',
+    documentation: 'pilot { mode: "browser"; safe_mode: true }' },
+  { label: 'viewport',   kind: CompletionItemKind.Keyword, detail: 'Screen understanding',
+    documentation: 'viewport { width: 1920; height: 1080; ocr: true }' },
+  { label: 'gestalt',    kind: CompletionItemKind.Keyword, detail: 'Parallel tool execution',
+    documentation: 'gestalt { search: "query"; analyze: "data"; merge: "unified_context" }' },
   { label: 'NeuralLayer',          kind: CompletionItemKind.Class, detail: '86B neuron cognitive layer' },
   { label: 'SovereignNeuralLayer', kind: CompletionItemKind.Class, detail: '86-param sovereign neural' },
 ];
@@ -93,6 +101,10 @@ const HOVER_DOCS: { [key: string]: string } = {
   coordinate: 'Dispatch task to team — hierarchical, democratic, competitive, or pipeline.',
   policy: 'Org-level controls — per-user limits, forbidden operations, rate limiting.',
   analytics: 'A/B experiments and metrics — model selection testing, custom tracking.',
+  witness: 'Multimodal perception — process image/video/audio/document with context fusion.',
+  pilot: 'Computer control — desktop/browser/mobile modes with perceive/act cycle.',
+  viewport: 'Screen understanding — resolution, accessibility tree, UI extraction, OCR.',
+  gestalt: 'Parallel tool execution — run concurrent operations and merge results.',
   budget: 'Resource budget — tokens, time limits, cost caps.',
   skill: 'Reusable capability with prompt template and tool list.',
   birth: 'Sovereign agent birth ceremony with BIPỌ̀N39 wallet generation.',
@@ -190,6 +202,10 @@ connection.onDocumentSymbol((params: DocumentSymbolParams): DocumentSymbol[] => 
     [/^\s*analytics\s+"([^"]+)"/, 'analytics', SymbolKind.Event],
     [/^\s*analytics\s+(\w+)/, 'analytics', SymbolKind.Event],
     [/^\s*coordinate\s+"([^"]+)"/, 'coordinate', SymbolKind.Method],
+    [/^\s*witness\b/, 'witness', SymbolKind.Event],
+    [/^\s*pilot\b/, 'pilot', SymbolKind.Event],
+    [/^\s*viewport\b/, 'viewport', SymbolKind.Property],
+    [/^\s*gestalt\b/, 'gestalt', SymbolKind.Method],
   ];
 
   lines.forEach((line, i) => {

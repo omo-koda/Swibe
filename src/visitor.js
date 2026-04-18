@@ -133,13 +133,57 @@ export class EthicsValidator extends ASTVisitor {
     // (soft check — team might be defined elsewhere)
   }
 
+  visitWitnessStatement(node) {
+    // Witness (multimodal perception) requires permissions — accesses external data
+    if (!this._hasPermissions) {
+      this.violations.push({
+        type: 'witness_without_permissions',
+        message: 'Witness perception requires a permission {} block',
+        node: node,
+      });
+    }
+  }
+
+  visitPilotStatement(node) {
+    // Pilot (computer control) requires both ethics and permissions
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'pilot_without_ethics',
+        message: 'Pilot computer control requires ethics {} declaration',
+        node: node,
+      });
+    }
+    if (!this._hasPermissions) {
+      this.violations.push({
+        type: 'pilot_without_permissions',
+        message: 'Pilot computer control requires a permission {} block',
+        node: node,
+      });
+    }
+  }
+
+  visitViewportStatement(node) {
+    // Viewport (screen capture) requires permissions
+    if (!this._hasPermissions) {
+      this.violations.push({
+        type: 'viewport_without_permissions',
+        message: 'Viewport screen access requires a permission {} block',
+        node: node,
+      });
+    }
+  }
+
+  visitGestaltStatement(node) {
+    // Gestalt (parallel execution) is safe but note its presence
+  }
+
   /**
    * Resolve the permission mode for a given action.
    * Falls back to 'ask' if no explicit rule.
    */
   resolvePermission(action) {
     if (this._permissionMatrix[action]) return this._permissionMatrix[action];
-    const safeActions = ['think', 'chain', 'plan', 'retrieve', 'remember', 'observe', 'heartbeat', 'receipt', 'session'];
+    const safeActions = ['think', 'chain', 'plan', 'retrieve', 'remember', 'observe', 'heartbeat', 'receipt', 'session', 'gestalt'];
     if (safeActions.includes(action)) return 'auto';
     return 'ask';
   }

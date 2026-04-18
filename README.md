@@ -1,16 +1,16 @@
-![Version](https://img.shields.io/badge/version-v3.1.0-blue)
+![Version](https://img.shields.io/badge/version-v3.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tests](https://img.shields.io/badge/tests-97%20passing-brightgreen)
 ![Backends](https://img.shields.io/badge/backends-44-orange)
 [![npm](https://img.shields.io/badge/npm-@bino--elgua/swibe-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
 
-# Swibe: Agent-Native Scripting Language (v3.1.0)
+# Swibe: Agent-Native Scripting Language (v3.2.0)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
 Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 44 backend targets, runs self-repairing swarms, and persists state via a BIP-39 ritual vault.
 
-v3.1 adds a full tool system with granular permissions, MCP integration, agentic think loops, hierarchical memory, bidirectional IDE bridge, advanced multi-agent coordination (hierarchical/democratic/competitive/pipeline), and production hardening with cost tracking, A/B analytics, and org-level policy controls.
+v3.2 adds multimodal perception (witness), computer control (pilot), screen understanding (viewport), and parallel tool execution (gestalt) — on top of the full tool system, MCP integration, agentic think loops, hierarchical memory, bidirectional IDE bridge, advanced multi-agent coordination, and production hardening from v3.1.
 
 ## Installation
 
@@ -222,6 +222,42 @@ analytics model_routing {
 
 Cost tracking supports model-specific pricing (Claude Opus/Sonnet/Haiku, GPT-4o, Ollama free models) with automatic USD calculation and configurable alert thresholds at 80%/100% utilization.
 
+### Phase 6: Multimodal + Computer Control
+
+```swibe
+-- Multimodal perception
+witness {
+  modalities: "image,audio,document";
+  fusion: "unified_context";
+  max_concurrent: 4
+}
+
+-- Computer control (browser/desktop/mobile)
+pilot {
+  mode: "browser";
+  safe_mode: true;
+  max_actions: 50
+}
+
+-- Screen understanding with OCR
+viewport {
+  width: 1920;
+  height: 1080;
+  accessibility: true;
+  ocr: true
+}
+
+-- Parallel tool execution with merge strategies
+gestalt {
+  search: "find vulnerabilities";
+  analyze: "review patterns";
+  scan: "check dependencies";
+  merge: "unified_context"
+}
+```
+
+**Witness** processes image, video, audio, and document inputs with configurable fusion strategies (unified_context, weighted, sequential). **Pilot** provides a perceive/act cycle for browser, desktop, and mobile automation with safety guards. **Viewport** captures screen state, builds accessibility trees, extracts UI elements, and runs OCR. **Gestalt** executes multiple tool operations concurrently with five merge strategies: unified_context, first_wins, majority_vote, concatenate, and reduce.
+
 ## 44 Compilation Targets
 
 Swibe backends are pure codegen emitters, mapping agentic primitives to native constructs.
@@ -392,7 +428,7 @@ Bidirectional communication between Swibe runtime and IDEs:
 - **REPL bridge** — evaluate Swibe code from editor selection
 - **Real-time diagnostics** — push parse errors and ethics violations to IDE
 
-### VSCode Extension (v3.1.0)
+### VSCode Extension (v3.2.0)
 
 Install from the `vscode-extension/` directory:
 
@@ -449,6 +485,10 @@ src/
   ide-bridge.js         # Bidirectional IDE bridge + SessionManager
   agent-coordinator.js  # Advanced multi-agent coordination (4 strategies)
   production.js         # CostTracker, Analytics, PolicyEngine
+  witness.js            # Multimodal perception (image/video/audio/document)
+  pilot.js              # Computer control (browser/desktop/mobile)
+  viewport.js           # Screen understanding (a11y, OCR, UI extraction)
+  gestalt.js            # Parallel tool execution (5 merge strategies)
   type-inference.js     # Static type inference
   conductor.js          # Technosis Sovereign Conductor
   backends/             # 44 codegen backends
@@ -499,11 +539,9 @@ grammar.ebnf            # Full EBNF specification
 | v3.3 | Complete | Interactive REPL with history, tab completion, Sabbath |
 | v3.4 | Complete | VSCode extension (syntax, snippets, theme, commands) |
 | v3.5-v3.7 | Complete | Registry hardening, Cloudflare registry worker, docs |
-| **v3.1.0** | **Current** | Phase 2: Permission system, MCP, think loops, memory engine |
-| | | Phase 3: IDE bridge, session management, two-way communication |
-| | | Phase 4: Advanced agent coordination (4 strategies) |
-| | | Phase 5: Cost tracking, A/B analytics, policy engine |
-| **Next** | Planned | TypeScript core migration, WASM runtime, production RAG |
+| v3.1.0 | Complete | Phase 2-5: Permissions, MCP, think loops, IDE bridge, coordination, production |
+| **v3.2.0** | **Current** | Phase 6: Witness (multimodal), Pilot (computer control), Viewport (screen), Gestalt (parallel) |
+| **Next** | Planned | Phase 7: Knowledge graphs, distributed mesh, TypeScript core migration |
 
 ## Environment Variables
 

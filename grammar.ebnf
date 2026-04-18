@@ -22,6 +22,10 @@ statement = function_decl
           | seal_statement
           | walrus_statement
           | expression_statement
+          | witness_statement
+          | pilot_statement
+          | viewport_statement
+          | gestalt_statement
           | return_statement ;
 
 (* Declarations *)
@@ -115,6 +119,21 @@ policy_field = identifier ":" expression [ ";" ] ;
 
 analytics_statement = "analytics" [ string | identifier ] "{" { analytics_field } "}" ;
 analytics_field = identifier ":" expression [ ";" ] ;
+
+(* Phase 6: Multimodal + Computer Control *)
+
+witness_statement = "witness" "{" { witness_field } "}" ;
+witness_field = identifier ":" expression [ ";" | "," ] ;
+
+pilot_statement = "pilot" "{" { pilot_field } "}" ;
+pilot_field = identifier ":" expression [ ";" | "," ] ;
+
+viewport_statement = "viewport" "{" { viewport_field } "}" ;
+viewport_field = identifier ":" expression [ ";" | "," ] ;
+
+gestalt_statement = "gestalt" "{" { gestalt_task | gestalt_merge } "}" ;
+gestalt_task = identifier ":" expression [ ";" | "," ] ;
+gestalt_merge = "merge" ":" expression [ ";" | "," ] ;
 
 (* Expressions *)
 

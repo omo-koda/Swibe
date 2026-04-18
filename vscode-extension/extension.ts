@@ -273,6 +273,10 @@ class SwibeHoverProvider implements vscode.HoverProvider {
     coordinate: 'Dispatch task to team — hierarchical/democratic/competitive/pipeline',
     policy: 'Org-level controls — token limits, forbidden ops, rate limits',
     analytics: 'A/B testing for model selection + metrics',
+    witness: 'Multimodal perception — image/video/audio/document processing with context fusion',
+    pilot: 'Computer control — desktop/browser/mobile with perceive/act cycle',
+    viewport: 'Screen understanding — resolution, accessibility, UI extraction, OCR',
+    gestalt: 'Parallel tool execution — concurrent operations with merge strategies',
     budget: 'Resource budget enforcement',
     skill: 'Reusable capability definition', swarm: 'Multi-agent swarm', birth: 'Agent birth ceremony',
     mint: 'Blockchain mint', receipt: 'Execution receipt', seal: 'Cryptographic seal',
@@ -296,6 +300,7 @@ class SwibeCompletionProvider implements vscode.CompletionItemProvider {
       'fn', 'struct', 'enum', 'match', 'if', 'else', 'return', 'mut', 'async', 'await',
       'let', 'const', 'think', 'swarm', 'ethics', 'permission', 'mcp', 'team', 'edit',
       'bridge', 'session', 'coordinate', 'policy', 'analytics',
+      'witness', 'pilot', 'viewport', 'gestalt',
       'budget', 'skill', 'secure', 'birth', 'mint', 'receipt', 'seal',
       'remember', 'neural', 'app', 'chain', 'plan', 'observe', 'evolve', 'heartbeat',
     ];
@@ -332,6 +337,10 @@ class SwibeSymbolProvider implements vscode.DocumentSymbolProvider {
       [/^\s*analytics\s+"([^"]+)"/, 'analytics', vscode.SymbolKind.Event],
       [/^\s*analytics\s+(\w+)/, 'analytics', vscode.SymbolKind.Event],
       [/^\s*coordinate\s+"([^"]+)"/, 'coordinate', vscode.SymbolKind.Method],
+      [/^\s*witness\b/, 'witness', vscode.SymbolKind.Event],
+      [/^\s*pilot\b/, 'pilot', vscode.SymbolKind.Event],
+      [/^\s*viewport\b/, 'viewport', vscode.SymbolKind.Property],
+      [/^\s*gestalt\b/, 'gestalt', vscode.SymbolKind.Method],
     ];
     lines.forEach((line, i) => {
       for (const [re, kind, sym] of patterns) {

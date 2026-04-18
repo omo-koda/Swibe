@@ -532,6 +532,31 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
         );
         return `await std.coordinate(${task}, {\n${entries.join(',\n')}\n});`;
       }
+      case 'WitnessStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `const __witness = await std.witness({\n${entries.join(',\n')}\n});`;
+      }
+      case 'PilotStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `const __pilot = await std.pilot({\n${entries.join(',\n')}\n});`;
+      }
+      case 'ViewportStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `const __viewport = await std.viewport({\n${entries.join(',\n')}\n});`;
+      }
+      case 'GestaltStatement': {
+        const tasks = (node.concurrent || []).map(c =>
+          `  { action: ${JSON.stringify(c.action)}, value: ${this.genJavaScript(c.value)} }`
+        );
+        const merge = typeof node.merge === 'object' ? this.genJavaScript(node.merge) : `"${node.merge}"`;
+        return `const __gestalt = await std.gestalt([\n${tasks.join(',\n')}\n], ${merge});`;
+      }
       default: return `/* Unhandled: ${node.type} */`;
     }
   }
