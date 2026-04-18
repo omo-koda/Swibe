@@ -10,12 +10,18 @@ export { ConversionEngine } from './conversion.js';
 export { StakingEngine } from './staking.js';
 export { RoyaltyEngine } from './royalty.js';
 export { EscrowEngine } from './escrow.js';
+export { DecayEngine, DECAY_CONFIG } from './decay.js';
+export { ElegbaraRouter, IsolatedWallet, ESU_CONFIG } from './esu-wallets.js';
+export { EventBridge, BRIDGE_CONFIG } from './event-bridge.js';
 
 import { WalletRegistry } from './wallet.js';
 import { ConversionEngine } from './conversion.js';
 import { StakingEngine } from './staking.js';
 import { RoyaltyEngine } from './royalty.js';
 import { EscrowEngine } from './escrow.js';
+import { DecayEngine } from './decay.js';
+import { ElegbaraRouter } from './esu-wallets.js';
+import { EventBridge } from './event-bridge.js';
 
 export class ToCEconomy {
   constructor() {
@@ -24,6 +30,9 @@ export class ToCEconomy {
     this.staking = new StakingEngine(this.wallets);
     this.royalty = new RoyaltyEngine(this.wallets);
     this.escrow = new EscrowEngine(this.wallets, this.royalty);
+    this.decay = new DecayEngine(this.wallets);
+    this.elegbara = new ElegbaraRouter();
+    this.bridge = new EventBridge(this, this.elegbara);
   }
 
   /**

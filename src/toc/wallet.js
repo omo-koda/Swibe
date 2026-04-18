@@ -16,7 +16,7 @@ const BIRTH_ENDOWMENT = {
 };
 
 /** Fixed Àṣẹ cost per agent birth — enforced at OSOVM, referenced here */
-export const AGENT_BIRTH_FEE_ASE = 10;
+export const AGENT_BIRTH_FEE_ASE = 0.01;
 
 export class Wallet extends EventEmitter {
   constructor(ownerId, ownerType = 'agent', ledger = null) {

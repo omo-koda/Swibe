@@ -15,7 +15,7 @@ const CONVERSION_RULES = {
   dopamine_to_synapse: {
     from: TOKEN_TYPE.TOC_D,
     to: TOKEN_TYPE.TOC_S,
-    ratio: 0.1,
+    ratio: 0.1, // 10 Dopamine → 1 Synapse (one-way burn, exactly 10:1)
     direction: 'one_way',
     agentOnly: true,
     tax: 0,
