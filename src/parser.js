@@ -293,6 +293,21 @@ class Parser {
       return this.parseSessionStatement();
     }
 
+    // Policy statement
+    if (token.type === TokenType.POLICY) {
+      return this.parsePolicyStatement();
+    }
+
+    // Analytics statement
+    if (token.type === TokenType.ANALYTICS) {
+      return this.parseAnalyticsStatement();
+    }
+
+    // Coordinate statement
+    if (token.type === TokenType.COORDINATE) {
+      return this.parseCoordinateStatement();
+    }
+
     // Call tool statement
     if (token.type === TokenType.CALL_TOOL) {
       return this.parseCallToolStatement();
@@ -1109,6 +1124,76 @@ class Parser {
     }
     this.expect(TokenType.RBRACE);
     return new ASTNode('SessionStatement', { name, config });
+  }
+
+  parsePolicyStatement() {
+    this.expect(TokenType.POLICY);
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.current().value;
+      this.advance();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('PolicyStatement', { name, config });
+  }
+
+  parseAnalyticsStatement() {
+    this.expect(TokenType.ANALYTICS);
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.current().value;
+      this.advance();
+    } else if (this.current().type === TokenType.IDENTIFIER) {
+      name = this.current().value;
+      this.advance();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('AnalyticsStatement', { name, config });
+  }
+
+  parseCoordinateStatement() {
+    this.expect(TokenType.COORDINATE);
+    // coordinate "task description" { strategy: "democratic" }
+    let task = null;
+    if (this.current().type === TokenType.STRING) {
+      task = this.current().value;
+      this.advance();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('CoordinateStatement', { task, config });
   }
 
   parsePattern() {

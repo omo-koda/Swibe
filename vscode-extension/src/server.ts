@@ -76,8 +76,14 @@ const SWIBE_KEYWORDS: CompletionItem[] = [
   // Phase 3 — IDE Bridge
   { label: 'bridge',   kind: CompletionItemKind.Keyword, detail: 'IDE bridge connection',
     documentation: 'bridge "name" { transport: "stdio"; port: 6271 }' },
-  { label: 'session',  kind: CompletionItemKind.Keyword, detail: 'Session management',
+  { label: 'session',    kind: CompletionItemKind.Keyword, detail: 'Session management',
     documentation: 'session "name" { action: "create" }' },
+  { label: 'coordinate', kind: CompletionItemKind.Keyword, detail: 'Agent coordination dispatch',
+    documentation: 'coordinate "task" { strategy: "democratic" }' },
+  { label: 'policy',     kind: CompletionItemKind.Keyword, detail: 'Org-level policy enforcement',
+    documentation: 'policy { max_tokens_per_user: 100000; forbidden: ["rm_rf"] }' },
+  { label: 'analytics',  kind: CompletionItemKind.Keyword, detail: 'A/B testing and metrics',
+    documentation: 'analytics "model_test" { variants: ["claude", "llama3"] }' },
 
   // Classes
   { label: 'NeuralLayer',         kind: CompletionItemKind.Class, detail: '86B neuron cognitive layer' },
@@ -104,7 +110,13 @@ const HOVER_DOCS: { [key: string]: { title: string; desc: string; example?: stri
   session:    { title: 'session', desc: 'Persistent agent session — create, resume, pause',
                 example: 'session "dev" { action: "create" }' },
   budget:     { title: 'budget', desc: 'Resource budget enforcement — tokens, time, cost limits',
-                example: 'budget { tokens: 100000; time: "300s" }' },
+                example: 'budget { tokens: 100000; time: "300s"; cost_usd: 5.00 }' },
+  coordinate: { title: 'coordinate', desc: 'Dispatch task to team — hierarchical/democratic/competitive/pipeline',
+                example: 'coordinate "Review code" { strategy: "democratic" }' },
+  policy:     { title: 'policy', desc: 'Org-level controls — token limits, forbidden ops, rate limits',
+                example: 'policy { max_tokens_per_user: 100000; forbidden: ["rm_rf"] }' },
+  analytics:  { title: 'analytics', desc: 'A/B testing for model selection + custom metrics',
+                example: 'analytics "model_test" { variants: ["claude", "llama3"] }' },
   swarm:      { title: 'swarm', desc: 'Multi-agent swarm coordination block' },
   skill:      { title: 'skill', desc: 'Reusable capability definition with tools and prompts',
                 example: 'skill Audit { prompt: "Check OWASP top 10", tools: ["read_file"] }' },
@@ -251,6 +263,10 @@ connection.onDocumentSymbol((params: DocumentSymbolParams): DocumentSymbol[] => 
     [/^\s*permission\b/, 'permission', SymbolKind.Key],
     [/^\s*mcp\b/, 'mcp', SymbolKind.Event],
     [/^\s*budget\b/, 'budget', SymbolKind.Constant],
+    [/^\s*policy\b/, 'policy', SymbolKind.Key],
+    [/^\s*analytics\s+"([^"]+)"/, 'analytics', SymbolKind.Event],
+    [/^\s*analytics\s+(\w+)/, 'analytics', SymbolKind.Event],
+    [/^\s*coordinate\s+"([^"]+)"/, 'coordinate', SymbolKind.Method],
   ];
 
   lines.forEach((line, i) => {

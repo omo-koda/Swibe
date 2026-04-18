@@ -111,6 +111,28 @@ export class EthicsValidator extends ASTVisitor {
     this._hasSessions = true;
   }
 
+  visitPolicyStatement(node) {
+    // Policy is an org-level control — requires ethics block
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'policy_without_ethics',
+        message: 'Policy enforcement requires an ethics {} declaration',
+        node: node,
+      });
+    }
+    this._hasPolicy = true;
+  }
+
+  visitAnalyticsStatement(node) {
+    // Analytics is safe — just tracking
+    this._hasAnalytics = true;
+  }
+
+  visitCoordinateStatement(node) {
+    // Coordinate requires a team to be defined
+    // (soft check — team might be defined elsewhere)
+  }
+
   /**
    * Resolve the permission mode for a given action.
    * Falls back to 'ask' if no explicit rule.

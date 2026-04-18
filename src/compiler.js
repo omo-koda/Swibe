@@ -510,6 +510,28 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
           .map(([k, v]) => `  ${k}: ${this.genJavaScript(v)}`);
         return `await std.session(${action}, ${name}, {\n${entries.join(',\n')}\n});`;
       }
+      case 'PolicyStatement': {
+        const name = node.name ? `"${node.name}"` : '"default"';
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `std._policy = std._policy || {};\nObject.assign(std._policy, {\n  name: ${name},\n${entries.join(',\n')}\n});\nconsole.log('[POLICY] Loaded:', ${name});`;
+      }
+      case 'AnalyticsStatement': {
+        const name = node.name || 'default';
+        const varName = name.replace(/[^a-zA-Z0-9_]/g, '_');
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `const ${varName}_analytics = await std.analytics({\n  name: "${name}",\n${entries.join(',\n')}\n});`;
+      }
+      case 'CoordinateStatement': {
+        const task = node.task ? this.genJavaScript({ type: 'String', value: node.task }) : '"task"';
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.coordinate(${task}, {\n${entries.join(',\n')}\n});`;
+      }
       default: return `/* Unhandled: ${node.type} */`;
     }
   }

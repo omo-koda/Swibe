@@ -1,0 +1,90 @@
+-- Phase 4+5 Demo: Advanced Agent Coordination + Production Hardening
+-- Swibe v3.1 — Crown Architect: Bino EL Gua Omo Koda Ase
+
+-- 1. Ethics (required for policy enforcement)
+ethics {
+  harm_none: true;
+  sovereign_data: true;
+  receipt_chain: true
+}
+
+-- 2. Permission matrix
+permission {
+  think: "auto";
+  chain: "auto";
+  coordinate: "auto";
+  bash: "plan";
+  edit: "ask";
+  mint: "ask"
+}
+
+-- 3. Phase 5: Policy — org-level controls
+policy "sovereign-org" {
+  max_tokens_per_user: 500000;
+  max_usd_per_user: 10;
+  forbidden: "rm_rf"
+}
+
+-- 4. Phase 5: Budget with USD cost tracking + alert thresholds
+budget {
+  tokens: 200000;
+  time: "600s";
+  cost_usd: 5
+}
+
+-- 5. Phase 5: Analytics — A/B experiment for model selection
+analytics model_routing {
+  experiment: "model_comparison";
+  variants: "claude_sonnet"
+}
+
+-- 6. Phase 4: Team with typed agents and skills
+team "SecurityTeam" {
+  lead: "designs audit strategy [design, review]";
+  scanner: "runs static analysis [scan, lint]";
+  reviewer: "reviews findings for ethics [audit, ethics]";
+  coordination: "hierarchical"
+}
+
+-- 7. Phase 4: Coordinate — dispatch task to team
+coordinate "Audit the codebase for OWASP top 10 vulnerabilities" {
+  strategy: "hierarchical";
+  team: "SecurityTeam"
+}
+
+-- 8. Think loop with tool integration
+think "Execute the security audit plan" {
+  loop: true,
+  max_iterations: 5
+}
+
+-- 9. Phase 4: Competitive coordination — agents race to find bugs
+team "BugHunters" {
+  alpha: "fuzzer agent [fuzz, crash]";
+  beta: "static analyzer [lint, typecheck]";
+  gamma: "pattern matcher [regex, ast_scan]";
+  coordination: "competitive"
+}
+
+coordinate "Find the most critical bug in src/" {
+  strategy: "competitive";
+  team: "BugHunters"
+}
+
+-- 10. Phase 4: Pipeline coordination — sequential transformation
+team "DataPipeline" {
+  ingester: "reads raw data [read, parse]";
+  transformer: "cleans and normalizes [transform, validate]";
+  loader: "writes to destination [write, index]";
+  coordination: "pipeline"
+}
+
+coordinate "Process the incoming dataset" {
+  strategy: "pipeline";
+  team: "DataPipeline"
+}
+
+-- 11. Remember session context
+remember {
+  "audit_results"
+}

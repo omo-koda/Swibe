@@ -80,6 +80,9 @@ const TokenType = {
   EDIT: 'EDIT',
   BRIDGE: 'BRIDGE',
   SESSION: 'SESSION',
+  POLICY: 'POLICY',
+  ANALYTICS: 'ANALYTICS',
+  COORDINATE: 'COORDINATE',
 
   // Operators
   PLUS: 'PLUS',
@@ -335,7 +338,10 @@ class Lexer {
     team: TokenType.TEAM,
     edit: TokenType.EDIT,
     bridge: TokenType.BRIDGE,
-    session: TokenType.SESSION,  };
+    session: TokenType.SESSION,
+    policy: TokenType.POLICY,
+    analytics: TokenType.ANALYTICS,
+    coordinate: TokenType.COORDINATE,  };
 
   addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);

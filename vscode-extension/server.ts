@@ -69,6 +69,12 @@ const SWIBE_KEYWORDS: CompletionItem[] = [
     documentation: 'bridge "name" { transport: "stdio"; port: 6271 }' },
   { label: 'session',    kind: CompletionItemKind.Keyword, detail: 'Session management',
     documentation: 'session "name" { action: "create" }' },
+  { label: 'coordinate', kind: CompletionItemKind.Keyword, detail: 'Agent coordination dispatch',
+    documentation: 'coordinate "task" { strategy: "democratic" }' },
+  { label: 'policy',     kind: CompletionItemKind.Keyword, detail: 'Org-level policy enforcement',
+    documentation: 'policy { max_tokens_per_user: 100000; forbidden: ["rm_rf"] }' },
+  { label: 'analytics',  kind: CompletionItemKind.Keyword, detail: 'A/B testing and metrics',
+    documentation: 'analytics "model_test" { variants: ["claude", "llama3"] }' },
   { label: 'NeuralLayer',          kind: CompletionItemKind.Class, detail: '86B neuron cognitive layer' },
   { label: 'SovereignNeuralLayer', kind: CompletionItemKind.Class, detail: '86-param sovereign neural' },
 ];
@@ -84,6 +90,9 @@ const HOVER_DOCS: { [key: string]: string } = {
   edit: 'Partial file modification via string replacement — safer than full overwrite.',
   bridge: 'Bidirectional IDE connection — JSON-RPC 2.0 over stdio or TCP.',
   session: 'Persistent agent session — create, resume, pause across IDE restarts.',
+  coordinate: 'Dispatch task to team — hierarchical, democratic, competitive, or pipeline.',
+  policy: 'Org-level controls — per-user limits, forbidden operations, rate limiting.',
+  analytics: 'A/B experiments and metrics — model selection testing, custom tracking.',
   budget: 'Resource budget — tokens, time limits, cost caps.',
   skill: 'Reusable capability with prompt template and tool list.',
   birth: 'Sovereign agent birth ceremony with BIPỌ̀N39 wallet generation.',
@@ -177,6 +186,10 @@ connection.onDocumentSymbol((params: DocumentSymbolParams): DocumentSymbol[] => 
     [/^\s*permission\b/, 'permission', SymbolKind.Key],
     [/^\s*mcp\b/, 'mcp', SymbolKind.Event],
     [/^\s*budget\b/, 'budget', SymbolKind.Constant],
+    [/^\s*policy\b/, 'policy', SymbolKind.Key],
+    [/^\s*analytics\s+"([^"]+)"/, 'analytics', SymbolKind.Event],
+    [/^\s*analytics\s+(\w+)/, 'analytics', SymbolKind.Event],
+    [/^\s*coordinate\s+"([^"]+)"/, 'coordinate', SymbolKind.Method],
   ];
 
   lines.forEach((line, i) => {

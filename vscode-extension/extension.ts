@@ -269,7 +269,11 @@ class SwibeHoverProvider implements vscode.HoverProvider {
     ethics: 'Ethics declaration — harm_none, sovereign_data', permission: 'Permission matrix — auto/ask/plan/refuse',
     mcp: 'MCP tool server connection', team: 'Multi-agent team coordination',
     edit: 'Partial file modification', bridge: 'IDE bridge — two-way communication',
-    session: 'Persistent agent session — create/resume/pause', budget: 'Resource budget enforcement',
+    session: 'Persistent agent session — create/resume/pause',
+    coordinate: 'Dispatch task to team — hierarchical/democratic/competitive/pipeline',
+    policy: 'Org-level controls — token limits, forbidden ops, rate limits',
+    analytics: 'A/B testing for model selection + metrics',
+    budget: 'Resource budget enforcement',
     skill: 'Reusable capability definition', swarm: 'Multi-agent swarm', birth: 'Agent birth ceremony',
     mint: 'Blockchain mint', receipt: 'Execution receipt', seal: 'Cryptographic seal',
     secure: 'Sandboxed execution block', remember: 'Memory store',
@@ -291,7 +295,8 @@ class SwibeCompletionProvider implements vscode.CompletionItemProvider {
     const keywords = [
       'fn', 'struct', 'enum', 'match', 'if', 'else', 'return', 'mut', 'async', 'await',
       'let', 'const', 'think', 'swarm', 'ethics', 'permission', 'mcp', 'team', 'edit',
-      'bridge', 'session', 'budget', 'skill', 'secure', 'birth', 'mint', 'receipt', 'seal',
+      'bridge', 'session', 'coordinate', 'policy', 'analytics',
+      'budget', 'skill', 'secure', 'birth', 'mint', 'receipt', 'seal',
       'remember', 'neural', 'app', 'chain', 'plan', 'observe', 'evolve', 'heartbeat',
     ];
     return keywords.map(k => {
@@ -323,6 +328,10 @@ class SwibeSymbolProvider implements vscode.DocumentSymbolProvider {
       [/^\s*session\s+"([^"]+)"/, 'session', vscode.SymbolKind.Object],
       [/^\s*ethics\b/, 'ethics', vscode.SymbolKind.Property],
       [/^\s*permission\b/, 'permission', vscode.SymbolKind.Key],
+      [/^\s*policy\b/, 'policy', vscode.SymbolKind.Key],
+      [/^\s*analytics\s+"([^"]+)"/, 'analytics', vscode.SymbolKind.Event],
+      [/^\s*analytics\s+(\w+)/, 'analytics', vscode.SymbolKind.Event],
+      [/^\s*coordinate\s+"([^"]+)"/, 'coordinate', vscode.SymbolKind.Method],
     ];
     lines.forEach((line, i) => {
       for (const [re, kind, sym] of patterns) {

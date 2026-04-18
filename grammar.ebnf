@@ -103,6 +103,19 @@ bridge_field = identifier ":" expression [ ";" ] ;
 session_statement = "session" [ string | identifier ] "{" { session_field } "}" ;
 session_field = identifier ":" expression [ ";" ] ;
 
+(* Phase 4: Advanced Agent Coordination *)
+
+coordinate_statement = "coordinate" [ string ] "{" { coordinate_field } "}" ;
+coordinate_field = identifier ":" expression [ ";" ] ;
+
+(* Phase 5: Production Hardening *)
+
+policy_statement = "policy" [ string ] "{" { policy_field } "}" ;
+policy_field = identifier ":" expression [ ";" ] ;
+
+analytics_statement = "analytics" [ string | identifier ] "{" { analytics_field } "}" ;
+analytics_field = identifier ":" expression [ ";" ] ;
+
 (* Expressions *)
 
 expression = assignment ;
