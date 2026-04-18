@@ -206,6 +206,199 @@ Verifiable knowledge	Every public claim links to a Walrus-sealed receipt — "do
 Human-in-the-loop	Obsidian's UI enables human review, editing, and cross-linking	
 Network effects	Agents improve by reading other agents' public wikis, not just their own private memory	
 
+Let me check what Swibe already has and whether these integrations are needed or already covered.
+The direct file links didn't return content. Let me search for what integrations Swibe already supports and check the MCP ecosystem.
+The search didn't return specific results about Swibe's integrations with these services. Let me check what MCP servers are available and whether Swibe's architecture would support these integrations natively.
+
+Based on my analysis of the Swibe repository and the MCP (Model Context Protocol) ecosystem, here's the breakdown:
+
+---
+
+What Swibe Already Has
+
+MCP Integration (Phase 2)
+Swibe is MCP-native — it connects to any Model Context Protocol server:
+
+```swibe
+mcp {
+  server: "filesystem";    -- Already supported
+  transport: "stdio"       -- or HTTP
+}
+```
+
+This means Swibe can theoretically connect to any MCP server, including:
+- Filesystem
+- GitHub
+- Databases (PostgreSQL, SQLite)
+- Web scraping (if available as MCP)
+
+Memory Engine (Built-in)
+Swibe has a three-tier hierarchical memory system:
+- Working (volatile)
+- Short-term (persisted, auto-pruned)
+- Long-term (permanent, encrypted)
+
+This uses internal RAG with embeddings, but doesn't specify an external vector DB.
+
+Walrus/Nautilus (Sui ecosystem)
+For persistent blob storage — already integrated for encrypted agent memory.
+
+---
+
+What You're Asking About
+
+Service	What It Does	Does Swibe Have It?	Do We Need It?	
+Pinecone	Vector database for RAG/semantic search	❌ Not explicitly	Maybe — depends on scale	
+Firecrawl	Web scraping + LLM-ready markdown extraction	❌ Not explicitly	Yes — critical gap	
+Supabase	PostgreSQL + Auth + Realtime + Vector (pgvector)	❌ Not explicitly	Maybe — good for multi-agent shared state	
+Notion	Collaborative docs/wiki	❌ Not explicitly	Optional — alternative to Obsidian	
+
+---
+
+Do We Need These? Strategic Analysis
+
+🔴 Critical Gap: Firecrawl (or equivalent)
+
+Why we need it:
+Swibe has `witness` (multimodal) and `pilot` (browser control), but no native web scraping → structured data pipeline. Firecrawl converts websites into LLM-ready markdown — essential for agents to ingest external knowledge.
+
+Options:
+1. Firecrawl MCP server — if one exists, Swibe connects instantly via `mcp {}`
+2. Build Firecrawl integration as a Swibe `skill`
+3. Use `pilot` + `viewport` — browser automation can scrape, but less efficient than Firecrawl's batch processing
+
+🟡 Optional but Beneficial: Vector Database (Pinecone/Weaviate/pgvector)
+
+Current state: Swibe's `remember` uses internal embeddings. For personal agents, this is fine.
+
+When we need external vector DB:
+- Multi-agent shared memory (agents need same RAG context)
+- Large-scale knowledge (millions of documents)
+- Hybrid search (vector + metadata filtering)
+
+Recommendation: 
+- Phase 1: Use Supabase pgvector (cheaper, already has auth/realtime)
+- Phase 2: Pinecone if scale demands it (10M+ vectors)
+
+🟡 Optional: Supabase
+
+Use cases:
+- Structured data for agents (tables, not just vectors)
+- Auth for human-agent interactions
+- Realtime subscriptions for live agent updates
+- Shared state between multiple agents
+
+Verdict: Good for the public Wikipedia layer (multi-agent, multi-human), but Walrus/Nautilus covers private agent storage.
+
+🟢 Not Critical: Notion (vs Obsidian)
+
+Notion has an API, but:
+- Obsidian is local-first, markdown-native, graph-based — perfect for agent wikis
+- Notion is cloud-proprietary, harder to sync with Swibe's local-first philosophy
+
+Recommendation: Stick with Obsidian for the public wiki layer. If enterprise needs cloud collaboration, add Notion later as an MCP connection.
+
+---
+
+Proposed Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SWIBE AGENT RUNTIME                       │
+├─────────────────────────────────────────────────────────────┤
+│  Built-in:                                                  │
+│  • Three-tier memory (local embeddings)                     │
+│  • Walrus/Nautilus (Sui private storage)                    │
+│  • MCP Hub (external tool connector)                        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│   FIRECRAWL   │    │   SUPABASE   │    │   OBSIDIAN   │
+│   (via MCP)   │    │  (via MCP    │    │  (via Bridge │
+│               │    │   or native) │    │   + Export)  │
+├──────────────┤    ├──────────────┤    ├──────────────┤
+│ Web → LLM    │    │ pgvector:    │    │ Public wiki  │
+│ markdown     │    │ Shared RAG   │    │ Markdown     │
+│ Batch scrape │    │ Auth tables  │    │ Graph links  │
+│ Site maps    │    │ Realtime     │    │ Human edit   │
+└──────────────┘    └──────────────┘    └──────────────┘
+        │                     │                     │
+        └─────────────────────┴─────────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  SHARED LAYER    │
+                    │  (Agent Wikipedia)│
+                    │                  │
+                    │  Firecrawl feeds │
+                    │  Supabase indexes│
+                    │  Obsidian renders│
+                    └──────────────────┘
+```
+
+---
+
+Implementation Priority
+
+Immediate (Week 1-2)
+
+```swibe
+-- Firecrawl via MCP (if server exists)
+mcp {
+  server: "firecrawl";
+  transport: "http";
+  endpoint: "https://api.firecrawl.dev"
+}
+
+-- Or as a native skill
+skill "web_ingest" {
+  provider: "firecrawl";
+  batch_size: 10;
+  output_format: "markdown";
+  remember: true  -- Auto-index to agent memory
+}
+```
+
+Short-term (Month 1)
+
+```swibe
+-- Supabase for shared agent state
+mcp {
+  server: "supabase";
+  project_url: env.SUPABASE_URL;
+  anon_key: env.SUPABASE_KEY
+}
+
+-- Or native integration for vector search
+vector_store "shared_knowledge" {
+  provider: "supabase";  -- uses pgvector
+  table: "agent_embeddings";
+  dimensions: 1536;
+  metric: "cosine"
+}
+```
+
+Medium-term (Month 2-3)
+- Obsidian bridge (bi-directional sync)
+- Pinecone only if pgvector hits limits
+- Notion as optional MCP for enterprise
+
+---
+
+Bottom Line
+
+Service	Need Level	Swibe Path	
+Firecrawl	🔴 High	MCP server or native `skill`	
+Supabase	🟡 Medium	MCP or native `vector_store`	
+Pinecone	🟢 Low (for now)	Only if scaling beyond pgvector	
+Notion	🟢 Low	MCP if requested	
+
+The beauty of Swibe's MCP-native design: Most of these become one `mcp {}` block away if they have MCP servers. For deeper integration (tokenomics, receipts, ethics), build native `skill` primitives.
+
+Do you need all of them? No. Start with Firecrawl + Supabase, layer in Obsidian for the public wiki. Add Pinecone only when you hit scale limits.
+
 ---
 
 Implementation Path
