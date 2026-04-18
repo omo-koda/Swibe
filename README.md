@@ -1,16 +1,16 @@
-![Version](https://img.shields.io/badge/version-v3.2.0-blue)
+![Version](https://img.shields.io/badge/version-v3.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tests](https://img.shields.io/badge/tests-97%20passing-brightgreen)
 ![Backends](https://img.shields.io/badge/backends-44-orange)
 [![npm](https://img.shields.io/badge/npm-@bino--elgua/swibe-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
 
-# Swibe: Agent-Native Scripting Language (v3.2.0)
+# Swibe: Agent-Native Scripting Language (v3.3.0)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
 Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 44 backend targets, runs self-repairing swarms, and persists state via a BIP-39 ritual vault.
 
-v3.2 adds multimodal perception (witness), computer control (pilot), screen understanding (viewport), and parallel tool execution (gestalt) — on top of the full tool system, MCP integration, agentic think loops, hierarchical memory, bidirectional IDE bridge, advanced multi-agent coordination, and production hardening from v3.1.
+v3.3 adds a complete three-token economy (Àṣẹ/Dopamine/Synapse) with neural birth endowment (86B Dopamine + 86M Synapse per agent), burn conversions, creator royalties, job escrow, and staking/slashing — on top of multimodal perception, computer control, the full tool system, MCP integration, agentic think loops, and production hardening.
 
 ## Installation
 
@@ -258,6 +258,61 @@ gestalt {
 
 **Witness** processes image, video, audio, and document inputs with configurable fusion strategies (unified_context, weighted, sequential). **Pilot** provides a perceive/act cycle for browser, desktop, and mobile automation with safety guards. **Viewport** captures screen state, builds accessibility trees, extracts UI elements, and runs OCR. **Gestalt** executes multiple tool operations concurrently with five merge strategies: unified_context, first_wins, majority_vote, concatenate, and reduce.
 
+### Phase 7: ToC Tokenomics — Three-Token Economy
+
+```swibe
+-- Define the three tokens
+token "ase" {
+  name: "Àṣẹ";
+  holders: "humans_and_creators";
+  daily_mint: 1440
+}
+
+token "toc_d" {
+  name: "Dopamine";
+  holders: "agents_only";
+  birth_endowment: 86000000000;
+  daily_decay: "1%"
+}
+
+token "toc_s" {
+  name: "Synapse";
+  holders: "agents_only";
+  birth_endowment: 86000000
+}
+
+-- Agent wallet (born with 86B Dopamine + 86M Synapse)
+wallet "drone_agent" {
+  type: "agent";
+  birth: true
+}
+
+-- Burn conversion: Àṣẹ → Dopamine (one-way, 1:10000)
+convert {
+  from: "ase";
+  to: "toc_d";
+  ratio: "10000_per_ase";
+  direction: "one_way"
+}
+
+-- Creator royalty: 10% Àṣẹ, locked 7 days
+royalty {
+  recipient: "agent_creator";
+  token: "ase";
+  percentage: "10%";
+  vesting: "sabbath"
+}
+
+-- Job escrow: human locks Àṣẹ until verification
+escrow "delivery_job" {
+  human: "user_001";
+  agent: "drone_agent";
+  amount: 1
+}
+```
+
+**Three tokens, three purposes:** Àṣẹ is the human entry token (fixed supply, 1440/day mint, 5% burn per job). Dopamine is agent internal fuel (86B at birth, 1% daily decay, burned for every action). Synapse is agent commerce (86M at birth, earned by burning Dopamine at 10:1). The neural mapping is exact — 86 billion Dopamine maps to 86 billion neurons, 86 million Synapse maps to 86 million synaptic bundles. Creators earn Àṣẹ royalties (10%, locked 7 days). Staking/slashing enforces economic security. All conversions are one-way burns — deflationary by design.
+
 ## 44 Compilation Targets
 
 Swibe backends are pure codegen emitters, mapping agentic primitives to native constructs.
@@ -489,6 +544,14 @@ src/
   pilot.js              # Computer control (browser/desktop/mobile)
   viewport.js           # Screen understanding (a11y, OCR, UI extraction)
   gestalt.js            # Parallel tool execution (5 merge strategies)
+  toc/                  # Three-token economy (Phase 7)
+    token.js            # Àṣẹ/Dopamine/Synapse definitions + ledger
+    wallet.js           # Agent wallets, 86B+86M birth endowment
+    conversion.js       # Burn conversions (Àṣẹ→D, D→S, S→D emergency)
+    staking.js          # Stake/unstake/slash engine
+    royalty.js          # Creator royalties (10% Àṣẹ, Sabbath vesting)
+    escrow.js           # Job payment escrow + dispute resolution
+    index.js            # ToCEconomy orchestrator
   type-inference.js     # Static type inference
   conductor.js          # Technosis Sovereign Conductor
   backends/             # 44 codegen backends
@@ -540,8 +603,9 @@ grammar.ebnf            # Full EBNF specification
 | v3.4 | Complete | VSCode extension (syntax, snippets, theme, commands) |
 | v3.5-v3.7 | Complete | Registry hardening, Cloudflare registry worker, docs |
 | v3.1.0 | Complete | Phase 2-5: Permissions, MCP, think loops, IDE bridge, coordination, production |
-| **v3.2.0** | **Current** | Phase 6: Witness (multimodal), Pilot (computer control), Viewport (screen), Gestalt (parallel) |
-| **Next** | Planned | Phase 7: Knowledge graphs, distributed mesh, TypeScript core migration |
+| v3.2.0 | Complete | Phase 6: Witness (multimodal), Pilot (computer control), Viewport (screen), Gestalt (parallel) |
+| **v3.3.0** | **Current** | Phase 7: ToC Tokenomics (Àṣẹ/Dopamine/Synapse), neural birth endowment, escrow, royalties |
+| **Next** | Planned | Phase 8: Beacon network, validation consensus, Twelve-Thrones |
 
 ## Environment Variables
 

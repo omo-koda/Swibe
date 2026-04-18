@@ -328,6 +328,29 @@ class Parser {
       return this.parseGestaltStatement();
     }
 
+    // Phase 7: ToC Tokenomics
+    if (token.type === TokenType.TOKEN) {
+      return this.parseTokenStatement();
+    }
+    if (token.type === TokenType.WALLET) {
+      return this.parseWalletStatement();
+    }
+    if (token.type === TokenType.STAKE) {
+      return this.parseStakeStatement();
+    }
+    if (token.type === TokenType.SLASH) {
+      return this.parseSlashStatement();
+    }
+    if (token.type === TokenType.CONVERT) {
+      return this.parseConvertStatement();
+    }
+    if (token.type === TokenType.ROYALTY) {
+      return this.parseRoyaltyStatement();
+    }
+    if (token.type === TokenType.ESCROW) {
+      return this.parseEscrowStatement();
+    }
+
     // Call tool statement
     if (token.type === TokenType.CALL_TOOL) {
       return this.parseCallToolStatement();
@@ -1300,6 +1323,142 @@ class Parser {
     }
     this.expect(TokenType.RBRACE);
     return new ASTNode('GestaltStatement', { concurrent, merge });
+  }
+
+  // Phase 7: ToC Tokenomics parse methods
+
+  parseTokenStatement() {
+    this.expect(TokenType.TOKEN);
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.current().value;
+      this.advance();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('TokenStatement', { name, config });
+  }
+
+  parseWalletStatement() {
+    this.expect(TokenType.WALLET);
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.current().value;
+      this.advance();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('WalletStatement', { name, config });
+  }
+
+  parseStakeStatement() {
+    this.expect(TokenType.STAKE);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('StakeStatement', { config });
+  }
+
+  parseSlashStatement() {
+    this.expect(TokenType.SLASH);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('SlashStatement', { config });
+  }
+
+  parseConvertStatement() {
+    this.expect(TokenType.CONVERT);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('ConvertStatement', { config });
+  }
+
+  parseRoyaltyStatement() {
+    this.expect(TokenType.ROYALTY);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('RoyaltyStatement', { config });
+  }
+
+  parseEscrowStatement() {
+    this.expect(TokenType.ESCROW);
+    let name = null;
+    if (this.current().type === TokenType.STRING) {
+      name = this.current().value;
+      this.advance();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) { this.advance(); continue; }
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      config[key] = this.parseExpression();
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('EscrowStatement', { name, config });
   }
 
   parsePattern() {

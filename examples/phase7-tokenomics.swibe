@@ -1,0 +1,126 @@
+-- Phase 7 Demo: ToC Tokenomics — Three-Token Economy
+-- Swibe v3.3 — Crown Architect: Bino EL Gua Omo Koda Ase
+-- Àṣẹ (human) → Dopamine (agent internal) → Synapse (agent commerce)
+-- Every agent born with 86B Dopamine + 86M Synapse (neural layer)
+
+-- 1. Ethics (required for all economic operations)
+ethics {
+  harm_none: true;
+  sovereign_data: true;
+  receipt_chain: true
+}
+
+-- 2. Permission matrix
+permission {
+  think: "auto";
+  token: "auto";
+  wallet: "auto";
+  stake: "ask";
+  slash: "ask";
+  convert: "auto";
+  royalty: "auto";
+  escrow: "ask"
+}
+
+-- 3. Budget
+budget {
+  tokens: 500000;
+  time: "1200s";
+  cost_usd: 10
+}
+
+-- 4. Define the three tokens
+token "ase" {
+  name: "Àṣẹ";
+  holders: "humans_and_creators";
+  daily_mint: 1440;
+  burn_rate: "5%"
+}
+
+token "toc_d" {
+  name: "Dopamine";
+  holders: "agents_only";
+  birth_endowment: 86000000000;
+  daily_decay: "1%";
+  transferable: false
+}
+
+token "toc_s" {
+  name: "Synapse";
+  holders: "agents_only";
+  birth_endowment: 86000000;
+  transferable: true
+}
+
+-- 5. Create agent wallet (receives 86B Dopamine + 86M Synapse)
+wallet "drone_agent" {
+  type: "agent";
+  birth: true
+}
+
+-- 6. Conversion rules
+convert {
+  from: "ase";
+  to: "toc_d";
+  ratio: "10000_per_ase";
+  direction: "one_way";
+  agent_only: true
+}
+
+convert {
+  from: "toc_d";
+  to: "toc_s";
+  ratio: "10_per_1";
+  direction: "one_way"
+}
+
+convert {
+  from: "toc_s";
+  to: "toc_d";
+  ratio: "1_per_5";
+  tax: "50%";
+  cooldown: "24h";
+  purpose: "emergency_fuel"
+}
+
+-- 7. Creator royalty (earns Àṣẹ, not Synapse)
+royalty {
+  recipient: "agent_creator";
+  token: "ase";
+  percentage: "10%";
+  vesting: "sabbath"
+}
+
+-- 8. Job escrow
+escrow "delivery_job" {
+  human: "user_001";
+  agent: "drone_agent";
+  amount: 1;
+  description: "Deliver package to coordinates"
+}
+
+-- 9. Staking (creator stakes Àṣẹ to register agent)
+stake {
+  holder: "agent_creator";
+  token: "ase";
+  amount: 10;
+  purpose: "agent_registration"
+}
+
+-- 10. Slashing (on fraud detection)
+slash {
+  holder: "bad_agent";
+  token: "toc_s";
+  percentage: 100;
+  reason: "sybil_detected"
+}
+
+-- 11. Think about economics
+think "Verify the job was completed and release escrow" {
+  loop: false
+}
+
+-- 12. Remember economic state
+remember {
+  "toc_ledger_state"
+}

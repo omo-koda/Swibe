@@ -26,6 +26,13 @@ statement = function_decl
           | pilot_statement
           | viewport_statement
           | gestalt_statement
+          | token_statement
+          | wallet_statement
+          | stake_statement
+          | slash_statement
+          | convert_statement
+          | royalty_statement
+          | escrow_statement
           | return_statement ;
 
 (* Declarations *)
@@ -134,6 +141,29 @@ viewport_field = identifier ":" expression [ ";" | "," ] ;
 gestalt_statement = "gestalt" "{" { gestalt_task | gestalt_merge } "}" ;
 gestalt_task = identifier ":" expression [ ";" | "," ] ;
 gestalt_merge = "merge" ":" expression [ ";" | "," ] ;
+
+(* Phase 7: ToC Tokenomics *)
+
+token_statement = "token" [ string ] "{" { token_field } "}" ;
+token_field = identifier ":" expression [ ";" | "," ] ;
+
+wallet_statement = "wallet" [ string ] "{" { wallet_field } "}" ;
+wallet_field = identifier ":" expression [ ";" | "," ] ;
+
+stake_statement = "stake" "{" { stake_field } "}" ;
+stake_field = identifier ":" expression [ ";" | "," ] ;
+
+slash_statement = "slash" "{" { slash_field } "}" ;
+slash_field = identifier ":" expression [ ";" | "," ] ;
+
+convert_statement = "convert" "{" { convert_field } "}" ;
+convert_field = identifier ":" expression [ ";" | "," ] ;
+
+royalty_statement = "royalty" "{" { royalty_field } "}" ;
+royalty_field = identifier ":" expression [ ";" | "," ] ;
+
+escrow_statement = "escrow" [ string ] "{" { escrow_field } "}" ;
+escrow_field = identifier ":" expression [ ";" | "," ] ;
 
 (* Expressions *)
 

@@ -87,6 +87,13 @@ const TokenType = {
   PILOT: 'PILOT',
   VIEWPORT: 'VIEWPORT',
   GESTALT: 'GESTALT',
+  TOKEN: 'TOKEN',
+  WALLET: 'WALLET',
+  STAKE: 'STAKE',
+  SLASH: 'SLASH',
+  CONVERT: 'CONVERT',
+  ROYALTY: 'ROYALTY',
+  ESCROW: 'ESCROW',
 
   // Operators
   PLUS: 'PLUS',
@@ -350,6 +357,13 @@ class Lexer {
     pilot: TokenType.PILOT,
     viewport: TokenType.VIEWPORT,
     gestalt: TokenType.GESTALT,
+    token: TokenType.TOKEN,
+    wallet: TokenType.WALLET,
+    stake: TokenType.STAKE,
+    slash: TokenType.SLASH,
+    convert: TokenType.CONVERT,
+    royalty: TokenType.ROYALTY,
+    escrow: TokenType.ESCROW,
   };
 
   addToken(type, value = null) {

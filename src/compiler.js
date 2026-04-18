@@ -557,6 +557,51 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
         const merge = typeof node.merge === 'object' ? this.genJavaScript(node.merge) : `"${node.merge}"`;
         return `const __gestalt = await std.gestalt([\n${tasks.join(',\n')}\n], ${merge});`;
       }
+      case 'TokenStatement': {
+        const name = node.name ? `"${node.name}"` : '"unnamed"';
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `const __token_${(node.name || 'def').replace(/[^a-zA-Z0-9]/g, '_')} = await std.toc.defineToken(${name}, {\n${entries.join(',\n')}\n});`;
+      }
+      case 'WalletStatement': {
+        const name = node.name ? `"${node.name}"` : '"agent"';
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `const __wallet = await std.toc.createWallet(${name}, {\n${entries.join(',\n')}\n});`;
+      }
+      case 'StakeStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.toc.stake({\n${entries.join(',\n')}\n});`;
+      }
+      case 'SlashStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.toc.slash({\n${entries.join(',\n')}\n});`;
+      }
+      case 'ConvertStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.toc.convert({\n${entries.join(',\n')}\n});`;
+      }
+      case 'RoyaltyStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.toc.royalty({\n${entries.join(',\n')}\n});`;
+      }
+      case 'EscrowStatement': {
+        const name = node.name ? `"${node.name}"` : '"job"';
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `const __escrow = await std.toc.escrow(${name}, {\n${entries.join(',\n')}\n});`;
+      }
       default: return `/* Unhandled: ${node.type} */`;
     }
   }

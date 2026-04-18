@@ -177,6 +177,99 @@ export class EthicsValidator extends ASTVisitor {
     // Gestalt (parallel execution) is safe but note its presence
   }
 
+  // Phase 7: ToC Tokenomics validators
+
+  visitTokenStatement(node) {
+    // Token definition requires ethics — it's economic infrastructure
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'token_without_ethics',
+        message: 'Token definition requires ethics {} declaration',
+        node: node,
+      });
+    }
+  }
+
+  visitWalletStatement(node) {
+    // Wallet creation requires ethics and permissions
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'wallet_without_ethics',
+        message: 'Wallet creation requires ethics {} declaration',
+        node: node,
+      });
+    }
+  }
+
+  visitStakeStatement(node) {
+    // Staking is economic — requires ethics
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'stake_without_ethics',
+        message: 'Staking requires ethics {} declaration',
+        node: node,
+      });
+    }
+  }
+
+  visitSlashStatement(node) {
+    // Slashing is punitive — requires both ethics and permissions
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'slash_without_ethics',
+        message: 'Slashing requires ethics {} declaration',
+        node: node,
+      });
+    }
+    if (!this._hasPermissions) {
+      this.violations.push({
+        type: 'slash_without_permissions',
+        message: 'Slashing requires a permission {} block',
+        node: node,
+      });
+    }
+  }
+
+  visitConvertStatement(node) {
+    // Conversion is economic — requires ethics
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'convert_without_ethics',
+        message: 'Token conversion requires ethics {} declaration',
+        node: node,
+      });
+    }
+  }
+
+  visitRoyaltyStatement(node) {
+    // Royalty is economic — requires ethics
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'royalty_without_ethics',
+        message: 'Royalty configuration requires ethics {} declaration',
+        node: node,
+      });
+    }
+  }
+
+  visitEscrowStatement(node) {
+    // Escrow is financial — requires ethics and permissions
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'escrow_without_ethics',
+        message: 'Escrow requires ethics {} declaration',
+        node: node,
+      });
+    }
+    if (!this._hasPermissions) {
+      this.violations.push({
+        type: 'escrow_without_permissions',
+        message: 'Escrow requires a permission {} block',
+        node: node,
+      });
+    }
+  }
+
   /**
    * Resolve the permission mode for a given action.
    * Falls back to 'ask' if no explicit rule.

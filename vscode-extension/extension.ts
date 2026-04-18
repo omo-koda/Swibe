@@ -277,6 +277,13 @@ class SwibeHoverProvider implements vscode.HoverProvider {
     pilot: 'Computer control — desktop/browser/mobile with perceive/act cycle',
     viewport: 'Screen understanding — resolution, accessibility, UI extraction, OCR',
     gestalt: 'Parallel tool execution — concurrent operations with merge strategies',
+    token: 'ToC token definition — Àṣẹ/Dopamine/Synapse economy',
+    wallet: 'Agent wallet — 86B Dopamine + 86M Synapse birth endowment',
+    stake: 'Stake tokens for validation rights or service offering',
+    slash: 'Slash staked tokens on fraud or violation',
+    convert: 'Burn-convert between token types (Àṣẹ→Dopamine→Synapse)',
+    royalty: 'Creator royalty — 10% Àṣẹ on agent job completion',
+    escrow: 'Job payment escrow — lock Àṣẹ until task verified',
     budget: 'Resource budget enforcement',
     skill: 'Reusable capability definition', swarm: 'Multi-agent swarm', birth: 'Agent birth ceremony',
     mint: 'Blockchain mint', receipt: 'Execution receipt', seal: 'Cryptographic seal',
@@ -301,6 +308,7 @@ class SwibeCompletionProvider implements vscode.CompletionItemProvider {
       'let', 'const', 'think', 'swarm', 'ethics', 'permission', 'mcp', 'team', 'edit',
       'bridge', 'session', 'coordinate', 'policy', 'analytics',
       'witness', 'pilot', 'viewport', 'gestalt',
+      'token', 'wallet', 'stake', 'slash', 'convert', 'royalty', 'escrow',
       'budget', 'skill', 'secure', 'birth', 'mint', 'receipt', 'seal',
       'remember', 'neural', 'app', 'chain', 'plan', 'observe', 'evolve', 'heartbeat',
     ];
@@ -341,6 +349,16 @@ class SwibeSymbolProvider implements vscode.DocumentSymbolProvider {
       [/^\s*pilot\b/, 'pilot', vscode.SymbolKind.Event],
       [/^\s*viewport\b/, 'viewport', vscode.SymbolKind.Property],
       [/^\s*gestalt\b/, 'gestalt', vscode.SymbolKind.Method],
+      [/^\s*token\s+"([^"]+)"/, 'token', vscode.SymbolKind.Constant],
+      [/^\s*token\b/, 'token', vscode.SymbolKind.Constant],
+      [/^\s*wallet\s+"([^"]+)"/, 'wallet', vscode.SymbolKind.Object],
+      [/^\s*wallet\b/, 'wallet', vscode.SymbolKind.Object],
+      [/^\s*stake\b/, 'stake', vscode.SymbolKind.Property],
+      [/^\s*slash\b/, 'slash', vscode.SymbolKind.Property],
+      [/^\s*convert\b/, 'convert', vscode.SymbolKind.Method],
+      [/^\s*royalty\b/, 'royalty', vscode.SymbolKind.Property],
+      [/^\s*escrow\s+"([^"]+)"/, 'escrow', vscode.SymbolKind.Object],
+      [/^\s*escrow\b/, 'escrow', vscode.SymbolKind.Object],
     ];
     lines.forEach((line, i) => {
       for (const [re, kind, sym] of patterns) {
