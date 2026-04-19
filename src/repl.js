@@ -1,22 +1,31 @@
 /**
- * Swibe REPL v3.3
- * Interactive sovereign agent shell
+ * Swibe REPL v3.3.2
+ * Interactive sovereign agent shell — now with Forgiving Mode
  */
 
 import readline from 'node:readline';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
 import { Compiler } from './compiler.js';
 import { StandardLibrary } from './stdlib.js';
+import { LLMIntegration } from './llm-integration.js';
+import { matchIntent, injectDefaults } from './intent-parser.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const HISTORY_FILE = path.join(
   os.homedir(), '.swibe', 'repl-history.json'
 );
 
-const BANNER = `🌀 Swibe REPL v3.3
+const TRANSLATOR_PROMPT_PATH = path.join(
+  __dirname, 'prompts', 'forgiving-translator.json'
+);
+
+const BANNER = `🌀 Swibe REPL v3.3.2
 ══════════════════════════════════════
 Sovereign Agent-Native Scripting Shell
 Type Swibe primitives and see results.
@@ -39,58 +48,148 @@ const HINTS = [
   '.clear',
   '.history',
   '.sabbath',
+  '.forgiving',
+  '.strict',
 ];
 
-const DOT_COMMANDS = {
-  '.help': () => {
-    console.log(`Swibe REPL Commands:
-  .help     — Show this help
-  .exit     — Exit the REPL
-  .clear    — Clear the screen
-  .history  — Show command history
-  .sabbath  — Check Sabbath status
-  .reset    — Reset the VM state
-  .version  — Show Swibe version
+// ────────────────────────────────────────────────────────────
+// Forgiving Translator — LLM fallback
+// ────────────────────────────────────────────────────────────
+
+let _translatorPromptCache = null;
+
+function loadTranslatorPrompt() {
+  if (_translatorPromptCache) return _translatorPromptCache;
+  try {
+    const raw = fs.readFileSync(TRANSLATOR_PROMPT_PATH, 'utf-8');
+    const data = JSON.parse(raw);
+    _translatorPromptCache = data;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function translateWithLLM(input) {
+  const promptData = loadTranslatorPrompt();
+  if (!promptData) {
+    return { code: `think "${input}"`, explanation: 'Translator prompt not found — defaulting to think.' };
+  }
+
+  const examplesText = (promptData.examples || [])
+    .map(e => `User: ${e.input}\nSwibe:\n${e.output}`)
+    .join('\n\n');
+
+  const fullPrompt = [
+    promptData.system,
+    '',
+    '## Examples',
+    examplesText,
+    '',
+    `## Translate this user input to valid Swibe code:`,
+    `User: ${input}`,
+    `Swibe:`,
+  ].join('\n');
+
+  try {
+    const llm = new LLMIntegration();
+    const result = await llm.think(fullPrompt, { max_tokens: 512 });
+    const code = (result.content || '').trim();
+    return {
+      code: code || `think "${input}"`,
+      explanation: `Translated natural language to Swibe syntax.`,
+    };
+  } catch (err) {
+    return {
+      code: `think "${input}"`,
+      explanation: `LLM translation failed (${err.message}) — wrapped as think.`,
+    };
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// Dot Commands
+// ────────────────────────────────────────────────────────────
+
+function buildDotCommands(state) {
+  return {
+    '.help': () => {
+      console.log(`Swibe REPL Commands:
+  .help      — Show this help
+  .exit      — Exit the REPL
+  .clear     — Clear the screen
+  .history   — Show command history
+  .sabbath   — Check Sabbath status
+  .reset     — Reset the VM state
+  .version   — Show Swibe version
+  .forgiving — Enable forgiving mode (natural language → Swibe)
+  .strict    — Return to strict parsing mode
+
+Mode: ${state.forgiving ? '🧠 Forgiving' : '⚙️ Strict'}
+
+Forgiving Mode:
+  Type natural English and Swibe translates it for you.
+  Examples: "what can you do", "create a swarm",
+            "analyze code", "show my balance"
+  Fast-path intents are matched locally.
+  Unrecognized input falls back to LLM translation.
 
 Primitives:
   think "prompt"
   swarm { think "task" }
-  ethics { harm-none }
-  ethics { mode: "hermetic" }
+  chain { think "step1"; think "step2" }
+  ethics { harm_none: true; mode: "hermetic" }
+  permission { think: "auto"; bash: "ask" }
   birth { identity: "bipọn39" }
   budget { tokens: 1000 }
   remember { "key" }
   evolve { soul: "name", rank: 1 }
   heartbeat { every: 60s }
+  wallet { token: "toc_s" }
+  secure { execution: "strict-vm" }
   println("message")
 
 Àṣẹ.`);
-  },
-  '.clear': () => {
-    process.stdout.write('\x1Bc');
-  },
-  '.sabbath': () => {
-    const day = new Date().getDay();
-    if (day === 6) {
-      console.log('[SABBATH] Saturday — rest is law. Heavy actions blocked.');
-    } else {
-      const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-      console.log(`[SABBATH] ${days[day]} — active. No restrictions.`);
-    }
-  },
-  '.version': () => {
-    try {
-      const pkg = JSON.parse(
-        fs.readFileSync(
-          path.join(process.cwd(), 'package.json'), 'utf-8'
-        )
-      );
-      console.log(`Swibe v${pkg.version}`);
-    } catch {
-      console.log('Swibe v3.3');
-    }
-  },
-};
+    },
+    '.clear': () => {
+      process.stdout.write('\x1Bc');
+    },
+    '.sabbath': () => {
+      const day = new Date().getDay();
+      if (day === 6) {
+        console.log('[SABBATH] Saturday — rest is law. Heavy actions blocked.');
+      } else {
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        console.log(`[SABBATH] ${days[day]} — active. No restrictions.`);
+      }
+    },
+    '.version': () => {
+      try {
+        const pkg = JSON.parse(
+          fs.readFileSync(
+            path.join(__dirname, '..', 'package.json'), 'utf-8'
+          )
+        );
+        console.log(`Swibe v${pkg.version}`);
+      } catch {
+        console.log('Swibe v3.3.2');
+      }
+    },
+    '.forgiving': () => {
+      state.forgiving = true;
+      console.log('🧠 Forgiving mode ON — type natural language and Swibe will translate.');
+      console.log('   Use .strict to return to normal parsing.');
+    },
+    '.strict': () => {
+      state.forgiving = false;
+      console.log('⚙️ Strict mode ON — standard Swibe parsing restored.');
+    },
+  };
+}
+
+// ────────────────────────────────────────────────────────────
+// History
+// ────────────────────────────────────────────────────────────
 
 function loadHistory() {
   try {
@@ -113,27 +212,84 @@ function saveHistory(history) {
   } catch {}
 }
 
-function getHint(input) {
-  if (!input || input.startsWith('.')) return '';
-  const match = HINTS.find(h =>
-    h.startsWith(input) && h !== input
+// ────────────────────────────────────────────────────────────
+// Core Execution
+// ────────────────────────────────────────────────────────────
+
+async function executeSwibe(source, std) {
+  const wrapped = source.includes('fn ')
+    ? source
+    : `fn main() {\n  ${source.split('\n').join('\n  ')}\n}`;
+
+  const compiler = new Compiler(wrapped, 'javascript');
+  const code = await compiler.compile();
+
+  const fn = new Function(
+    'std', 'console',
+    `return (async () => {\n${code}\nawait main();\n})()`
   );
-  return match ? match.slice(input.length) : '';
+  await fn(std, console);
 }
 
-export async function startRepl() {
+// ────────────────────────────────────────────────────────────
+// Forgiving Handler
+// ────────────────────────────────────────────────────────────
+
+async function handleForgiving(source, std) {
+  // Part 1: Try native intent parser (fast path)
+  const intent = matchIntent(source);
+  if (intent.matched) {
+    const code = injectDefaults(intent.code);
+    console.log(`\x1b[90m╭─ Understood: "${source}"\x1b[0m`);
+    console.log(`\x1b[90m│  Intent: ${intent.intent}\x1b[0m`);
+    console.log(`\x1b[90m╰─ Translated to:\x1b[0m`);
+    console.log(`\x1b[36m${code}\x1b[0m`);
+    console.log('');
+    await executeSwibe(code, std);
+    return;
+  }
+
+  // Part 2: LLM translator fallback
+  console.log(`\x1b[33m⏳ Translating natural input...\x1b[0m`);
+  const result = await translateWithLLM(source);
+  const code = injectDefaults(result.code);
+
+  console.log(`\x1b[90m╭─ Understood: "${source}"\x1b[0m`);
+  console.log(`\x1b[90m│  ${result.explanation}\x1b[0m`);
+  console.log(`\x1b[90m╰─ Translated to:\x1b[0m`);
+  console.log(`\x1b[36m${code}\x1b[0m`);
+  console.log('');
+  await executeSwibe(code, std);
+}
+
+// ────────────────────────────────────────────────────────────
+// REPL Entry Point
+// ────────────────────────────────────────────────────────────
+
+export async function startRepl(options = {}) {
   console.log(BANNER);
 
   const history = loadHistory();
   const std = new StandardLibrary();
 
+  const state = {
+    forgiving: options.forgiving || false,
+  };
+
+  const dotCommands = buildDotCommands(state);
+
   let multilineBuffer = '';
   let braceDepth = 0;
+
+  const promptStr = () =>
+    state.forgiving
+      ? '\x1b[35mswibe\x1b[0m \x1b[33m🧠❯\x1b[0m '
+      : '\x1b[36mswibe\x1b[0m \x1b[33m❯\x1b[0m ';
 
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: '\x1b[36mswibe\x1b[0m \x1b[33m❯\x1b[0m ',
+    prompt: promptStr(),
     history: history,
     historySize: 100,
     completer: (line) => {
@@ -152,6 +308,7 @@ export async function startRepl() {
       if (braceDepth > 0) {
         multilineBuffer += '\n';
       }
+      rl.setPrompt(promptStr());
       rl.prompt();
       return;
     }
@@ -168,6 +325,7 @@ export async function startRepl() {
         rl.history.slice(0, 20).forEach((h, i) => {
           console.log(`  ${i + 1}: ${h}`);
         });
+        rl.setPrompt(promptStr());
         rl.prompt();
         return;
       }
@@ -178,16 +336,18 @@ export async function startRepl() {
         });
         std._budget = null;
         console.log('[REPL] VM state reset.');
+        rl.setPrompt(promptStr());
         rl.prompt();
         return;
       }
 
-      const cmd = DOT_COMMANDS[trimmed];
+      const cmd = dotCommands[trimmed];
       if (cmd) {
         cmd();
       } else {
         console.log(`Unknown command: ${trimmed}. Type .help`);
       }
+      rl.setPrompt(promptStr());
       rl.prompt();
       return;
     }
@@ -205,39 +365,49 @@ export async function startRepl() {
     }
 
     // Reset prompt
-    rl.setPrompt('\x1b[36mswibe\x1b[0m \x1b[33m❯\x1b[0m ');
+    rl.setPrompt(promptStr());
 
     const source = multilineBuffer;
     multilineBuffer = '';
     braceDepth = 0;
 
-    // Wrap bare statements in fn main()
-    const wrapped = source.includes('fn ')
-      ? source
-      : `fn main() {\n  ${source.split('\n').join('\n  ')}\n}`;
-
     try {
-      // Compile and execute
-      const compiler = new Compiler(wrapped, 'javascript');
-      const code = await compiler.compile();
-
-      // Execute in stdlib context
-      const fn = new Function(
-        'std', 'console',
-        `return (async () => {\n${code}\nawait main();\n})()`
-      );
-      await fn(std, console);
+      await executeSwibe(source, std);
     } catch (err) {
-      // Show friendly errors
-      if (err.message?.includes('Unexpected token') ||
-          err.message?.includes('parse')) {
-        console.error(
-          `\x1b[31m[SYNTAX]\x1b[0m ${err.message}`
-        );
+      // In forgiving mode, catch parse errors and translate
+      if (state.forgiving) {
+        const isSyntax = err.message?.includes('Unexpected') ||
+                         err.message?.includes('parse') ||
+                         err.message?.includes('Expected');
+        if (isSyntax) {
+          try {
+            await handleForgiving(source, std);
+          } catch (innerErr) {
+            console.error(
+              `\x1b[31m[ERROR]\x1b[0m Translation also failed: ${innerErr.message}`
+            );
+          }
+        } else {
+          console.error(
+            `\x1b[31m[ERROR]\x1b[0m ${err.message}`
+          );
+        }
       } else {
-        console.error(
-          `\x1b[31m[ERROR]\x1b[0m ${err.message}`
-        );
+        // Strict mode — show friendly errors with forgiving hint
+        if (err.message?.includes('Unexpected token') ||
+            err.message?.includes('parse') ||
+            err.message?.includes('Expected')) {
+          console.error(
+            `\x1b[31m[SYNTAX]\x1b[0m ${err.message}`
+          );
+          console.error(
+            `\x1b[90m  💡 Tip: Type .forgiving to enable natural language mode.\x1b[0m`
+          );
+        } else {
+          console.error(
+            `\x1b[31m[ERROR]\x1b[0m ${err.message}`
+          );
+        }
       }
     }
 
@@ -255,7 +425,7 @@ export async function startRepl() {
     if (multilineBuffer) {
       multilineBuffer = '';
       braceDepth = 0;
-      rl.setPrompt('\x1b[36mswibe\x1b[0m \x1b[33m❯\x1b[0m ');
+      rl.setPrompt(promptStr());
       console.log('\n[REPL] Cancelled.');
       rl.prompt();
     } else {
@@ -268,8 +438,8 @@ export async function startRepl() {
 
 // Legacy compat — SwibeREPL class wraps startRepl
 class SwibeREPL {
-  start() {
-    return startRepl();
+  start(options = {}) {
+    return startRepl(options);
   }
 }
 

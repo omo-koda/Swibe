@@ -199,7 +199,8 @@ async function main() {
     }
 
     case 'repl': {
-      await startRepl();
+      const forgiving = args.includes('--forgiving');
+      await startRepl({ forgiving });
       break;
     }
 
@@ -548,6 +549,7 @@ fn main() {
           swibe compile <file.swibe>      Compile to target language
           swibe audit <file.swibe>        Run Sovereign Readiness Report
           swibe repl                      Start interactive REPL
+          swibe repl --forgiving          Start REPL in forgiving mode
           swibe route <file.swibe>        Show neural routing & permission matrix
           swibe init <template> [name]    Scaffold from template
           swibe token audit               Audit agent token balances & slashes
@@ -561,6 +563,7 @@ fn main() {
           --target <lang>       Compile target (javascript, rust, elixir, move, openclaw, hybrid)
           --report              Show sovereign readiness report during compile
           --strict-layers       Enable hard errors for layer-order violations
+          --forgiving           Start REPL in forgiving (natural language) mode
       `);
       break;
     }
