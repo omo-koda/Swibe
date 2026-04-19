@@ -332,6 +332,49 @@ function registerBuiltinTools(registry) {
       return execSync(args.command, { encoding: 'utf-8', timeout: 30_000 });
     }
   );
+
+  registry.register(
+    'pilot',
+    'Control the computer (click, type, scroll, etc.)',
+    {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['click', 'type', 'scroll', 'keycombo', 'screenshot'] },
+        target: { type: 'string' },
+        text: { type: 'string' },
+        coordinates: { type: 'array', items: { type: 'number' } },
+      },
+      required: ['action'],
+    },
+    async (args) => {
+      const { PilotEngine } = await import('./pilot.js');
+      const pilot = new PilotEngine();
+      return pilot.execute(args);
+    }
+  );
+
+  registry.register(
+    'viewport',
+    'Analyze the screen content (OCR, UI elements)',
+    {
+      type: 'object',
+      properties: {
+        screenshot: { type: 'string', description: 'Base64 screenshot data (optional, takes fresh one if omitted)' },
+      },
+    },
+    async (args) => {
+      const { ViewportEngine } = await import('./viewport.js');
+      const { PilotEngine } = await import('./pilot.js');
+      let data = args.screenshot;
+      if (!data) {
+        const pilot = new PilotEngine();
+        const res = await pilot.execute({ action: 'screenshot' });
+        data = res.data || 'mock_screenshot_data';
+      }
+      const viewport = new ViewportEngine();
+      return viewport.analyze(data);
+    }
+  );
 }
 
 export { ThinkLoop, ToolRegistry, registerBuiltinTools, DEFAULT_LOOP_CONFIG };

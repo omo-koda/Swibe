@@ -14,10 +14,17 @@ import { PackageManager } from './package-manager.js';
 import { AgentGenerator } from './agent-generator.js';
 import { DockerGenerator } from './docker-generator.js';
 import { MicroservicesGenerator } from './microservices-generator.js';
+import { ObsidianExporter } from './obsidian-exporter.js';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
+const VERSION = pkg.version;
 
 async function main() {
   const args = process.argv.slice(2);
@@ -29,7 +36,6 @@ async function main() {
   }
 
   const command = args[0];
-  const fs = await import('node:fs');
 
   switch (command) {
     case 'compile': {
@@ -54,7 +60,7 @@ async function main() {
         const { genCargoToml } = await import('./backends/rust.js');
         const cargoToml = genCargoToml();
         
-        const path = await import('node:path');
+
         const outputDir = path.dirname(file);
         const rustFile = path.join(outputDir, 'main.rs');
         const cargoFile = path.join(outputDir, 'Cargo.toml');
@@ -66,7 +72,7 @@ async function main() {
         const { genMixExs } = await import('./backends/elixir.js');
         const mixExs = genMixExs();
         
-        const path = await import('node:path');
+
         const outputDir = path.dirname(file);
         const exFile = path.join(outputDir, 'output.ex');
         const mixFile = path.join(outputDir, 'mix.exs');
@@ -78,7 +84,7 @@ async function main() {
         const { genMoveToml } = await import('./backends/move.js');
         const moveToml = genMoveToml();
         
-        const path = await import('node:path');
+
         const outputDir = path.dirname(file);
         const moveFile = path.join(outputDir, 'sources', 'soul.move');
         const tomlFile = path.join(outputDir, 'Move.toml');
@@ -107,7 +113,7 @@ async function main() {
         console.log('  agent.js  — Runtime implementation');
         console.log('  SOUL.md   — Sovereign identity');
       } else if (target === 'hybrid') {
-        const path = await import('node:path');
+
         const outputDir = path.dirname(file);
         
         const sections = code.split('--- MOVE ---');
@@ -156,7 +162,7 @@ async function main() {
       // Load Plugin if specified
       if (pluginPath) {
         try {
-          const path = await import('node:path');
+  
           const absolutePath = pluginPath.startsWith('.') 
             ? path.resolve(process.cwd(), pluginPath)
             : pluginPath;
@@ -195,7 +201,6 @@ async function main() {
       try {
         const wrappedCode = `(async () => { 
           ${code} 
-          if (typeof main === "function") await main(); 
         })()`;
         await vm.runInContext(wrappedCode, context);
         if (std.plugin && typeof std.plugin.onSettle === 'function') {
@@ -806,14 +811,33 @@ npm i -g github:Bino-Elgua/Swibe
     }
 
     case 'version': {
-      console.log('Swibe v3.0.7');
+      console.log(`Swibe v${VERSION}`);
+      break;
+    }
+
+    case 'export': {
+      const target = args.includes('--target') 
+        ? args[args.indexOf('--target') + 1] 
+        : 'obsidian';
+      
+      if (target === 'obsidian') {
+        const memoryPath = path.join(os.homedir(), '.swibe', 'memory', 'agent.json');
+        const options = {
+          all: args.includes('--all')
+        };
+        const exporter = new ObsidianExporter(memoryPath, options);
+        await exporter.export();
+      } else {
+        console.error(`Unknown export target: ${target}`);
+        process.exit(1);
+      }
       break;
     }
 
     case 'help':
     default: {
       console.log(`
-Swibe — Sovereign Agent Language v3.0.7
+Swibe — Sovereign Agent Language v${VERSION}
 
 USAGE:
   swibe run <file.swibe>          Run a Swibe agent
@@ -824,6 +848,7 @@ USAGE:
   swibe daemon <file.swibe>       Run headless agent
   swibe daemon:stop               Stop running daemon
   swibe route <file.swibe>        Show LLM routing
+  swibe export --target obsidian  Export memory to Obsidian vault
   swibe docs [--live]             Generate documentation
   swibe repl                      Interactive REPL
 

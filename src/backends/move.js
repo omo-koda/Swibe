@@ -154,8 +154,9 @@ export function genMove(node, indent = "") {
       return `${indent}// @target ${node.target}`;
 
     case 'MintStatement': {
-      const agent = node.args?.fields?.agent ? genMove(node.args.fields.agent) : 'tx_context::sender(ctx)';
-      const value = node.args?.fields?.value ? genMove(node.args.fields.value) : '1';
+      const args = node.args?.fields || node.config || {};
+      const agent = args.agent ? genMove(args.agent) : 'tx_context::sender(ctx)';
+      const value = args.value ? genMove(args.value) : '1';
       return `${indent}transfer::public_transfer(\n` +
              `${indent}  SoulToken { id: object::new(ctx), agent: ${agent}, value: ${value} },\n` +
              `${indent}  ${agent}\n` +
@@ -163,8 +164,9 @@ export function genMove(node, indent = "") {
     }
 
     case 'ReceiptStatement': {
-      const hash = node.args?.fields?.hash ? genMove(node.args.fields.hash) : 'b"none"';
-      const agent = node.args?.fields?.agent ? genMove(node.args.fields.agent) : 'tx_context::sender(ctx)';
+      const args = node.args?.fields || node.config || {};
+      const hash = args.hash ? genMove(args.hash) : 'b"none"';
+      const agent = args.agent ? genMove(args.agent) : 'tx_context::sender(ctx)';
       return `${indent}event::emit(ReceiptEvent { hash: ${hash}, agent: ${agent} });`;
     }
 
@@ -173,7 +175,8 @@ export function genMove(node, indent = "") {
              `${indent}event::emit(BreathEvent { message: b"seal_request", iteration: 0 });`;
 
     case 'WalrusStatement': {
-      const blob = node.args?.fields?.blob ? genMove(node.args.fields.blob) : 'b""';
+      const args = node.args?.fields || node.config || {};
+      const blob = args.blob ? genMove(args.blob) : 'b""';
       return `${indent}// WALRUS_HOOK: Storing blob via Walrus SDK\n` +
              `${indent}event::emit(BreathEvent { message: ${blob}, iteration: 999 });`;
     }

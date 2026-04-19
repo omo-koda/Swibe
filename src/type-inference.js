@@ -27,36 +27,86 @@ class TypeInference {
   }
 
   /**
-   * Infer type of expression
+   * Infer type of expression or statement
    */
-  infer(expr, expectedType = null) {
-    if (typeof expr === 'number') {
-      if (Number.isInteger(expr)) return 'i32';
+  infer(node, expectedType = null) {
+    if (!node) return 'unknown';
+
+    // Literals
+    if (typeof node === 'number') {
+      if (Number.isInteger(node)) return 'i32';
       return 'f64';
     }
+    if (typeof node === 'string') return 'str';
+    if (typeof node === 'boolean') return 'bool';
 
-    if (typeof expr === 'string') return 'str';
-    if (typeof expr === 'boolean') return 'bool';
-
-    if (Array.isArray(expr)) {
-      if (expr.length === 0) return this.freshVar();
-      const elemType = this.infer(expr[0], expectedType);
-      return `[${elemType}]`;
+    // AST Nodes
+    const type = node.type;
+    switch (type) {
+      case 'Number': return Number.isInteger(node.value) ? 'i32' : 'f64';
+      case 'String': return 'str';
+      case 'Boolean': return 'bool';
+      case 'Identifier': return this.bindings.get(node.name) || this.freshVar();
+      
+      // Swibe Specific
+      case 'ThinkStatement': {
+        this.bindings.set('think_result', 'Receipt');
+        return 'Receipt';
+      }
+      case 'SwarmStatement': {
+        this.bindings.set('swarm_result', 'SwarmResult[]');
+        return 'SwarmResult[]';
+      }
+      case 'BirthStatement': {
+        this.bindings.set('agent', 'SovereignAgent');
+        return 'SovereignAgent';
+      }
+      case 'BudgetStatement': {
+        this.bindings.set('budget', 'Budget');
+        return 'Budget';
+      }
+      case 'RememberStatement': {
+        this.bindings.set('memory', 'MemoryEntry');
+        return 'MemoryEntry';
+      }
+      case 'EvolveStatement': {
+        this.bindings.set('soul', 'Soul');
+        return 'Soul';
+      }
+      case 'EthicsStatement': {
+        this.bindings.set('ethics', 'EthicsResult');
+        return 'EthicsResult';
+      }
+      case 'HeartbeatStatement': {
+        this.bindings.set('heartbeat', 'HeartbeatHandle');
+        return 'HeartbeatHandle';
+      }
+      case 'MintStatement': return 'TransactionDigest';
+      case 'ReceiptStatement': return 'TransactionDigest';
+      case 'WalrusStatement': return 'BlobId';
+      
+      case 'FunctionDecl': {
+        this.bindings.set(node.name, 'function');
+        if (node.body) return this.infer(node.body);
+        return 'function';
+      }
+      case 'Program':
+      case 'Block': {
+        let lastType = 'null';
+        if (node.statements) {
+          for (const stmt of node.statements) {
+            lastType = this.infer(stmt);
+          }
+        }
+        return lastType;
+      }
+      case 'Return': return this.infer(node.value);
+      case 'Call':
+      case 'MethodCall':
+      case 'FunctionCall': return this.inferCall(node, expectedType);
+      default:
+        return 'unknown';
     }
-
-    if (typeof expr === 'object' && expr !== null) {
-      if (expr.type === 'binop') {
-        return this.inferBinop(expr, expectedType);
-      }
-      if (expr.type === 'call') {
-        return this.inferCall(expr, expectedType);
-      }
-      if (expr.type === 'if') {
-        return this.inferIf(expr, expectedType);
-      }
-    }
-
-    return this.freshVar();
   }
 
   /**

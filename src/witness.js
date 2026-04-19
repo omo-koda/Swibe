@@ -1,229 +1,150 @@
 /**
- * Swibe Witness Module — Phase 6: Multimodal Perception
- * Image, video, audio processing with unified context fusion
+ * Swibe Witness Engine — Multimodal Perception
+ *
+ * Processes images, video frames, and audio to produce
+ * unified embeddings for the memory engine.
  */
 
-import { EventEmitter } from 'events';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const MODALITY = {
-  IMAGE: 'image',
-  VIDEO: 'video',
-  AUDIO: 'audio',
-  DOCUMENT: 'document',
-};
-
-class PerceptionResult {
-  constructor(modality, source, data = {}) {
-    this.modality = modality;
-    this.source = source;
-    this.timestamp = Date.now();
-    this.data = data;
-    this.confidence = data.confidence || 1.0;
-    this.labels = data.labels || [];
-    this.text = data.text || null;
-    this.objects = data.objects || [];
-    this.metadata = data.metadata || {};
-  }
-
-  toContext() {
-    return {
-      modality: this.modality,
-      source: this.source,
-      confidence: this.confidence,
-      labels: this.labels,
-      text: this.text,
-      objects: this.objects,
-      timestamp: this.timestamp,
-    };
-  }
-}
-
-export class Witness extends EventEmitter {
+class WitnessEngine {
   constructor(config = {}) {
-    super();
-    this.modalities = config.modalities || ['image', 'audio'];
-    this.maxConcurrent = config.max_concurrent || 4;
-    this.fusionStrategy = config.fusion || 'unified_context';
-    this.results = [];
-    this._active = 0;
-    this._queue = [];
+    this.config = {
+      fusion: config.fusion || 'unified_context',
+      maxFrames: config.maxFrames || 3,
+      ...config,
+    };
+    this.observations = [];
   }
 
-  async perceive(source, modality = null) {
-    const detected = modality || this._detectModality(source);
-    this.emit('perceive:start', { source, modality: detected });
+  async perceive(inputs) {
+    const results = {};
 
-    if (this._active >= this.maxConcurrent) {
-      await new Promise(resolve => this._queue.push(resolve));
-    }
-    this._active++;
-
-    try {
-      let result;
-      switch (detected) {
-        case MODALITY.IMAGE:
-          result = await this._processImage(source);
-          break;
-        case MODALITY.VIDEO:
-          result = await this._processVideo(source);
-          break;
-        case MODALITY.AUDIO:
-          result = await this._processAudio(source);
-          break;
-        case MODALITY.DOCUMENT:
-          result = await this._processDocument(source);
-          break;
-        default:
-          throw new Error(`Unsupported modality: ${detected}`);
-      }
-
-      this.results.push(result);
-      this.emit('perceive:complete', result);
-      return result;
-    } finally {
-      this._active--;
-      if (this._queue.length > 0) {
-        this._queue.shift()();
-      }
-    }
-  }
-
-  async _processImage(source) {
-    return new PerceptionResult(MODALITY.IMAGE, source, {
-      labels: ['image_analysis'],
-      text: `[Image perceived: ${source}]`,
-      objects: [],
-      confidence: 0.95,
-      metadata: { width: null, height: null, format: this._getExtension(source) },
-    });
-  }
-
-  async _processVideo(source) {
-    return new PerceptionResult(MODALITY.VIDEO, source, {
-      labels: ['video_analysis'],
-      text: `[Video perceived: ${source}]`,
-      objects: [],
-      confidence: 0.90,
-      metadata: { duration: null, fps: null, format: this._getExtension(source) },
-    });
-  }
-
-  async _processAudio(source) {
-    return new PerceptionResult(MODALITY.AUDIO, source, {
-      labels: ['audio_analysis'],
-      text: `[Audio perceived: ${source}]`,
-      confidence: 0.88,
-      metadata: { duration: null, sampleRate: null, format: this._getExtension(source) },
-    });
-  }
-
-  async _processDocument(source) {
-    return new PerceptionResult(MODALITY.DOCUMENT, source, {
-      labels: ['document_analysis'],
-      text: `[Document perceived: ${source}]`,
-      confidence: 0.92,
-      metadata: { pages: null, format: this._getExtension(source) },
-    });
-  }
-
-  async fuse(results = null) {
-    const toFuse = results || this.results;
-    if (toFuse.length === 0) return { context: [], summary: 'No perceptions to fuse' };
-
-    this.emit('fuse:start', { count: toFuse.length, strategy: this.fusionStrategy });
-
-    const contexts = toFuse.map(r => r.toContext());
-    let fused;
-
-    switch (this.fusionStrategy) {
-      case 'unified_context':
-        fused = this._fuseUnified(contexts);
-        break;
-      case 'weighted':
-        fused = this._fuseWeighted(contexts);
-        break;
-      case 'sequential':
-        fused = this._fuseSequential(contexts);
-        break;
-      default:
-        fused = this._fuseUnified(contexts);
+    if (inputs.image) {
+      results.image = await this.analyzeImage(inputs.image);
     }
 
-    this.emit('fuse:complete', fused);
+    if (inputs.video) {
+      results.video = await this.analyzeVideo(
+        inputs.video,
+        inputs.extract_frames || this.config.maxFrames
+      );
+    }
+
+    if (inputs.audio) {
+      results.audio = await this.analyzeAudio(inputs.audio, {
+        transcribe: inputs.transcribe !== false,
+        emotionDetect: inputs.emotion_detect || false,
+      });
+    }
+
+    const fused = this.fuse(results);
+    this.observations.push({
+      timestamp: Date.now(),
+      inputs: Object.keys(inputs),
+      hash: crypto.createHash('sha256')
+        .update(JSON.stringify(fused))
+        .digest('hex')
+        .slice(0, 16),
+      result: fused,
+    });
+
     return fused;
   }
 
-  _fuseUnified(contexts) {
-    const allLabels = [...new Set(contexts.flatMap(c => c.labels))];
-    const allText = contexts.map(c => c.text).filter(Boolean).join('\n');
-    const allObjects = contexts.flatMap(c => c.objects);
-    const avgConfidence = contexts.reduce((s, c) => s + c.confidence, 0) / contexts.length;
-
+  async analyzeImage(imagePath) {
+    const resolved = path.resolve(imagePath);
+    if (!fs.existsSync(resolved)) {
+      return { error: `Image not found: ${resolved}`, modality: 'image' };
+    }
+    const stat = fs.statSync(resolved);
+    const ext = path.extname(resolved).toLowerCase();
     return {
-      strategy: 'unified_context',
-      modalities: [...new Set(contexts.map(c => c.modality))],
-      labels: allLabels,
-      text: allText,
-      objects: allObjects,
-      confidence: avgConfidence,
-      context: contexts,
-      summary: `Fused ${contexts.length} perceptions across ${new Set(contexts.map(c => c.modality)).size} modalities`,
+      modality: 'image',
+      path: resolved,
+      format: ext,
+      size: stat.size,
+      analyzed: true,
+      description: `[image:${path.basename(resolved)}]`,
+      embedding: this._mockEmbedding(resolved),
     };
   }
 
-  _fuseWeighted(contexts) {
-    const sorted = [...contexts].sort((a, b) => b.confidence - a.confidence);
+  async analyzeVideo(videoPath, frameCount) {
+    const resolved = path.resolve(videoPath);
+    if (!fs.existsSync(resolved)) {
+      return { error: `Video not found: ${resolved}`, modality: 'video' };
+    }
+    const frames = [];
+    for (let i = 0; i < frameCount; i++) {
+      frames.push({
+        index: i,
+        timestamp_s: i * 2,
+        description: `[frame:${i}]`,
+        embedding: this._mockEmbedding(`${resolved}:frame${i}`),
+      });
+    }
+    return { modality: 'video', path: resolved, frames, analyzed: true };
+  }
+
+  async analyzeAudio(audioPath, options = {}) {
+    const resolved = path.resolve(audioPath);
+    if (!fs.existsSync(resolved)) {
+      return { error: `Audio not found: ${resolved}`, modality: 'audio' };
+    }
+    const result = { modality: 'audio', path: resolved, analyzed: true };
+    if (options.transcribe) {
+      result.transcript = `[transcript:${path.basename(resolved)}]`;
+    }
+    if (options.emotionDetect) {
+      result.emotion = { valence: 0.6, arousal: 0.4, label: 'neutral' };
+    }
+    result.embedding = this._mockEmbedding(resolved);
+    return result;
+  }
+
+  fuse(results) {
+    const modalities = Object.keys(results);
+    const embeddings = modalities
+      .map(m => results[m]?.embedding)
+      .filter(Boolean);
     return {
-      strategy: 'weighted',
-      primary: sorted[0],
-      secondary: sorted.slice(1),
-      context: sorted,
-      summary: `Weighted fusion: primary=${sorted[0].modality} (${sorted[0].confidence.toFixed(2)})`,
+      modalities,
+      strategy: this.config.fusion,
+      results,
+      unified_embedding: embeddings.length > 0
+        ? this._averageEmbeddings(embeddings)
+        : null,
+      timestamp: Date.now(),
     };
   }
 
-  _fuseSequential(contexts) {
-    const sorted = [...contexts].sort((a, b) => a.timestamp - b.timestamp);
-    return {
-      strategy: 'sequential',
-      timeline: sorted,
-      context: sorted,
-      summary: `Sequential fusion: ${sorted.length} perceptions in temporal order`,
-    };
+  _mockEmbedding(seed) {
+    const hash = crypto.createHash('sha256').update(seed).digest();
+    const emb = [];
+    for (let i = 0; i < 8; i++) {
+      emb.push(((hash[i] || 0) / 255) * 2 - 1);
+    }
+    return emb;
   }
 
-  _detectModality(source) {
-    const ext = this._getExtension(source).toLowerCase();
-    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return MODALITY.IMAGE;
-    if (['mp4', 'avi', 'mov', 'webm', 'mkv'].includes(ext)) return MODALITY.VIDEO;
-    if (['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(ext)) return MODALITY.AUDIO;
-    if (['pdf', 'doc', 'docx', 'txt', 'md'].includes(ext)) return MODALITY.DOCUMENT;
-    return MODALITY.IMAGE;
+  _averageEmbeddings(embeddings) {
+    if (embeddings.length === 0) return [];
+    const dims = embeddings[0].length;
+    const avg = new Array(dims).fill(0);
+    for (const emb of embeddings) {
+      for (let i = 0; i < dims; i++) {
+        avg[i] += emb[i] / embeddings.length;
+      }
+    }
+    return avg;
   }
 
-  _getExtension(source) {
-    const parts = String(source).split('.');
-    return parts.length > 1 ? parts[parts.length - 1] : '';
-  }
-
-  clear() {
-    this.results = [];
+  getHistory() {
+    return this.observations;
   }
 }
 
-export function witnessFromAST(node) {
-  const config = node.config || {};
-  const opts = {};
-  if (config.modalities) {
-    const val = config.modalities;
-    opts.modalities = typeof val === 'string' ? val.split(',').map(s => s.trim()) : val.value ? val.value.split(',').map(s => s.trim()) : ['image', 'audio'];
-  }
-  if (config.fusion) {
-    opts.fusion = typeof config.fusion === 'string' ? config.fusion : config.fusion.value;
-  }
-  if (config.max_concurrent) {
-    const v = config.max_concurrent;
-    opts.max_concurrent = typeof v === 'number' ? v : (v.value ? Number(v.value) : 4);
-  }
-  return new Witness(opts);
-}
+export { WitnessEngine };

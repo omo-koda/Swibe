@@ -208,16 +208,22 @@ class Parser {
     // New statements for sovereign blockchain integration
     if (token.type === TokenType.MINT) {
       this.advance();
-      const args = this.parseExpression();
+      let args = null;
+      if (this.current().type !== TokenType.SEMICOLON && this.current().type !== TokenType.RBRACE) {
+        args = this.parseExpression();
+      }
       this.match(TokenType.SEMICOLON);
-      return new ASTNode('MintStatement', { args });
+      return new ASTNode('MintStatement', { config: args });
     }
 
     if (token.type === TokenType.RECEIPT) {
       this.advance();
-      const args = this.parseExpression();
+      let args = null;
+      if (this.current().type !== TokenType.SEMICOLON && this.current().type !== TokenType.RBRACE) {
+        args = this.parseExpression();
+      }
       this.match(TokenType.SEMICOLON);
-      return new ASTNode('ReceiptStatement', { args });
+      return new ASTNode('ReceiptStatement', { config: args });
     }
 
     if (token.type === TokenType.SEAL) {
@@ -227,10 +233,11 @@ class Parser {
     }
 
     if (token.type === TokenType.WALRUS) {
-      this.advance();
-      const args = this.parseExpression();
-      this.match(TokenType.SEMICOLON);
-      return new ASTNode('WalrusStatement', { args });
+      return this.parseWalrusStatement();
+    }
+
+    if (token.type === TokenType.SOVEREIGN) {
+      return this.parseSovereignStatement();
     }
 
     // Budget statement
@@ -253,9 +260,20 @@ class Parser {
       return this.parseEvolveStatement();
     }
 
-    // Ethics statement
     if (token.type === TokenType.ETHICS) {
       return this.parseEthicsStatement();
+    }
+
+    if (token.type === TokenType.COMMONS) {
+      return this.parseCommonsStatement();
+    }
+
+    if (token.type === TokenType.PUBLIC_FACING) {
+      return this.parsePublicFacingStatement();
+    }
+
+    if (token.type === TokenType.WEB_INGEST) {
+      return this.parseWebIngestStatement();
     }
 
     // Heartbeat statement
@@ -393,6 +411,14 @@ class Parser {
 
     // Expression statement
     const expr = this.parseExpression();
+    
+    // If it's one of our special keyword "statements" that can also be expressions
+    const exprWithBraces = ['CommonsStatement', 'PublicFacingStatement', 'WebIngestStatement'];
+    if (exprWithBraces.includes(expr.type)) {
+      this.match(TokenType.SEMICOLON);
+      return expr;
+    }
+
     this.match(TokenType.SEMICOLON);
     return expr;
   }
@@ -484,7 +510,7 @@ class Parser {
       this.advance();
       const k = this.expect(TokenType.IDENTIFIER).value;
       this.expect(TokenType.COLON);
-      const v = this.expect(TokenType.IDENTIFIER).value;
+      const v = this.parseExpression();
       config[k] = v;
     }
     this.expect(TokenType.RBRACE);
@@ -1483,8 +1509,9 @@ class Parser {
   }
 
   parseVariableDecl() {
+    const isConst = this.match(TokenType.CONST);
+    if (!isConst) this.expect(TokenType.LET);
     const isMut = this.match(TokenType.MUT);
-    this.expect(TokenType.LET);
     const name = this.expect(TokenType.IDENTIFIER).value;
 
     let type = null;
@@ -1497,7 +1524,7 @@ class Parser {
     const value = this.parseExpression();
     this.match(TokenType.SEMICOLON);
 
-    return new ASTNode('VariableDecl', { name, type, value, isMut });
+    return new ASTNode('VariableDecl', { name, type, value, isMut, isConst });
   }
 
   parseBlock(isFunctionBody = false) {
@@ -1749,6 +1776,16 @@ class Parser {
       return new ASTNode('Voice', { text: token.value });
     }
 
+    if (token.type === TokenType.COMMONS) {
+      return this.parseCommonsStatement();
+    }
+    if (token.type === TokenType.PUBLIC_FACING) {
+      return this.parsePublicFacingStatement();
+    }
+    if (token.type === TokenType.WEB_INGEST) {
+      return this.parseWebIngestStatement();
+    }
+
     // call_tool expression is used both as statement and value expression
     if (token.type === TokenType.CALL_TOOL) {
       return this.parseCallToolStatement();
@@ -1830,6 +1867,99 @@ class Parser {
     }
 
     throw new Error(`Unexpected token: ${token.type} at ${token.line}:${token.column}`);
+  }
+
+  parseCommonsStatement() {
+    this.expect(TokenType.COMMONS);
+    let name = null;
+    if (this.current().type !== TokenType.LBRACE) {
+      name = this.parseExpression();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      const val = this.parseExpression();
+      config[key] = val;
+      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    this.match(TokenType.SEMICOLON);
+    return new ASTNode('CommonsStatement', { name, config });
+  }
+
+  parsePublicFacingStatement() {
+    this.expect(TokenType.PUBLIC_FACING);
+    let name = null;
+    if (this.current().type !== TokenType.LBRACE) {
+      name = this.parseExpression();
+    }
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      const val = this.parseExpression();
+      config[key] = val;
+      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    this.match(TokenType.SEMICOLON);
+    return new ASTNode('PublicFacingStatement', { name, config });
+  }
+
+  parseWebIngestStatement() {
+    this.expect(TokenType.WEB_INGEST);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      const val = this.parseExpression();
+      config[key] = val;
+      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    this.match(TokenType.SEMICOLON);
+    return new ASTNode('WebIngestStatement', { config });
+  }
+
+  parseSovereignStatement() {
+    this.expect(TokenType.SOVEREIGN);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      const val = this.parseExpression();
+      config[key] = val;
+      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    this.match(TokenType.SEMICOLON);
+    return new ASTNode('SovereignStatement', { config });
+  }
+
+  parseWalrusStatement() {
+    this.expect(TokenType.WALRUS);
+    this.expect(TokenType.LBRACE);
+    const config = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      const key = this.current().value;
+      this.advance();
+      this.expect(TokenType.COLON);
+      const val = this.parseExpression();
+      config[key] = val;
+      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    this.match(TokenType.SEMICOLON);
+    return new ASTNode('WalrusStatement', { config });
   }
 }
 

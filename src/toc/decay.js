@@ -10,6 +10,8 @@ import { TOKEN_TYPE } from './token.js';
 const DECAY_RATE = 0.01; // Exactly 1% per day
 const DAY_MS = 86_400_000;
 
+export const DECAY_CONFIG = { DECAY_RATE, DAY_MS };
+
 export class DecayEngine extends EventEmitter {
   constructor(walletRegistry) {
     super();
@@ -21,8 +23,6 @@ export class DecayEngine extends EventEmitter {
 
   /**
    * Apply 1% daily decay to a single agent's Dopamine.
-   * Decay is cumulative: if 3 days have passed, decay = 1 - (0.99)^3.
-   * Burns the decayed amount from the agent's wallet.
    */
   decayAgent(agentId, nowMs = Date.now()) {
     const wallet = this.registry.get(agentId);
@@ -38,13 +38,12 @@ export class DecayEngine extends EventEmitter {
     if (currentBalance <= 0) return 0;
 
     // Exact compound decay: remaining = balance * (1 - rate)^days
-    // decayed = balance - remaining
     const retainFactor = Math.pow(1 - DECAY_RATE, days);
     const remaining = Math.floor(currentBalance * retainFactor);
     const decayAmount = currentBalance - remaining;
 
     if (decayAmount > 0) {
-      wallet.spend(TOKEN_TYPE.TOC_D, decayAmount);
+      wallet.spend(TOKEN_TYPE.TOC_D, decayAmount, 'daily_decay');
     }
 
     this.lastDecayRun.set(agentId, nowMs);
@@ -63,9 +62,6 @@ export class DecayEngine extends EventEmitter {
     return decayAmount;
   }
 
-  /**
-   * Run decay across all registered agents.
-   */
   decayAll(nowMs = Date.now()) {
     const results = [];
     for (const [agentId, wallet] of this.registry.wallets) {
@@ -76,35 +72,20 @@ export class DecayEngine extends EventEmitter {
         }
       }
     }
-    this.emit('decay_cycle', { count: results.length, timestamp: nowMs });
     return results;
   }
 
-  /**
-   * Start automatic daily decay scheduler.
-   */
   startScheduler(intervalMs = DAY_MS) {
     if (this._interval) return;
     this._interval = setInterval(() => {
       this.decayAll();
     }, intervalMs);
-    this.emit('scheduler_started', { intervalMs });
   }
 
   stopScheduler() {
     if (this._interval) {
       clearInterval(this._interval);
       this._interval = null;
-      this.emit('scheduler_stopped');
     }
   }
-
-  getHistory(agentId = null, limit = 50) {
-    const filtered = agentId
-      ? this.history.filter(h => h.agentId === agentId)
-      : this.history;
-    return filtered.slice(-limit);
-  }
 }
-
-export const DECAY_CONFIG = { DECAY_RATE, DAY_MS };

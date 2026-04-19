@@ -1,4 +1,4 @@
-defmodule Swibe.MixProject do
+defmodule SwibeAgent.MixProject do
   use Mix.Project
 
   def project do
@@ -13,15 +13,11 @@ defmodule Swibe.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :crypto],
-      mod: {SwibeAgent.Application, []}
+      extra_applications: [:logger]
     ]
   end
 
   defp deps do
-    [
-      {:httpoison, "~> 2.0"},
-      {:jason, "~> 1.4"}
-    ]
+    []
   end
 end

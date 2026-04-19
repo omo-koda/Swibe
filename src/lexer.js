@@ -94,6 +94,10 @@ const TokenType = {
   CONVERT: 'CONVERT',
   ROYALTY: 'ROYALTY',
   ESCROW: 'ESCROW',
+  COMMONS: 'COMMONS',
+  PUBLIC_FACING: 'PUBLIC_FACING',
+  WEB_INGEST: 'WEB_INGEST',
+  SOVEREIGN: 'SOVEREIGN',
 
   // Operators
   PLUS: 'PLUS',
@@ -364,9 +368,11 @@ class Lexer {
     convert: TokenType.CONVERT,
     royalty: TokenType.ROYALTY,
     escrow: TokenType.ESCROW,
-  };
-
-  addToken(type, value = null) {
+    commons: TokenType.COMMONS,
+    public_facing: TokenType.PUBLIC_FACING,
+    web_ingest: TokenType.WEB_INGEST,
+    sovereign: TokenType.SOVEREIGN,
+    };  addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);
     this.tokens.push(token);
   }

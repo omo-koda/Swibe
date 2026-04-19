@@ -8,7 +8,6 @@ import { Parser } from './parser.js';
 import { LLMIntegration } from './llm-integration.js';
 import { IRGenerator } from './ir-generator.js';
 import { TypeInference } from './type-inference.js';
-import { TypeInferencer } from './typeinference.js';
 import { genElixir } from './backends/elixir.js';
 import { genPony } from './backends/pony.js';
 import { genMojo } from './backends/mojo.js';
@@ -74,6 +73,10 @@ class Compiler {
     const parser = new Parser(tokens);
     let ast = parser.parse();
 
+    if (parser.errors.length > 0) {
+      throw new Error(`Parser errors:\n${parser.errors.join('\n')}`);
+    }
+
     try {
       const ir = new IRGenerator();
       const irAst = ir.generate(ast);
@@ -86,19 +89,10 @@ class Compiler {
     try {
       const typeInference = new TypeInference();
       typeInference.infer(ast);
+      typeInference.solve();
+      this._types = Object.fromEntries(typeInference.bindings);
     } catch (error) {
       this._warn('TYPE-INFERENCE', error);
-    }
-
-    try {
-      const inferencer = new TypeInferencer(ast);
-      const typeResult = inferencer.infer();
-      if (typeResult.errors.length > 0) {
-        console.warn('[TYPE] Warnings:', typeResult.errors);
-      }
-      this._types = typeResult.types;
-    } catch (error) {
-      this._warn('TYPE-INFERENCER', error);
     }
 
     this.ast = ast;
@@ -231,6 +225,12 @@ class Compiler {
           const code = this.genJavaScript(s);
           return code.endsWith(';') || code.endsWith('}') ? code : code + ';';
         }).join('\n\n');
+
+        // Append main call if main function is defined
+        const hasMain = node.statements.some(s => s.type === 'FunctionDecl' && s.name === 'main');
+        if (hasMain) {
+          code += '\n\nif (typeof main === "function") {\n  if (main.constructor.name === "AsyncFunction") {\n    main().catch(console.error);\n  } else {\n    main();\n  }\n}';
+        }
         return code;
       case 'FunctionDecl': {
         // Strip type annotations: 'a: i32' -> 'a', handles both {name,type} objects and 'a: i32' strings
@@ -245,7 +245,8 @@ class Compiler {
           return '  ' + code + (code.endsWith(';') || code.endsWith('}') ? '' : ';');
         }).join('\n') + '\n}';
       case 'VariableDecl':
-        return `${node.isMut ? 'let' : 'const'} ${node.name} = ${this.genJavaScript(node.value)};`;
+        const kw = node.isConst ? 'const' : (node.isMut ? 'let' : 'var');
+        return `${kw} ${node.name} = ${this.genJavaScript(node.value)};`;
       case 'Return':
         return `return ${this.genJavaScript(node.value)};`;
       case 'FunctionCall':
@@ -282,10 +283,11 @@ class Compiler {
       case 'BinaryOp':
         return `(${this.genJavaScript(node.left)} ${node.op} ${this.genJavaScript(node.right)})`;
       case 'SwarmStatement': {
-        const agents = node.agents?.map(a => `"${a.name || 'agent'}"`).join(', ') || '';
-        return `// Swarm: ${node.name || 'anonymous'}\n` +
-          `const swarm = await Promise.all([${agents}]\n` +
-          `.map(name => ({ name, status: 'running' })));\n`;
+        const steps = (node.steps || node.agents || []).map(s => {
+          const role = typeof s.role === 'string' ? `"${s.role}"` : (s.role ? this.genJavaScript(s.role) : '"agent"');
+          return `{ name: "${s.name}", role: ${role} }`;
+        }).join(', ');
+        return `const pipeline = new SwarmPipeline([${steps}]);\nawait pipeline.run();`;
       }
       case 'BirthStatement': {
         const config = this.genJavaScript(node.config);
@@ -299,18 +301,14 @@ class Compiler {
         const config = this.genJavaScript(node.config);
         return `await std.writeSharedState(${config})`;
       }
-      case 'ThinkStatement': {
-        const prompt = this.genJavaScript(node.prompt);
-        const model = node.config?.model
-          ? (typeof node.config.model === 'string' ? node.config.model : this.genJavaScript(node.config.model))
-          : 'ollama:llama3';
-        const maxTokens = node.config?.max_tokens
-          ? (typeof node.config.max_tokens === 'number' ? node.config.max_tokens : this.genJavaScript(node.config.max_tokens))
-          : 512;
-        return `await std.think(${prompt}, { model: "${model}", max_tokens: ${maxTokens} })`;
-      }
       case 'NeuralLayer':
         return `/* Neural Layer: 86B neurons activated */`;
+      case 'AgentDefinition': {
+        const fields = Object.entries(node.fields).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `{ ${fields} }`;
+      }
       case 'ArrayLiteral':
         return `[${node.elements.map(e => this.genJavaScript(e)).join(', ')}]`;
       case 'DictLiteral':
@@ -384,7 +382,13 @@ class Compiler {
         })();`;
       }
       case 'ThinkStatement': {
-        return `await std.think(${this.genJavaScript(node.prompt)});`;
+        const prompt = this.genJavaScript(node.prompt);
+        const config = node.config || {};
+        const configEntries = Object.entries(config).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        
+        return `await std.think(${prompt}, { ${configEntries} })`;
       }
       case 'InvokeStatement': {
         return `await std.invoke(${this.genJavaScript(node.tool)});`;
@@ -410,10 +414,61 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
       }
       case 'RememberStatement': {
         const key = this.genJavaScript(node.key);
-        const arweave = node.config?.arweave === 'true';
-        return `await std.remember(${key}, {
-        arweave: ${arweave}
-});`;
+        const configEntries = Object.entries(node.config).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        
+        return `await std.remember(${key}, { ${configEntries} });`;
+      }
+      case 'CommonsStatement': {
+        const name = node.name ? this.genJavaScript(node.name) : 'null';
+        const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.commons(${name}, { ${configEntries} })`;
+      }
+      case 'PublicFacingStatement': {
+        const name = node.name ? this.genJavaScript(node.name) : 'null';
+        const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.public_facing(${name}, { ${configEntries} })`;
+      }
+      case 'WebIngestStatement': {
+        const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.web_ingest({ ${configEntries} })`;
+      }
+      case 'SovereignStatement': {
+        const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.sovereign({ ${configEntries} })`;
+      }
+      case 'WalrusStatement': {
+        const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.walrus({ ${configEntries} })`;
+      }
+      case 'MintStatement': {
+        const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.mint({ ${configEntries} })`;
+      }
+      case 'ReceiptStatement': {
+        const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.receipt({ ${configEntries} })`;
+      }
+      case 'SealStatement': {
+        const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.seal_statement({ ${configEntries} })`;
       }
       case 'ObserveStatement': {
         const event = this.genJavaScript(node.event);
@@ -601,6 +656,33 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
           `  ${k}: ${this.genJavaScript(v)}`
         );
         return `const __escrow = await std.toc.escrow(${name}, {\n${entries.join(',\n')}\n});`;
+      }
+      case 'WitnessStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.witness({\n${entries.join(',\n')}\n});`;
+      }
+      case 'PilotStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.pilot({\n${entries.join(',\n')}\n});`;
+      }
+      case 'ViewportStatement': {
+        const entries = Object.entries(node.config || {}).map(([k, v]) =>
+          `  ${k}: ${this.genJavaScript(v)}`
+        );
+        return `await std.viewport({\n${entries.join(',\n')}\n});`;
+      }
+      case 'GestaltStatement': {
+        const tasks = (node.concurrent || []).map(c =>
+          `  std.${c.action}(${this.genJavaScript(c.value)})`
+        );
+        const mergeStr = typeof node.merge === 'string'
+          ? `"${node.merge}"`
+          : this.genJavaScript(node.merge);
+        return `await std.gestalt([\n${tasks.join(',\n')}\n], { merge: ${mergeStr} });`;
       }
       default: return `/* Unhandled: ${node.type} */`;
     }

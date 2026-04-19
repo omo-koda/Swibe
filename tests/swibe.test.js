@@ -672,7 +672,7 @@ describe('Swibe v3.2 — Compiler Hardening', () => {
   });
 
   it('type inferencer runs without error', async () => {
-    const { TypeInferencer } = await import('../src/typeinference.js');
+    const { TypeInference } = await import('../src/type-inference.js');
     const src = `fn main() {
       think "test"
       ethics { harm-none }
@@ -682,11 +682,12 @@ describe('Swibe v3.2 — Compiler Hardening', () => {
     const tokens = lexer.tokenize();
     const parser = new Parser(tokens);
     const ast = parser.parse();
-    const inferencer = new TypeInferencer(ast);
-    const result = inferencer.infer();
-    expect(result.errors).toHaveLength(0);
-    expect(result.types.think_result).toBe('Receipt');
-    expect(result.types.agent).toBe('SovereignAgent');
+    const inferencer = new TypeInference();
+    inferencer.infer(ast);
+    inferencer.solve();
+    const types = Object.fromEntries(inferencer.bindings);
+    expect(types.think_result).toBe('Receipt');
+    expect(types.agent).toBe('SovereignAgent');
   });
 
   it('AST visitor collects think statements', async () => {

@@ -30,25 +30,30 @@ class LLMIntegration {
     };
   }
 
-  async think(prompt) {
+  async think(prompt, options = {}) {
     let content;
+    const multimodal = options.image || options.images;
+    
     try {
+      // 1. Ollama (default local)
       try {
-        content = await this.ollamaGenerate(prompt);
+        content = await this.ollamaGenerate(prompt, options);
       } catch (e) {
-        if (this.provider === 'claude') {
-          content = await this.claudeGenerate(prompt);
+        // 2. Claude (primary cloud)
+        if (this.provider === 'claude' || !content) {
+          content = await this.claudeGenerate(prompt, options);
         } else {
           throw e;
         }
       }
     } catch (e) {
+      // 3. OpenRouter (ultimate fallback)
       try {
-        const orResult = await this.callOpenRouter(prompt);
+        const orResult = await this.callOpenRouter(prompt, options);
         if (orResult) { content = orResult; }
         else throw new Error('OpenRouter returned null');
       } catch (e2) {
-        console.warn(`[THINK] LLM failed, using mock: ${e.message}`);
+        console.warn(`[THINK] All LLMs failed, using mock: ${e2.message}`);
         content = this.mockGenerate(prompt);
       }
     }
@@ -59,22 +64,7 @@ class LLMIntegration {
 
   async generateCode(prompt, context = {}) {
     const enhancedPrompt = this.buildPrompt(prompt, context);
-
-    try {
-      try {
-        return await this.ollamaGenerate(enhancedPrompt);
-      } catch (e) {
-        if (this.provider === 'claude') {
-          return await this.claudeGenerate(enhancedPrompt);
-        } else {
-          throw e;
-        }
-      }
-    } catch (e) {
-      const orResult = await this.callOpenRouter(enhancedPrompt);
-      if (orResult) return orResult;
-      return this.mockGenerate(enhancedPrompt);
-    }
+    return this.think(enhancedPrompt, context);
   }
 
   async callOpenRouter(prompt, config = {}) {
@@ -83,6 +73,17 @@ class LLMIntegration {
     const model = config.model
       || process.env.OPENROUTER_DEFAULT_MODEL
       || 'meta-llama/llama-3.3-70b-instruct:free';
+    
+    const messages = [{ role: 'user', content: prompt }];
+    
+    // Multimodal support for OpenRouter
+    if (config.image) {
+      messages[0].content = [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${config.image}` } }
+      ];
+    }
+
     try {
       const res = await fetch(
         'https://openrouter.ai/api/v1/chat/completions',
@@ -95,8 +96,8 @@ class LLMIntegration {
           },
           body: JSON.stringify({
             model,
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: config.max_tokens || 512
+            messages,
+            max_tokens: config.max_tokens || 1024
           })
         }
       );
@@ -105,15 +106,21 @@ class LLMIntegration {
     } catch { return null; }
   }
 
-  async ollamaGenerate(prompt) {
+  async ollamaGenerate(prompt, options = {}) {
+    const body = {
+      model: options.model || process.env.OLLAMA_MODEL || 'glm-4.7:cloud',
+      prompt: prompt,
+      stream: false,
+    };
+
+    if (options.image) {
+      body.images = [options.image];
+    }
+
     const response = await fetch(`${this.ollamaUrl}/api/generate`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model: process.env.OLLAMA_MODEL || 'glm-4.7:cloud',
-        prompt: prompt,
-        stream: false,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) throw new Error(`Ollama error: ${response.status}`);
@@ -141,8 +148,26 @@ class LLMIntegration {
     }
   }
 
-  async claudeGenerate(prompt) {
+  async claudeGenerate(prompt, options = {}) {
     if (!this.apiKey) throw new Error('ANTHROPIC_API_KEY not set');
+    
+    const messages = [{ role: 'user', content: prompt }];
+    
+    // Multimodal support for Claude
+    if (options.image) {
+      messages[0].content = [
+        {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: 'image/jpeg',
+            data: options.image,
+          },
+        },
+        { type: 'text', text: prompt },
+      ];
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -151,9 +176,9 @@ class LLMIntegration {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2048,
-        messages: [{ role: 'user', content: prompt }],
+        model: options.model || 'claude-3-5-sonnet-20241022',
+        max_tokens: options.max_tokens || 2048,
+        messages,
       }),
     });
 

@@ -10,6 +10,11 @@
  */
 
 import crypto from 'node:crypto';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
+const VERSION = pkg.version;
 
 // ────────────────────────────────────────────────────────────
 // MCP Message Types (JSON-RPC 2.0)
@@ -153,7 +158,7 @@ class MCPConnection {
         capabilities: {},
         clientInfo: {
           name: 'swibe',
-          version: '3.0.7',
+          version: VERSION,
         },
       });
 
