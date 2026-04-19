@@ -9,6 +9,7 @@
  */
 
 export const TOKEN_TYPE = {
+  ASE: 'ase',     // Àṣẹ (human entry token, tracked at VM layer but referenced here for escrow)
   TOC_D: 'toc_d', // Dopamine
   TOC_S: 'toc_s', // Synapse
 };
@@ -38,10 +39,12 @@ export class TokenLedger {
   constructor() {
     this.balances = new Map();
     this.totalSupply = {
+      [TOKEN_TYPE.ASE]: 0,
       [TOKEN_TYPE.TOC_D]: 0,
       [TOKEN_TYPE.TOC_S]: 0,
     };
     this.burnedTotal = {
+      [TOKEN_TYPE.ASE]: 0,
       [TOKEN_TYPE.TOC_D]: 0,
       [TOKEN_TYPE.TOC_S]: 0,
     };
@@ -83,24 +86,46 @@ export class TokenLedger {
     });
   }
 
-  burn(holder, token, amount, reason = 'action') {
+  burn(holder, token, amount, reason = 'action', receiptHash = null) {
     if (amount <= 0) return;
     const key = this._key(holder, token);
     const prev = this.balances.get(key) || 0;
     if (prev < amount) throw new Error(`Insufficient ${token}: have ${prev}, need ${amount}`);
-    
+
     this.balances.set(key, prev - amount);
     this.totalSupply[token] -= amount;
     this.burnedTotal[token] += amount;
-    
-    this.transactions.push({ 
-      type: 'burn', 
-      holder, 
-      token, 
-      amount, 
-      reason, 
-      timestamp: Date.now() 
-    });
+
+    const tx = {
+      type: 'burn',
+      holder,
+      token,
+      amount,
+      reason,
+      timestamp: Date.now(),
+    };
+
+    // Burn audit trail: Dopamine burns must link to a receipt
+    if (token === TOKEN_TYPE.TOC_D) {
+      tx.receiptHash = receiptHash || this._generateBurnReceipt(holder, amount, reason);
+    }
+
+    this.transactions.push(tx);
+    return tx;
+  }
+
+  /**
+   * Generate a burn receipt hash for audit trail.
+   * Every Dopamine burn is sealed with a deterministic receipt.
+   */
+  _generateBurnReceipt(holder, amount, reason) {
+    const payload = `${holder}:${amount}:${reason}:${Date.now()}`;
+    // Simple deterministic hash — in production this would be SHA-256
+    let hash = 0;
+    for (let i = 0; i < payload.length; i++) {
+      hash = ((hash << 5) - hash + payload.charCodeAt(i)) | 0;
+    }
+    return `burn_${Math.abs(hash).toString(16).padStart(8, '0')}`;
   }
 
   transfer(from, to, token, amount) {

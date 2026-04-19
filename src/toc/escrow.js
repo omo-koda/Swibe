@@ -1,8 +1,10 @@
 /**
- * Swibe ToC Escrow — Phase 7
+ * Swibe ToC Escrow — Phase 7+
  * Job state tracking at the agent layer.
  * Àṣẹ escrow is enforced at the VM layer (OSOVM op_job_payment).
  * Swibe tracks job lifecycle and receives Dopamine conversion signals.
+ *
+ * Hardening: auto-refund if job not completed within timeout.
  */
 
 import { EventEmitter } from 'events';
@@ -14,7 +16,10 @@ const ESCROW_STATUS = {
   DISPUTED: 'disputed',
   REFUNDED: 'refunded',
   FORFEITED: 'forfeited',
+  EXPIRED: 'expired',
 };
+
+const DEFAULT_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export class EscrowEngine extends EventEmitter {
   constructor(walletRegistry, royaltyEngine = null) {
@@ -25,7 +30,7 @@ export class EscrowEngine extends EventEmitter {
     this._nextId = 1;
   }
 
-  create(humanId, agentId, aseAmount, jobDescription = '') {
+  create(humanId, agentId, aseAmount, jobDescription = '', timeoutMs = DEFAULT_TIMEOUT_MS) {
     const humanWallet = this.registry.get(humanId);
     if (!humanWallet) throw new Error(`No wallet for ${humanId}`);
     if (humanWallet.ownerType !== 'human') throw new Error('Only humans can create escrows');
@@ -36,6 +41,7 @@ export class EscrowEngine extends EventEmitter {
     humanWallet.lock(TOKEN_TYPE.ASE, aseAmount, 'escrow');
 
     const id = `escrow_${this._nextId++}`;
+    const now = Date.now();
     const escrow = {
       id,
       humanId,
@@ -43,7 +49,8 @@ export class EscrowEngine extends EventEmitter {
       amount: aseAmount,
       job: jobDescription,
       status: ESCROW_STATUS.LOCKED,
-      created: Date.now(),
+      created: now,
+      expiresAt: now + timeoutMs,
       resolved: null,
     };
 
@@ -124,6 +131,30 @@ export class EscrowEngine extends EventEmitter {
     escrow.status = ESCROW_STATUS.DISPUTED;
     this.emit('dispute', escrow);
     return escrow;
+  }
+
+  /**
+   * Auto-refund any escrows that have exceeded their timeout.
+   * Returns array of expired escrow records.
+   */
+  expireStale(now = Date.now()) {
+    const expired = [];
+    for (const [id, escrow] of this.escrows) {
+      if (escrow.status === ESCROW_STATUS.LOCKED && now >= escrow.expiresAt) {
+        escrow.status = ESCROW_STATUS.EXPIRED;
+        escrow.resolved = now;
+
+        // Refund the human
+        const humanWallet = this.registry.get(escrow.humanId);
+        if (humanWallet) {
+          humanWallet.unlock(TOKEN_TYPE.ASE, 'escrow');
+        }
+
+        expired.push(escrow);
+        this.emit('expire', escrow);
+      }
+    }
+    return expired;
   }
 
   get(escrowId) {

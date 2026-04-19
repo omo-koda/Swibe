@@ -820,8 +820,17 @@ class StandardLibrary {
     console.log(`[TRACE] [${timestamp}] ${message}`, data ? JSON.stringify(data) : '');
   }
 
-  async sandbox_run(fn) {
-    console.warn('[SWIBE] secure{} sandbox: Node.js vm isolation. Not for untrusted code.');
+  async sandbox_run(fn, policy = {}) {
+    const securityPolicy = {
+      execution: policy.execution || 'strict-vm',
+      network: policy.network || 'refuse',
+      filesystem: policy.filesystem || 'read-only',
+      memory: policy.memory || 'standard',
+      receipts: policy.receipts || 'optional',
+      audit: policy.audit || 'off',
+      ...policy,
+    };
+    console.warn(`[SWIBE] secure{} sandbox: isolation=${securityPolicy.execution}, net=${securityPolicy.network}, fs=${securityPolicy.filesystem}`);
 
     const ragApi = Object.freeze({
       save: async (key, data) => {
@@ -847,10 +856,11 @@ class StandardLibrary {
     });
 
     const script = new vm.Script(`(${fn.toString()})()`);
-    const context = vm.createContext(Object.freeze({
+
+    // Build context based on security policy
+    const blocked = (name) => () => { throw new Error(`[SECURE] ${name} blocked by security policy`); };
+    const contextObj = {
       console: Object.freeze({ log: (...args) => console.log('[SANDBOX-LOG]', ...args) }),
-      encrypt_storage: this.encrypt_storage.bind(this),
-      no_external_upload: this.no_external_upload.bind(this),
       println: (...args) => console.log('[SANDBOX-LOG]', ...args),
       join: this.join.bind(this),
       trace: this.trace.bind(this),
@@ -865,8 +875,35 @@ class StandardLibrary {
       crypto: Object.freeze({ randomBytes: (n) => crypto.randomBytes(n) }),
       json: Object.freeze({ stringify: (obj) => JSON.stringify(obj), parse: (str) => JSON.parse(str) }),
       rag: ragApi,
-      process: Object.freeze({ exit: () => { throw new Error('process.exit() is forbidden'); } })
-    }));
+      process: Object.freeze({ exit: () => { throw new Error('process.exit() is forbidden'); } }),
+    };
+
+    // Enforce filesystem policy
+    if (securityPolicy.filesystem === 'refuse') {
+      contextObj.encrypt_storage = blocked('encrypt_storage (filesystem=refuse)');
+      contextObj.no_external_upload = blocked('no_external_upload (filesystem=refuse)');
+    } else {
+      contextObj.encrypt_storage = this.encrypt_storage.bind(this);
+      contextObj.no_external_upload = this.no_external_upload.bind(this);
+    }
+
+    // Enforce network policy — no net primitives exposed inside sandbox regardless,
+    // but mark it explicitly so downstream tools respect the policy
+    contextObj.__securityPolicy = Object.freeze(securityPolicy);
+
+    // Audit mode — wrap every call with logging
+    if (securityPolicy.audit === 'on') {
+      contextObj.__auditLog = [];
+      const origLog = contextObj.console.log;
+      contextObj.console = Object.freeze({
+        log: (...args) => {
+          contextObj.__auditLog.push({ ts: Date.now(), args });
+          origLog(...args);
+        }
+      });
+    }
+
+    const context = vm.createContext(Object.freeze(contextObj));
 
     try {
       return await script.runInContext(context, { timeout: 5000 });

@@ -8,6 +8,7 @@ import { Parser } from './parser.js';
 import { LLMIntegration } from './llm-integration.js';
 import { IRGenerator } from './ir-generator.js';
 import { TypeInference } from './type-inference.js';
+import { EthicsValidator, LayerValidator } from './visitor.js';
 import { genElixir } from './backends/elixir.js';
 import { genPony } from './backends/pony.js';
 import { genMojo } from './backends/mojo.js';
@@ -93,6 +94,32 @@ class Compiler {
       this._types = Object.fromEntries(typeInference.bindings);
     } catch (error) {
       this._warn('TYPE-INFERENCE', error);
+    }
+
+    // Run ethics validator
+    try {
+      const ethicsValidator = new EthicsValidator();
+      for (const stmt of (ast.statements || [])) {
+        ethicsValidator.visit(stmt);
+      }
+      for (const v of ethicsValidator.violations) {
+        this._warn('ETHICS', new Error(v.message || v.type));
+      }
+    } catch (error) {
+      this._warn('ETHICS', error);
+    }
+
+    // Run layer ordering validator
+    try {
+      const layerValidator = new LayerValidator();
+      for (const stmt of (ast.statements || [])) {
+        layerValidator.visit(stmt);
+      }
+      for (const w of layerValidator.warnings) {
+        this._warn('LAYER-ORDER', new Error(w.message));
+      }
+    } catch (error) {
+      this._warn('LAYER-ORDER', error);
     }
 
     this.ast = ast;
@@ -269,8 +296,12 @@ class Compiler {
       }
       case 'SkillDecl':
         return `const ${node.name} = {\n  actions: async function() {\n${node.body.map(s => '    ' + this.genJavaScript(s)).join(';\n')}\n  }\n};`;
-      case 'SecureBlock':
-        return `await sandbox_run(async () => ${this.genJavaScript(node.body)})`;
+      case 'SecureBlock': {
+        const pol = node.policies || {};
+        const policyJSON = JSON.stringify(pol);
+        const inner = (node.body || []).map(s => '    ' + this.genJavaScript(s)).join(';\n');
+        return `await sandbox_run(async () => {\n${inner}\n}, ${policyJSON})`;
+      }
       case 'MetaDigital': {
         return `const ${node.name.replace(/\s+/g, '_')} = new MetaDigital({ name: "${node.name}", ethics: ${this.genJavaScript(node.config.ethics)}, output: ${this.genJavaScript(node.config.output)} });\nawait ${node.name.replace(/\s+/g, '_')}.run();`;
       }

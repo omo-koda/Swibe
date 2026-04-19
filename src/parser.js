@@ -964,8 +964,36 @@ class Parser {
 
   parseSecureBlock() {
     this.expect(TokenType.SECURE);
-    const body = this.parseBlock();
-    return new ASTNode('SecureBlock', { body });
+    this.expect(TokenType.LBRACE);
+    const policies = {};
+    const body = [];
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      // Parse policy key-value pairs (execution, network, filesystem, memory, receipts, audit)
+      const tok = this.current();
+      if (tok.type === TokenType.IDENTIFIER || tok.type === TokenType.STRING) {
+        const key = tok.value;
+        this.advance();
+        if (this.current().type === TokenType.COLON) {
+          this.advance();
+          const value = this.parseExpression();
+          const val = typeof value === 'object' && value.value !== undefined ? value.value : value;
+          policies[key] = val;
+        } else {
+          // It's a statement inside the secure block, not a policy field
+          body.push(new ASTNode('Identifier', { name: key }));
+        }
+      } else {
+        // Parse nested statements inside secure block
+        body.push(this.parseStatement());
+      }
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('SecureBlock', { policies, body });
   }
 
   parseLoopUntil() {

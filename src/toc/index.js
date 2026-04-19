@@ -8,7 +8,7 @@ export { TOKEN_TYPE, TOKEN_CONFIG, TokenLedger } from './token.js';
 export { generateAgentIdentity, recoverAgentIdentity, signMessage, verifyMessage, deriveCapabilities, agentAddress, checkSabbath } from '../bipon39/agent-identity.js';
 export { Wallet, WalletRegistry } from './wallet.js';
 export { ConversionEngine } from './conversion.js';
-export { StakingEngine } from './staking.js';
+export { StakingEngine, GATED_PRIMITIVES, GATED_STAKE_FRACTION } from './staking.js';
 export { RoyaltyEngine } from './royalty.js';
 export { EscrowEngine } from './escrow.js';
 export { DecayEngine, DECAY_CONFIG } from './decay.js';

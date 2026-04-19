@@ -115,6 +115,41 @@ export class Wallet extends EventEmitter {
     this.emit('receive', { token, amount, source: 'vm_conversion' });
   }
 
+  /**
+   * Lock tokens for staking or escrow. Moves balance to a locked pool.
+   */
+  lock(token, amount, purpose = 'stake') {
+    if (!this._locked) this._locked = new Map();
+    const bal = this.ledger.balance(this.ownerId, token);
+    if (bal < amount) throw new Error(`Insufficient ${token} to lock: have ${bal}, need ${amount}`);
+    this.ledger.burn(this.ownerId, token, amount, `lock_${purpose}`);
+    const key = `${token}:${purpose}`;
+    const prev = this._locked.get(key) || 0;
+    this._locked.set(key, prev + amount);
+    return amount;
+  }
+
+  /**
+   * Unlock previously locked tokens (returns to balance).
+   */
+  unlock(token, purpose = 'stake') {
+    if (!this._locked) return 0;
+    const key = `${token}:${purpose}`;
+    const amount = this._locked.get(key) || 0;
+    if (amount > 0) {
+      this.ledger.mint(this.ownerId, token, amount, 'vm_conversion');
+      this._locked.set(key, 0);
+    }
+    return amount;
+  }
+
+  /**
+   * Receive tokens from external source (e.g., escrow release).
+   */
+  receive(token, amount) {
+    this.ledger.mint(this.ownerId, token, amount, 'vm_conversion');
+  }
+
   balance(token) {
     return this.ledger.balance(this.ownerId, token);
   }
@@ -173,7 +208,24 @@ export class WalletRegistry {
     return wallet;
   }
 
+  createHuman(userId) {
+    if (this.wallets.has(userId)) {
+      return this.wallets.get(userId);
+    }
+    const wallet = new Wallet(userId, 'human', this.ledger);
+    this.wallets.set(userId, wallet);
+    return wallet;
+  }
+
   get(id) {
     return this.wallets.get(id) || null;
+  }
+
+  getSupply() {
+    return this.ledger.getSupply();
+  }
+
+  getBurned() {
+    return this.ledger.getBurned();
   }
 }

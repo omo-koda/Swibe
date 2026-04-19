@@ -84,11 +84,18 @@ export class EthicsValidator extends ASTVisitor {
   }
 
   visitEditStatement(node) {
-    // File edits are sensitive — warn if no ethics block
+    // File edits are sensitive — require both ethics and permissions
     if (!this._hasEthics) {
       this.violations.push({
         type: 'edit_without_ethics',
         message: 'File edit requires ethics {} declaration',
+        node: node,
+      });
+    }
+    if (!this._hasPermissions) {
+      this.violations.push({
+        type: 'edit_without_permissions',
+        message: 'File edit requires a permission {} block (high-risk primitive)',
         node: node,
       });
     }
@@ -173,6 +180,23 @@ export class EthicsValidator extends ASTVisitor {
     }
   }
 
+  visitSecureBlock(node) {
+    this._hasSecure = true;
+    // Validate that secure policy fields are recognized
+    const validPolicies = ['execution', 'network', 'filesystem', 'memory', 'receipts', 'audit'];
+    if (node.policies) {
+      for (const key of Object.keys(node.policies)) {
+        if (!validPolicies.includes(key)) {
+          this.violations.push({
+            type: 'unknown_secure_policy',
+            message: `Unknown secure policy field: "${key}". Valid: ${validPolicies.join(', ')}`,
+            node,
+          });
+        }
+      }
+    }
+  }
+
   visitGestaltStatement(node) {
     // Gestalt (parallel execution) is safe but note its presence
   }
@@ -230,6 +254,24 @@ export class EthicsValidator extends ASTVisitor {
     }
   }
 
+  visitMintStatement(node) {
+    // Mint is high-risk — requires both ethics and permissions
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'mint_without_ethics',
+        message: 'Mint requires ethics {} declaration',
+        node: node,
+      });
+    }
+    if (!this._hasPermissions) {
+      this.violations.push({
+        type: 'mint_without_permissions',
+        message: 'Mint requires a permission {} block (high-risk primitive)',
+        node: node,
+      });
+    }
+  }
+
   visitConvertStatement(node) {
     // Conversion is economic — requires ethics
     if (!this._hasEthics) {
@@ -281,3 +323,89 @@ export class EthicsValidator extends ASTVisitor {
     return 'ask';
   }
 }
+
+// ────────────────────────────────────────────────────────────
+// Layered Architecture Validator
+// ────────────────────────────────────────────────────────────
+//
+// Layer 0 – Ethics & Identity: ethics, secure, neural, wallet, token
+// Layer 1 – Core Agent:        think, remember, budget, permission, skill
+// Layer 2 – Coordination:      swarm, team, coordinate, gestalt
+// Layer 3 – Execution:         pilot, witness, mcp, edit, bridge, viewport
+//
+// Lower layers should be declared before higher ones.
+// Out-of-order declarations produce warnings (not hard errors).
+// ────────────────────────────────────────────────────────────
+
+const LAYER_MAP = {
+  // Layer 0 – Ethics & Identity
+  EthicsStatement: 0,
+  SecureBlock: 0,
+  NeuralLayer: 0,
+  WalletStatement: 0,
+  TokenStatement: 0,
+  // Layer 1 – Core Agent
+  ThinkStatement: 1,
+  RememberStatement: 1,
+  BudgetStatement: 1,
+  PermissionStatement: 1,
+  SkillDecl: 1,
+  ChainStatement: 1,
+  PlanStatement: 1,
+  // Layer 2 – Coordination
+  SwarmStatement: 2,
+  TeamStatement: 2,
+  CoordinateStatement: 2,
+  GestaltStatement: 2,
+  // Layer 3 – Execution
+  PilotStatement: 3,
+  WitnessStatement: 3,
+  MCPStatement: 3,
+  EditStatement: 3,
+  BridgeStatement: 3,
+  ViewportStatement: 3,
+};
+
+const LAYER_NAMES = ['Ethics & Identity', 'Core Agent', 'Coordination', 'Execution'];
+
+export class LayerValidator extends ASTVisitor {
+  constructor() {
+    super();
+    this.warnings = [];
+    this._highestLayer = -1;
+    this._highestLayerNode = null;
+    this._order = [];
+  }
+
+  visit(node) {
+    if (!node) return;
+    const layer = LAYER_MAP[node.type];
+    if (layer !== undefined) {
+      if (layer < this._highestLayer) {
+        this.warnings.push({
+          type: 'layer_order',
+          message: `Layer ${layer} (${LAYER_NAMES[layer]}: ${node.type}) declared after Layer ${this._highestLayer} (${LAYER_NAMES[this._highestLayer]}). Declare Layer 0 before Layer 1, Layer 1 before Layer 2, etc.`,
+          node,
+          declaredLayer: layer,
+          afterLayer: this._highestLayer,
+        });
+      }
+      if (layer > this._highestLayer) {
+        this._highestLayer = layer;
+        this._highestLayerNode = node;
+      }
+      this._order.push({ type: node.type, layer });
+    }
+    return super.visit(node);
+  }
+
+  getLayerReport() {
+    return {
+      order: this._order,
+      warnings: this.warnings,
+      valid: this.warnings.length === 0,
+    };
+  }
+}
+
+export { LAYER_MAP, LAYER_NAMES };

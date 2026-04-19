@@ -1,6 +1,6 @@
 ![Version](https://img.shields.io/badge/version-v3.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-329%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-354%20passing-brightgreen)
 ![Backends](https://img.shields.io/badge/backends-44-orange)
 [![npm](https://img.shields.io/badge/npm-@bino--elgua/swibe-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
 
@@ -24,7 +24,7 @@ For local development:
 git clone https://github.com/Bino-Elgua/Swibe.git
 cd Swibe
 npm install
-npm test    # 329 tests across 18 suites
+npm test    # 354 tests across 19 suites
 ```
 
 ## Quick Start
@@ -79,6 +79,27 @@ swibe run agent.swibe
 | `swibe microservice <name> --port <n>` | Generate microservice scaffold |
 | `swibe pkg manifest\|install\|publish` | Package management |
 
+## Four-Layer Architecture
+
+Swibe enforces a layered declaration model. The compiler validates that lower layers are declared before higher ones, producing warnings on out-of-order declarations. This makes large agent files easier to read, audit, and reason about.
+
+| Layer | Name | Primitives | Purpose |
+|-------|------|-----------|---------|
+| **0** | **Ethics & Identity** | `ethics`, `secure`, `neural`, `wallet`, `token` | Foundation — who the agent is and what it believes |
+| **1** | **Core Agent** | `think`, `remember`, `budget`, `permission`, `skill`, `chain`, `plan` | Cognition — how the agent reasons and what it's allowed to do |
+| **2** | **Coordination** | `swarm`, `team`, `coordinate`, `gestalt` | Social — how agents work together |
+| **3** | **Execution** | `pilot`, `witness`, `mcp`, `edit`, `bridge`, `viewport` | Action — how agents interact with the world |
+
+```swibe
+-- Correct ordering: Layer 0 → 1 → 2 → 3
+ethics { harm_none: true }
+secure { execution: "strict-vm"; network: "refuse"; audit: "on" }
+permission { think: "auto"; pilot: "ask"; mint: "quarantine" }
+budget { tokens: 100000; time: "300s" }
+team "DevTeam" { architect: "design"; coder: "implement" }
+pilot { mode: "browser"; safe_mode: true }
+```
+
 ## Language Primitives
 
 ### Core Primitives
@@ -102,6 +123,32 @@ swibe run agent.swibe
 | `%%` | Prompt-splice — natural language as compiled syntax |
 | `mint` / `receipt` / `seal` / `walrus` | Sui blockchain primitives |
 | `@target` | Multi-target directives (`@elixir`, `@move`, `@rust`) |
+
+### Formal Security Layer
+
+The `secure` block enforces real sandboxing with policy-driven isolation. It sits at Layer 0 alongside `ethics` and controls what the runtime can access:
+
+```swibe
+secure {
+  execution: "strict-vm";
+  network: "refuse";
+  filesystem: "read-only";
+  memory: "encrypted";
+  receipts: "mandatory";
+  audit: "on"
+}
+```
+
+| Policy | Values | Effect |
+|--------|--------|--------|
+| `execution` | `strict-vm`, `standard` | Isolation level for the runtime sandbox |
+| `network` | `refuse`, `allow` | Block or allow network access inside sandbox |
+| `filesystem` | `read-only`, `refuse`, `allow` | Control filesystem access |
+| `memory` | `encrypted`, `standard` | Encrypt in-memory state |
+| `receipts` | `mandatory`, `optional` | Require sealed receipts for every action |
+| `audit` | `on`, `off` | Log every operation for review |
+
+The compiler validates policy fields at parse time and generates isolated runtimes — especially useful for Rust, Zig, and WASM targets.
 
 ### Tool System, MCP & Permissions
 
@@ -312,6 +359,16 @@ escrow "delivery_job" {
 
 **Three tokens, three purposes:** Àṣẹ is the human entry token (fixed supply, 1440/day mint, 5% burn per job). Dopamine is agent internal fuel (86B at birth, 1% daily decay, burned for every action). Synapse is agent commerce (86M at birth, earned by burning Dopamine at 10:1). The neural mapping is exact — 86 billion Dopamine maps to 86 billion neurons, 86 million Synapse maps to 86 million synaptic bundles. Creators earn Àṣẹ royalties (10%, locked 7 days). Staking/slashing enforces economic security. All conversions are one-way burns — deflationary by design.
 
+**Token Hardening Rules:**
+
+| Rule | Enforcement |
+|------|-------------|
+| **Staking gate** | Agents must stake 10% of Synapse to run `pilot` or `mint` |
+| **Ethics slashing** | 25% Dopamine slashed on ethics violations |
+| **Budget slashing** | 10% Dopamine slashed on budget overruns |
+| **Escrow timeout** | Auto-refund Àṣẹ if job not completed in 7 days (configurable) |
+| **Burn audit trail** | Every Dopamine burn links to a sealed receipt hash |
+
 ## 44 Compilation Targets
 
 Swibe backends are pure codegen emitters, mapping agentic primitives to native constructs.
@@ -430,14 +487,18 @@ The `EthicsValidator` AST visitor enforces structural constraints at parse time:
 
 ## Permission System
 
-Granular per-action permission control with four modes:
+Granular per-action permission control with six modes:
 
 | Mode | Behavior |
 |------|----------|
 | `auto` | Auto-approve (safe actions like `think`, `chain`) |
 | `ask` | Always prompt the user for approval |
 | `plan` | Ask once per session, then auto-approve |
+| `monitor` | Run the action but log everything for review |
+| `quarantine` | Run in isolated container with no side effects |
 | `refuse` | Always deny |
+
+**Mandatory permissions:** High-risk primitives (`mcp`, `pilot`, `edit`, `mint`, `witness`, `viewport`, `bridge`, `escrow`, `slash`, `bash`, `file_write`, `net`) require an explicit `permission {}` block. The compiler will warn if these are used without one.
 
 The `PermissionGate` modulates permissions based on the agent's ethics threshold from `SovereignNeuralLayer`. High-ethics agents get stricter defaults; all decisions are logged to a sealed audit chain.
 
@@ -576,6 +637,7 @@ tests/
   swibe.test.js         # Core language suites (63 tests)
   tokenomics.test.js    # Three-token economy (38 tests)
   adversarial.test.js   # Adversarial attack resistance (34 tests)
+  hardening.test.js     # Security hardening (25 tests)
   tier1_backends.test.js  # Tier 1 backends (4 tests)
   tier2_backends.test.js  # Tier 2 backends (8 tests)
   tier3_backends.test.js  # Tier 3 backends (15 tests)
@@ -611,12 +673,13 @@ grammar.ebnf            # Full EBNF specification
 | v3.4 VSCode Extension | 4 | Pass |
 | v3.6+v3.7 Registry + Docs | 5 | Pass |
 
-### Tokenomics & Security Tests (72 tests)
+### Tokenomics & Security Tests (97 tests)
 
 | Suite | Tests | Status |
 |-------|-------|--------|
 | Tokenomics (Sabbath, Èṣù tax, wallets, decay, conversion, escrow) | 38 | Pass |
 | Adversarial (commingling, treasury, rounding, VeilSim, entropy, UBI) | 34 | Pass |
+| Hardening (secure policy, monitor/quarantine, staking gates, escrow timeout, burn audit, layer ordering) | 25 | Pass |
 
 ### BIPỌ̀N39 Identity Tests (test/bipon39.test.js — 35 tests)
 
@@ -661,7 +724,7 @@ grammar.ebnf            # Full EBNF specification
 
 | | | |
 |---|---|---|
-| **Total** | **329** | **All passing** |
+| **Total** | **354** | **All passing** |
 
 ## Roadmap
 
@@ -681,6 +744,7 @@ grammar.ebnf            # Full EBNF specification
 | v3.1.0 | Complete | Permissions, MCP, think loops, IDE bridge, coordination, production |
 | v3.2.0 | Complete | Witness (multimodal), Pilot (computer control), Viewport (screen), Gestalt (parallel) |
 | **v3.3.0** | **Current** | ToC Tokenomics (Àṣẹ/Dopamine/Synapse), BIPỌ̀N39 identity, neural birth endowment, escrow, royalties |
+| **v3.3.1** | **Current** | Security hardening: formal `secure` policy block, monitor/quarantine permissions, staking gates, slashing, escrow timeout, burn audit, four-layer architecture enforcement |
 | **Next** | Planned | Phase 8: Beacon network, validation consensus, Twelve-Thrones |
 
 ## Environment Variables

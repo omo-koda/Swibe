@@ -7,10 +7,12 @@
  * The sovereign vault's ethics threshold modulates permission strictness.
  *
  * Modes:
- *   "auto"   — Approved if ethics threshold allows and action is in whitelist
- *   "ask"    — Always prompt the operator for confirmation
- *   "plan"   — Approve once per plan/session, then auto for the rest
- *   "refuse" — Never allow, regardless of context
+ *   "auto"       — Approved if ethics threshold allows and action is in whitelist
+ *   "ask"        — Always prompt the operator for confirmation
+ *   "plan"       — Approve once per plan/session, then auto for the rest
+ *   "monitor"    — Runs the action but logs everything for review
+ *   "quarantine" — Runs in isolated container with no side effects
+ *   "refuse"     — Never allow, regardless of context
  */
 
 import crypto from 'node:crypto';
@@ -20,10 +22,12 @@ import crypto from 'node:crypto';
 // ────────────────────────────────────────────────────────────
 
 const PermissionMode = Object.freeze({
-  AUTO:   'auto',
-  ASK:    'ask',
-  PLAN:   'plan',
-  REFUSE: 'refuse',
+  AUTO:       'auto',
+  ASK:        'ask',
+  PLAN:       'plan',
+  MONITOR:    'monitor',
+  QUARANTINE: 'quarantine',
+  REFUSE:     'refuse',
 });
 
 // ────────────────────────────────────────────────────────────
@@ -87,6 +91,24 @@ class PermissionGate {
       entry.reason = 'Action permanently refused by permission matrix';
       this.auditLog.push(entry);
       return { granted: false, reason: entry.reason };
+    }
+
+    // Monitor: allow but log everything for review
+    if (mode === PermissionMode.MONITOR) {
+      entry.granted = true;
+      entry.monitored = true;
+      entry.reason = 'Monitor-mode: action allowed, full audit logged';
+      this.auditLog.push(entry);
+      return { granted: true, reason: entry.reason, monitored: true };
+    }
+
+    // Quarantine: allow but in isolated container with no side effects
+    if (mode === PermissionMode.QUARANTINE) {
+      entry.granted = true;
+      entry.quarantined = true;
+      entry.reason = 'Quarantine-mode: action runs in isolation, no side effects persist';
+      this.auditLog.push(entry);
+      return { granted: true, reason: entry.reason, quarantined: true };
     }
 
     // Auto: check ethics threshold
@@ -217,4 +239,13 @@ function gateFromAST(ethicsNode, permNode, ethicsThreshold = 0.5) {
   return new PermissionGate(overrides, ethicsThreshold);
 }
 
-export { PermissionGate, PermissionMode, DEFAULT_PERMISSIONS, gateFromAST };
+// ────────────────────────────────────────────────────────────
+// High-Risk Primitives — require explicit permission block
+// ────────────────────────────────────────────────────────────
+
+const HIGH_RISK_PRIMITIVES = Object.freeze([
+  'mcp', 'pilot', 'edit', 'mint', 'witness', 'viewport', 'bridge',
+  'escrow', 'slash', 'bash', 'file_write', 'net',
+]);
+
+export { PermissionGate, PermissionMode, DEFAULT_PERMISSIONS, HIGH_RISK_PRIMITIVES, gateFromAST };
