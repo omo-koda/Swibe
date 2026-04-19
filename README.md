@@ -8,7 +8,7 @@
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
-Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 44 backend targets, runs self-repairing swarms, and persists state via a BIP-39 ritual vault.
+Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 44 backend targets, runs self-repairing swarms, and persists state via a BIPỌ̀N39 ritual vault.
 
 v3.3 adds a complete three-token economy (Àṣẹ/Dopamine/Synapse) with neural birth endowment (86B Dopamine + 86M Synapse per agent), burn conversions, creator royalties, job escrow, and staking/slashing — on top of multimodal perception, computer control, the full tool system, MCP integration, agentic think loops, and production hardening.
 
@@ -24,7 +24,7 @@ For local development:
 git clone https://github.com/Bino-Elgua/Swibe.git
 cd Swibe
 npm install
-npm test    # 329 tests across all suites
+npm test    # 329 tests across 18 suites
 ```
 
 ## Quick Start
@@ -61,7 +61,7 @@ swibe run agent.swibe
 ## CLI Commands
 
 | Command | Description |
-|---|---|
+|---------|-------------|
 | `swibe run <file.swibe>` | Execute a Swibe agent |
 | `swibe compile <file> --target <lang>` | Compile to any of 44 targets |
 | `swibe repl` | Interactive REPL with history, tab completion, Sabbath awareness |
@@ -84,7 +84,7 @@ swibe run agent.swibe
 ### Core Primitives
 
 | Primitive | Purpose |
-|---|---|
+|-----------|---------|
 | `think` | LLM reasoning with agentic tool-call loops and receipt sealing |
 | `chain` | LangChain-style sequential reasoning steps |
 | `plan` | Semantic Kernel-style goal decomposition |
@@ -103,10 +103,10 @@ swibe run agent.swibe
 | `mint` / `receipt` / `seal` / `walrus` | Sui blockchain primitives |
 | `@target` | Multi-target directives (`@elixir`, `@move`, `@rust`) |
 
-### Phase 2: Tool System + MCP + Permissions
+### Tool System, MCP & Permissions
 
 | Primitive | Purpose |
-|---|---|
+|-----------|---------|
 | `permission` | Granular permission matrix — `auto` / `ask` / `plan` / `refuse` per action |
 | `mcp` | Model Context Protocol server connections (filesystem, GitHub, databases) |
 | `team` | Role-based multi-agent teams with coordination modes |
@@ -139,10 +139,10 @@ edit "src/main.swibe" {
 }
 ```
 
-### Phase 3: IDE Bridge + Session Management
+### IDE Bridge & Session Management
 
 | Primitive | Purpose |
-|---|---|
+|-----------|---------|
 | `bridge` | Bidirectional IDE connection — JSON-RPC 2.0 over stdio or TCP |
 | `session` | Persistent agent sessions — create, resume, pause across IDE restarts |
 
@@ -164,16 +164,16 @@ The IDE bridge enables:
 - Session persistence across IDE restarts
 - Real-time diagnostics push
 
-### Phase 4: Advanced Agent Coordination
+### Advanced Agent Coordination
 
 | Primitive | Purpose |
-|---|---|
+|-----------|---------|
 | `coordinate` | Dispatch tasks to teams with strategy selection |
 
 Four coordination strategies:
 
 | Strategy | How It Works |
-|---|---|
+|----------|--------------|
 | `hierarchical` | Lead agent plans, delegates to workers, synthesizes results |
 | `democratic` | All agents solve independently, vote on best result (weighted) |
 | `competitive` | Agents race — fastest valid result wins |
@@ -193,13 +193,12 @@ coordinate "Audit codebase for OWASP top 10" {
 }
 ```
 
-### Phase 5: Production Hardening
+### Production Hardening
 
 | Primitive | Purpose |
-|---|---|
+|-----------|---------|
 | `policy` | Org-level controls — per-user token/USD limits, forbidden operations, rate limiting |
 | `analytics` | A/B experiment management for model selection, custom metrics tracking |
-| `budget` (enhanced) | USD cost tracking with model pricing table and alert thresholds |
 
 ```swibe
 policy "sovereign-org" {
@@ -222,7 +221,7 @@ analytics model_routing {
 
 Cost tracking supports model-specific pricing (Claude Opus/Sonnet/Haiku, GPT-4o, Ollama free models) with automatic USD calculation and configurable alert thresholds at 80%/100% utilization.
 
-### Phase 6: Multimodal + Computer Control
+### Multimodal Perception & Computer Control
 
 ```swibe
 -- Multimodal perception
@@ -258,7 +257,7 @@ gestalt {
 
 **Witness** processes image, video, audio, and document inputs with configurable fusion strategies (unified_context, weighted, sequential). **Pilot** provides a perceive/act cycle for browser, desktop, and mobile automation with safety guards. **Viewport** captures screen state, builds accessibility trees, extracts UI elements, and runs OCR. **Gestalt** executes multiple tool operations concurrently with five merge strategies: unified_context, first_wins, majority_vote, concatenate, and reduce.
 
-### Phase 7: ToC Tokenomics — Three-Token Economy
+### ToC Tokenomics — Three-Token Economy
 
 ```swibe
 -- Define the three tokens
@@ -318,8 +317,9 @@ escrow "delivery_job" {
 Swibe backends are pure codegen emitters, mapping agentic primitives to native constructs.
 
 ### Tier 1: High-Speed & Embedded
+
 | Target | Architecture | Use Case |
-|---|---|---|
+|--------|--------------|----------|
 | **JavaScript** | Async/Node | Universal runtime (default) |
 | **TypeScript** | Typed Async | Web + type-safe agents |
 | **Lua** | Coroutines | Tiny embedded agents |
@@ -329,8 +329,9 @@ Swibe backends are pure codegen emitters, mapping agentic primitives to native c
 | **Scheme** | Lambdas | Minimal footprint |
 
 ### Tier 2: Systems & Safety
+
 | Target | Architecture | Use Case |
-|---|---|---|
+|--------|--------------|----------|
 | **Rust** | Threads/Safety | Sovereign enforcers |
 | **Go** | Goroutines | High-scale workers |
 | **Zig** | Comptime | Zero-overhead edge |
@@ -342,8 +343,9 @@ Swibe backends are pure codegen emitters, mapping agentic primitives to native c
 | **Haskell** | Monads | Pure ethical chaining |
 
 ### Tier 3: Scientific & Scripting
+
 | Target | Architecture | Use Case |
-|---|---|---|
+|--------|--------------|----------|
 | **Python** | Asyncio | ML/data pipelines |
 | **R** | Vectors | Statistical agents |
 | **Julia** | Matrix/SIMD | Scientific compute |
@@ -354,6 +356,7 @@ Swibe backends are pure codegen emitters, mapping agentic primitives to native c
 | **Wolfram** | Symbolic | Mathematical agents |
 
 ### Tier 4: Exotic & Specialized
+
 **Pony** (lock-free actors), **Aether** (work-stealing queues), **Mojo** (SIMD kernels), **Sui Move** (on-chain soul), **APL** (tensor ops), **J** (vector processing), **K** (event streams), **Forth** (stack machine), **Prolog** (logic judge), **Mercury** (deterministic), **Ada** (crash-proof), **COBOL** (batch audit), **Smalltalk** (live object), **D** (contract guard), **Raku** (grammar ethics), **Scala** (Akka scale), **Idris** (dependent types), **WASM** (browser/edge), **OpenClaw** (agent skill deployment)
 
 ## LLM Providers
@@ -363,7 +366,7 @@ Swibe supports multiple LLM backends via a provider fallback chain:
 **Ollama -> OpenRouter -> Claude -> Mock**
 
 | Provider | Setup | Cost |
-|---|---|---|
+|----------|-------|------|
 | Ollama (default) | `ollama serve` locally | Free |
 | OpenRouter | Set `OPENROUTER_API_KEY` | Free tier available |
 | Claude | Set `ANTHROPIC_API_KEY` | Paid |
@@ -397,12 +400,15 @@ const report = layer.getRoutingReport(); // full fingerprint + metrics
 
 ## Sovereign Identity & Vault
 
-Agents are born with a sovereign identity derived from a Yoruba-inspired BIP-39 ritual phrase. This identity secures the agent's RAG memory and signs every execution receipt.
+Agents are born with a sovereign identity derived from a BIPỌ̀N39 ritual phrase. This identity secures the agent's RAG memory and signs every execution receipt.
 
-- **BIP-39 ritual phrase** generation (e.g., `esu-gate sango-volt`)
+- **BIPỌ̀N39 mnemonic** generation — 16 roots x 16 affixes = 256 canonical tokens (e.g., `esu-gate sango-volt`)
+- **Deterministic agent identity** — SHA-256 agent ID, Odù archetype (0-255), elemental signature, capability derivation
+- **HMAC-SHA256 message signing** with seed-derived keys
 - **Ed25519 keypairs** (SPKI/PKCS8 encoded) from deterministic seed derivation
 - **SHA-256 receipt chain** — every `think` call produces an auditable receipt
 - **AES-256-GCM** encryption for vault storage
+- **Sabbath gate** — queue irreversible writes on Saturday (Ọbàtálá sabbath, UTC day 6)
 
 ## Hermetic Ethics Engine (v3.1)
 
@@ -427,7 +433,7 @@ The `EthicsValidator` AST visitor enforces structural constraints at parse time:
 Granular per-action permission control with four modes:
 
 | Mode | Behavior |
-|---|---|
+|------|----------|
 | `auto` | Auto-approve (safe actions like `think`, `chain`) |
 | `ask` | Always prompt the user for approval |
 | `plan` | Ask once per session, then auto-approve |
@@ -453,7 +459,7 @@ The `MCPHub` manages multiple server connections with JSON-RPC 2.0 (stdio or HTT
 The `MemoryEngine` provides hierarchical memory beyond simple RAG:
 
 | Tier | Persistence | Use Case |
-|---|---|---|
+|------|-------------|----------|
 | **Working** | Volatile (in-memory) | Current task context |
 | **Short-term** | Persisted, auto-pruned | Recent facts, session state |
 | **Long-term** | Permanent, encrypted | Core knowledge, identity |
@@ -525,8 +531,8 @@ openclaw skill install ./openclaw-out
 ```
 src/
   index.js              # CLI entry point
-  lexer.js              # Tokenizer (90+ token types)
-  parser.js             # AST parser (EBNF grammar, 20+ statement types)
+  lexer.js              # Tokenizer (120+ token types)
+  parser.js             # AST parser (EBNF grammar, 49 statement types)
   compiler.js           # Multi-target compiler (44 backends)
   stdlib.js             # Standard library (think, swarm, budget, ethics, etc.)
   neural.js             # SovereignNeuralLayer (86B neurons, cortical routing)
@@ -544,26 +550,44 @@ src/
   pilot.js              # Computer control (browser/desktop/mobile)
   viewport.js           # Screen understanding (a11y, OCR, UI extraction)
   gestalt.js            # Parallel tool execution (5 merge strategies)
-  toc/                  # Three-token economy (Phase 7)
+  bipon39/              # BIPỌ̀N39 identity engine
+    wordspace.js        # 256 canonical tokens, Merkle tree, affix metadata
+    mnemonic.js         # Entropy/mnemonic/seed encoding, Odù, elemental signatures
+    crypto.js           # SHA-256, PBKDF2, HMAC-SHA512, timing-safe compare
+    derivation.js       # Master key derivation, agent derivation paths
+    agent-identity.js   # Agent ID generation, signing, capabilities, addresses
+    index.js            # Re-exports
+  toc/                  # Three-token economy
     token.js            # Àṣẹ/Dopamine/Synapse definitions + ledger
-    wallet.js           # Agent wallets, 86B+86M birth endowment
+    wallet.js           # Agent wallets, 86B+86M birth endowment, BIPỌ̀N39 identity
     conversion.js       # Burn conversions (Àṣẹ→D, D→S, S→D emergency)
     staking.js          # Stake/unstake/slash engine
     royalty.js          # Creator royalties (10% Àṣẹ, Sabbath vesting)
     escrow.js           # Job payment escrow + dispute resolution
+    event-bridge.js     # Ọ̀ṢỌ́VM event bridge
     index.js            # ToCEconomy orchestrator
   type-inference.js     # Static type inference
   conductor.js          # Technosis Sovereign Conductor
   backends/             # 44 codegen backends
   plugins/              # Plugin implementations
-tests/                  # 97 tests (vitest) across 6 suites
+test/
+  bipon39.test.js       # BIPỌ̀N39 identity conformance (35 tests)
+tests/
+  swibe.test.js         # Core language suites (63 tests)
+  tokenomics.test.js    # Three-token economy (38 tests)
+  adversarial.test.js   # Adversarial attack resistance (34 tests)
+  tier1_backends.test.js  # Tier 1 backends (4 tests)
+  tier2_backends.test.js  # Tier 2 backends (8 tests)
+  tier3_backends.test.js  # Tier 3 backends (15 tests)
+  backends_v0.5.test.js   # v0.5 backend extensions (6 tests)
+  hybrid_upgrade.test.js  # Hybrid compiler upgrade (1 test)
+web-playground/         # Browser-based Swibe editor + crypto utils (125 tests)
 spec/                   # Formal grammar (EBNF), execution model, security model
-examples/               # 36 example .swibe files
+examples/               # 38 example .swibe files
 docs/                   # Landing page (Vercel/Netlify ready)
 registry/               # Cloudflare Worker package registry
 vscode-extension/       # VSCode extension (LSP, bridge, themes, snippets)
 pwa/                    # Progressive Web App playground
-web-playground/         # Browser-based Swibe editor
 swibe-openclaw/         # OpenClaw bridge package
 adapters/               # Ecosystem adapters (oso, seemplify)
 grammar.ebnf            # Full EBNF specification
@@ -571,26 +595,78 @@ grammar.ebnf            # Full EBNF specification
 
 ## Test & Audit Status
 
+### Core Language Tests (tests/swibe.test.js — 63 tests)
+
 | Suite | Tests | Status |
-|---|---|---|
+|-------|-------|--------|
 | Core (v0.4) | 5 | Pass |
 | SovereignNeuralLayer | 5 | Pass |
-| Extensions (v0.5) | 10 | Pass |
-| v2.0 Primitives | 14 | Pass |
-| v2.0 Phase D — Plugins | 3 | Pass |
-| OpenClaw Integration | 3 | Pass |
+| Extensions (v0.5) | 9 | Pass |
+| v2.0 Primitives | 10 | Pass |
+| v2.0 Phase D — Plugins | 4 | Pass |
+| OpenClaw Integration | 6 | Pass |
 | v3.1 Hermetic Ethics | 5 | Pass |
 | v3.2 Compiler Hardening | 5 | Pass |
 | v3.3 REPL | 5 | Pass |
 | v3.4 VSCode Extension | 4 | Pass |
 | v3.6+v3.7 Registry + Docs | 5 | Pass |
-| Backend Suites (Tier 1-3) | 33 | Pass |
-| **Total** | **97** | **All passing** |
+
+### Tokenomics & Security Tests (72 tests)
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Tokenomics (Sabbath, Èṣù tax, wallets, decay, conversion, escrow) | 38 | Pass |
+| Adversarial (commingling, treasury, rounding, VeilSim, entropy, UBI) | 34 | Pass |
+
+### BIPỌ̀N39 Identity Tests (test/bipon39.test.js — 35 tests)
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Wordspace (roots, affixes, tokens, subtones, metadata) | 7 | Pass |
+| Mnemonic (roundtrip 256/2048, re-encode, checksum) | 6 | Pass |
+| Sabbath Gate | 3 | Pass |
+| Merkle Root | 2 | Pass |
+| Derivation (master key, paths) | 3 | Pass |
+| Pinned Test Vectors (entropy/seed/master key conformance) | 6 | Pass |
+| Agent Identity (generate, recover, sign, verify, capabilities, address) | 8 | Pass |
+
+### Backend Tests (33 tests)
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Tier 1 Backends | 4 | Pass |
+| Tier 2 Backends | 8 | Pass |
+| Tier 3 Backends | 15 | Pass |
+| v0.5 Backend Extensions | 6 | Pass |
+
+### Web Playground Tests (125 tests)
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Crypto utilities | 29 | Pass |
+| Cipher implementations | 19 | Pass |
+| Input validation | 24 | Pass |
+| Chain crypto | 14 | Pass |
+| BIP-39 helper | 14 | Pass |
+| Profile management | 8 | Pass |
+| Encryption | 6 | Pass |
+| Poison radar | 6 | Pass |
+| Address generator hook | 5 | Pass |
+
+### Other (1 test)
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| Hybrid compiler upgrade | 1 | Pass |
+
+| | | |
+|---|---|---|
+| **Total** | **329** | **All passing** |
 
 ## Roadmap
 
 | Version | Status | Highlights |
-|---|---|---|
+|---------|--------|------------|
 | v0.1-v0.4 | Complete | Lexer, parser, backends, neural layer |
 | v1.0 | Complete | Agent runtime, sovereign vault, RAG |
 | v1.1 | Complete | Hybrid compiler, swarm OTP, plugin system |
@@ -602,9 +678,9 @@ grammar.ebnf            # Full EBNF specification
 | v3.3 | Complete | Interactive REPL with history, tab completion, Sabbath |
 | v3.4 | Complete | VSCode extension (syntax, snippets, theme, commands) |
 | v3.5-v3.7 | Complete | Registry hardening, Cloudflare registry worker, docs |
-| v3.1.0 | Complete | Phase 2-5: Permissions, MCP, think loops, IDE bridge, coordination, production |
-| v3.2.0 | Complete | Phase 6: Witness (multimodal), Pilot (computer control), Viewport (screen), Gestalt (parallel) |
-| **v3.3.0** | **Current** | Phase 7: ToC Tokenomics (Àṣẹ/Dopamine/Synapse), neural birth endowment, escrow, royalties |
+| v3.1.0 | Complete | Permissions, MCP, think loops, IDE bridge, coordination, production |
+| v3.2.0 | Complete | Witness (multimodal), Pilot (computer control), Viewport (screen), Gestalt (parallel) |
+| **v3.3.0** | **Current** | ToC Tokenomics (Àṣẹ/Dopamine/Synapse), BIPỌ̀N39 identity, neural birth endowment, escrow, royalties |
 | **Next** | Planned | Phase 8: Beacon network, validation consensus, Twelve-Thrones |
 
 ## Environment Variables
@@ -612,7 +688,7 @@ grammar.ebnf            # Full EBNF specification
 See `.env.example` for full configuration. Key variables:
 
 | Variable | Purpose |
-|---|---|
+|----------|---------|
 | `OPENROUTER_API_KEY` | OpenRouter LLM access (free tier available) |
 | `OPENROUTER_DEFAULT_MODEL` | Default model for think calls |
 | `ANTHROPIC_API_KEY` | Claude API access |
