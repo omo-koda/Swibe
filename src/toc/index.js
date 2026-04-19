@@ -5,6 +5,7 @@
  */
 
 export { TOKEN_TYPE, TOKEN_CONFIG, TokenLedger } from './token.js';
+export { generateAgentIdentity, recoverAgentIdentity, signMessage, verifyMessage, deriveCapabilities, agentAddress, checkSabbath } from '../bipon39/agent-identity.js';
 export { Wallet, WalletRegistry } from './wallet.js';
 export { ConversionEngine } from './conversion.js';
 export { StakingEngine } from './staking.js';
@@ -13,6 +14,9 @@ export { EscrowEngine } from './escrow.js';
 export { DecayEngine, DECAY_CONFIG } from './decay.js';
 export { ElegbaraRouter, IsolatedWallet, ESU_CONFIG } from './esu-wallets.js';
 export { EventBridge, BRIDGE_CONFIG } from './event-bridge.js';
+export { VeilSimEngine } from '../veilsim/engine.js';
+export { EntropyEngine, ENTROPY_CONFIG } from '../entropy/engine.js';
+export { UBIEngine, UBI_CONFIG } from '../ubi/engine.js';
 
 import { WalletRegistry } from './wallet.js';
 import { ConversionEngine } from './conversion.js';
@@ -44,8 +48,8 @@ export class ToCEconomy {
    * @param {number} royaltyPercent - Creator royalty % (default 10)
    * @param {object} vmSignal - Optional OSOVM birth signal with endowment amounts
    */
-  spawnAgent(agentId, creatorId = null, royaltyPercent = 10, vmSignal = null) {
-    const wallet = this.wallets.createAgent(agentId, vmSignal);
+  async spawnAgent(agentId, creatorId = null, royaltyPercent = 10, vmSignal = null) {
+    const wallet = await this.wallets.createAgent(agentId, vmSignal);
     if (creatorId) {
       this.royalty.registerCreator(creatorId, agentId, { percentage: royaltyPercent });
     }

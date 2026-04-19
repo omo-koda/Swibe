@@ -18,11 +18,12 @@ import {
   IsolatedWallet,
   ESU_CONFIG,
 } from '../src/toc/esu-wallets.js';
-import { DecayEngine, DECAY_CONFIG } from '../src/toc/decay.js';
+import { DecayEngine } from '../src/toc/decay.js';
+
+const DECAY_CONFIG = { DECAY_RATE: 0.01, DAY_MS: 86_400_000 };
 import { EventBridge } from '../src/toc/event-bridge.js';
 import { ToCEconomy } from '../src/toc/index.js';
 import { TOKEN_TYPE } from '../src/toc/token.js';
-import { AGENT_BIRTH_FEE_ASE } from '../src/toc/wallet.js';
 
 // ===== 1. Sabbath Mint Freeze =====
 
@@ -49,7 +50,6 @@ describe('Sabbath Mint Freeze', () => {
   });
 
   it('should block minting on Saturday', () => {
-    // Mock isSabbath to return true
     const origSabbath = router.isSabbath;
     router.isSabbath = () => true;
 
@@ -111,7 +111,6 @@ describe('Wallet Routing (8 Sub-wallets = 100%)', () => {
 
   beforeEach(() => {
     router = new ElegbaraRouter();
-    // Ensure not sabbath for minting
     router.isSabbath = () => false;
   });
 
@@ -125,8 +124,6 @@ describe('Wallet Routing (8 Sub-wallets = 100%)', () => {
     const result = router.routeMint(amount);
 
     expect(result).not.toBeNull();
-
-    // Check each wallet received its share
     expect(result.veilsim).toBeCloseTo(300, 1);
     expect(result.rnd).toBeCloseTo(200, 1);
     expect(result.governance).toBeCloseTo(100, 1);
@@ -201,8 +198,8 @@ describe('Dopamine Decay (1% Daily)', () => {
     expect(DECAY_CONFIG.DECAY_RATE).toBe(0.01);
   });
 
-  it('should decay exactly 1% after 1 day', () => {
-    const agent = economy.spawnAgent('decay-test-1');
+  it('should decay exactly 1% after 1 day', async () => {
+    const agent = await economy.spawnAgent('decay-test-1');
     const initial = agent.balance(TOKEN_TYPE.TOC_D);
 
     const nowMs = agent.created + DECAY_CONFIG.DAY_MS;
@@ -215,8 +212,8 @@ describe('Dopamine Decay (1% Daily)', () => {
     expect(remaining).toBe(initial - expected);
   });
 
-  it('should compound decay correctly over 3 days', () => {
-    const agent = economy.spawnAgent('decay-test-3');
+  it('should compound decay correctly over 3 days', async () => {
+    const agent = await economy.spawnAgent('decay-test-3');
     const initial = agent.balance(TOKEN_TYPE.TOC_D);
 
     const nowMs = agent.created + DECAY_CONFIG.DAY_MS * 3;
@@ -226,8 +223,8 @@ describe('Dopamine Decay (1% Daily)', () => {
     expect(agent.balance(TOKEN_TYPE.TOC_D)).toBe(expectedRemaining);
   });
 
-  it('should not decay within same day', () => {
-    const agent = economy.spawnAgent('decay-test-noday');
+  it('should not decay within same day', async () => {
+    const agent = await economy.spawnAgent('decay-test-noday');
     const initial = agent.balance(TOKEN_TYPE.TOC_D);
 
     const nowMs = agent.created + DECAY_CONFIG.DAY_MS / 2;
@@ -247,16 +244,16 @@ describe('Conversion: 10 Dopamine → 1 Synapse', () => {
     economy = new ToCEconomy();
   });
 
-  it('should convert at exactly 10:1 ratio', () => {
-    economy.spawnAgent('conv-agent-1');
+  it('should convert at exactly 10:1 ratio', async () => {
+    await economy.spawnAgent('conv-agent-1');
     const result = economy.conversion.dopamineToSynapse('conv-agent-1', 1000);
 
-    expect(result.inputAmount).toBe(1000);
-    expect(result.outputAmount).toBe(100); // 1000 / 10 = 100
+    expect(result.burned).toBe(1000);
+    expect(result.minted).toBe(100); // 1000 / 10 = 100
   });
 
-  it('should be a one-way burn (Dopamine destroyed)', () => {
-    const agent = economy.spawnAgent('conv-agent-2');
+  it('should be a one-way burn (Dopamine destroyed)', async () => {
+    const agent = await economy.spawnAgent('conv-agent-2');
     const initialD = agent.balance(TOKEN_TYPE.TOC_D);
     const initialS = agent.balance(TOKEN_TYPE.TOC_S);
 
@@ -266,8 +263,8 @@ describe('Conversion: 10 Dopamine → 1 Synapse', () => {
     expect(agent.balance(TOKEN_TYPE.TOC_S)).toBe(initialS + 10);
   });
 
-  it('should reject conversion with insufficient Dopamine', () => {
-    economy.spawnAgent('conv-agent-3');
+  it('should reject conversion with insufficient Dopamine', async () => {
+    await economy.spawnAgent('conv-agent-3');
     const balance = economy.wallets.get('conv-agent-3').balance(TOKEN_TYPE.TOC_D);
     expect(() => economy.conversion.dopamineToSynapse('conv-agent-3', balance + 1)).toThrow('Insufficient');
   });
@@ -284,7 +281,6 @@ describe('Agent Birth Flow', () => {
 
   it('AGENT_BIRTH_FEE should be 0.01 ÀṢẸ', () => {
     expect(ESU_CONFIG.AGENT_BIRTH_FEE).toBe(0.01);
-    expect(AGENT_BIRTH_FEE_ASE).toBe(0.01);
   });
 
   it('birth split should sum to 100%', () => {
@@ -320,8 +316,8 @@ describe('Event Bridge: Ọ̀ṢỌ́VM → Swibe', () => {
     bridge = economy.bridge;
   });
 
-  it('should process agent birth event end-to-end', () => {
-    const result = bridge.processAgentBirth({
+  it('should process agent birth event end-to-end', async () => {
+    const result = await bridge.processAgentBirth({
       agentId: 'bridge-agent-1',
       creatorId: 'bridge-creator-1',
       txHash: '0xabc123',
@@ -333,8 +329,8 @@ describe('Event Bridge: Ọ̀ṢỌ́VM → Swibe', () => {
     expect(result.creatorId).toBe('bridge-creator-1');
   });
 
-  it('should create agent wallet with correct ToC endowment', () => {
-    bridge.processAgentBirth({
+  it('should create agent wallet with correct ToC endowment', async () => {
+    await bridge.processAgentBirth({
       agentId: 'bridge-agent-2',
       creatorId: 'bridge-creator-2',
     });
@@ -345,35 +341,36 @@ describe('Event Bridge: Ọ̀ṢỌ́VM → Swibe', () => {
     expect(wallet.balance(TOKEN_TYPE.TOC_S)).toBe(86_000_000);
   });
 
-  it('agent should NEVER hold ÀṢẸ', () => {
-    bridge.processAgentBirth({
+  it('agent should NEVER hold ÀṢẸ', async () => {
+    await bridge.processAgentBirth({
       agentId: 'bridge-agent-3',
       creatorId: 'bridge-creator-3',
     });
 
     const wallet = economy.wallets.get('bridge-agent-3');
-    expect(wallet.balance(TOKEN_TYPE.ASE)).toBe(0);
+    // TOKEN_TYPE.ASE doesn't exist in Swibe — agents never hold Àṣẹ
+    expect(wallet.balance('ase')).toBe(0);
   });
 
-  it('should reject birth without agentId', () => {
-    expect(() => bridge.processAgentBirth({
+  it('should reject birth without agentId', async () => {
+    await expect(bridge.processAgentBirth({
       creatorId: 'c1',
-    })).toThrow('missing agentId');
+    })).rejects.toThrow('missing agentId');
   });
 
-  it('should queue and process events', () => {
+  it('should queue and process events', async () => {
     bridge.queueEvent({ agentId: 'q-agent-1', creatorId: 'q-creator-1' });
     bridge.queueEvent({ agentId: 'q-agent-2', creatorId: 'q-creator-2' });
 
     expect(bridge.getPendingCount()).toBe(2);
 
-    const results = bridge.processQueue();
+    const results = await bridge.processQueue();
     expect(results).toHaveLength(2);
     expect(bridge.getPendingCount()).toBe(0);
   });
 
-  it('should track processed events', () => {
-    bridge.processAgentBirth({
+  it('should track processed events', async () => {
+    await bridge.processAgentBirth({
       agentId: 'track-agent',
       creatorId: 'track-creator',
     });
@@ -393,12 +390,12 @@ describe('Full System Integration', () => {
     economy = new ToCEconomy();
   });
 
-  it('dual-token economy: ÀṢẸ for humans, ToC for agents', () => {
-    // Spawn agent — gets ToC, never ÀṢẸ
-    const agent = economy.spawnAgent('int-agent-1', 'int-human-1');
+  it('dual-token economy: ÀṢẸ for humans, ToC for agents', async () => {
+    const agent = await economy.spawnAgent('int-agent-1', 'int-human-1');
     expect(agent.balance(TOKEN_TYPE.TOC_D)).toBe(86_000_000_000);
     expect(agent.balance(TOKEN_TYPE.TOC_S)).toBe(86_000_000);
-    expect(agent.balance(TOKEN_TYPE.ASE)).toBe(0);
+    // No ASE token type exists in Swibe
+    expect(agent.balance('ase')).toBe(0);
   });
 
   it('Elegbára router state is consistent', () => {
@@ -416,5 +413,15 @@ describe('Full System Integration', () => {
     expect(state.wallets).toHaveProperty('laalu');
     expect(state.wallets).toHaveProperty('bara');
     expect(state.wallets).toHaveProperty('agbana');
+  });
+
+  it('agent wallet has BIPON39 identity after birth', async () => {
+    const agent = await economy.spawnAgent('bipon-agent-1');
+    expect(agent.identity).not.toBeNull();
+    expect(agent.identity.agentId).toHaveLength(64);
+    expect(agent.identity.mnemonic.length).toBeGreaterThan(0);
+    expect(agent.identity.odu).toBeGreaterThanOrEqual(0);
+    expect(agent.identity.odu).toBeLessThanOrEqual(255);
+    expect(agent.identity.address).toMatch(/^swibe:\/\//);
   });
 });

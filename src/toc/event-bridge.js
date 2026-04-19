@@ -42,7 +42,7 @@ export class EventBridge extends EventEmitter {
    * @param {number} vmEvent.timestamp - Block timestamp
    * @param {object} vmEvent.tocEndowment - Optional override endowments
    */
-  processAgentBirth(vmEvent) {
+  async processAgentBirth(vmEvent) {
     const { agentId, creatorId, txHash, timestamp, tocEndowment } = vmEvent;
 
     if (!agentId || !creatorId) {
@@ -60,7 +60,7 @@ export class EventBridge extends EventEmitter {
       dopamine_endowment: 86_000_000_000,
       synapse_endowment: 86_000_000,
     };
-    const wallet = this.economy.spawnAgent(agentId, creatorId, 10, vmSignal);
+    const wallet = await this.economy.spawnAgent(agentId, creatorId, 10, vmSignal);
 
     // Step 3: Record processed event
     const processed = {
@@ -93,12 +93,12 @@ export class EventBridge extends EventEmitter {
   /**
    * Process all pending events.
    */
-  processQueue() {
+  async processQueue() {
     const results = [];
     while (this.pendingEvents.length > 0) {
       const event = this.pendingEvents.shift();
       try {
-        const result = this.processAgentBirth(event);
+        const result = await this.processAgentBirth(event);
         results.push(result);
       } catch (err) {
         this.emit('event_error', { event, error: err.message });
