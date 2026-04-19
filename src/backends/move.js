@@ -38,7 +38,7 @@ export function genMove(node, indent = "") {
       
       if (effectNodes.length > 0) {
         code += '\n\n  public entry fun init_ritual(ctx: &mut TxContext) {\n';
-        code += effectNodes.map(s => '    ' + genMove(s, '    ').trim()).join('\n');
+        code += effectNodes.map(s => '    ' + genMove(s, '  ').trim() + ';').join('\n');
         code += '\n  }';
       }
 
@@ -66,6 +66,7 @@ export function genMove(node, indent = "") {
       return `b"${node.value}"`;
 
     case 'Identifier':
+      if (node.name.startsWith('0x')) return node.name;
       return node.name;
 
     case 'SwarmStatement': {
@@ -154,31 +155,26 @@ export function genMove(node, indent = "") {
       return `${indent}// @target ${node.target}`;
 
     case 'MintStatement': {
-      const args = node.args?.fields || node.config || {};
+      const args = node.config?.fields || node.args?.fields || node.config || node.args || {};
       const agent = args.agent ? genMove(args.agent) : 'tx_context::sender(ctx)';
       const value = args.value ? genMove(args.value) : '1';
-      return `${indent}transfer::public_transfer(\n` +
-             `${indent}  SoulToken { id: object::new(ctx), agent: ${agent}, value: ${value} },\n` +
-             `${indent}  ${agent}\n` +
-             `${indent});`;
+      return `${indent}SoulToken { id: object::new(ctx), agent: ${agent}, value: ${value} }`;
     }
 
     case 'ReceiptStatement': {
-      const args = node.args?.fields || node.config || {};
+      const args = node.config?.fields || node.args?.fields || node.config || node.args || {};
       const hash = args.hash ? genMove(args.hash) : 'b"none"';
       const agent = args.agent ? genMove(args.agent) : 'tx_context::sender(ctx)';
-      return `${indent}event::emit(ReceiptEvent { hash: ${hash}, agent: ${agent} });`;
+      return `${indent}event::emit(ReceiptEvent { hash: b"${hash.replace(/^b"|"$/g, '')}", agent: ${agent} })`;
     }
 
     case 'SealStatement':
-      return `${indent}// SEAL_HOOK: Requesting key derivation via Seal server\n` +
-             `${indent}event::emit(BreathEvent { message: b"seal_request", iteration: 0 });`;
+      return `${indent}event::emit(BreathEvent { message: b"seal_request", iteration: 0 })`;
 
     case 'WalrusStatement': {
-      const args = node.args?.fields || node.config || {};
+      const args = node.config?.fields || node.args?.fields || node.config || node.args || {};
       const blob = args.blob ? genMove(args.blob) : 'b""';
-      return `${indent}// WALRUS_HOOK: Storing blob via Walrus SDK\n` +
-             `${indent}event::emit(BreathEvent { message: ${blob}, iteration: 999 });`;
+      return `${indent}event::emit(BreathEvent { message: b"${blob.replace(/^b"|"$/g, '')}", iteration: 999 })`;
     }
 
     case 'Nil':

@@ -760,24 +760,32 @@ class Parser {
         this.advance();
       }
 
-      const name = this.expect(TokenType.IDENTIFIER).value;
-      this.expect(TokenType.COLON);
-      
+      let name;
       let role;
-      if (this.current().type === TokenType.IDENTIFIER && this.current().value === 'Agent') {
-        this.advance();
-        this.expect(TokenType.LBRACE);
-        const fields = {};
-        while (this.current().type !== TokenType.RBRACE) {
-          const fieldName = this.expect(TokenType.IDENTIFIER).value;
-          this.expect(TokenType.COLON);
-          fields[fieldName] = this.parseExpression();
-          if (this.current().type === TokenType.COMMA) this.advance();
-        }
-        this.expect(TokenType.RBRACE);
-        role = new ASTNode('AgentDefinition', { fields });
+
+      // Check for shorthand: think "worker"
+      if (this.current().type === TokenType.THINK) {
+        name = 'AnonymousThinker';
+        role = this.parseThinkStatement();
       } else {
-        role = this.parseExpression();
+        name = this.expect(TokenType.IDENTIFIER).value;
+        this.expect(TokenType.COLON);
+        
+        if (this.current().type === TokenType.IDENTIFIER && this.current().value === 'Agent') {
+          this.advance();
+          this.expect(TokenType.LBRACE);
+          const fields = {};
+          while (this.current().type !== TokenType.RBRACE) {
+            const fieldName = this.expect(TokenType.IDENTIFIER).value;
+            this.expect(TokenType.COLON);
+            fields[fieldName] = this.parseExpression();
+            if (this.current().type === TokenType.COMMA) this.advance();
+          }
+          this.expect(TokenType.RBRACE);
+          role = new ASTNode('AgentDefinition', { fields });
+        } else {
+          role = this.parseExpression();
+        }
       }
       
       // Also support trailing @target syntax
@@ -792,7 +800,10 @@ class Parser {
         this.advance();
       } else if (this.current().type === TokenType.COMMA) {
         this.advance();
-      } else if (this.current().type !== TokenType.RBRACE) {
+      } else if (this.current().type === TokenType.RBRACE) {
+        // End of swarm
+        break;
+      } else {
         throw new Error(`Expected => or , in swarm at ${this.current().line}:${this.current().column}`);
       }
     }
