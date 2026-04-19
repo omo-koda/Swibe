@@ -1,6 +1,6 @@
 ![Version](https://img.shields.io/badge/version-v3.3.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-354%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-363%20passing-brightgreen)
 ![Backends](https://img.shields.io/badge/backends-44-orange)
 [![npm](https://img.shields.io/badge/npm-@bino--elgua/swibe-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
 
@@ -26,7 +26,7 @@ For local development:
 git clone https://github.com/Bino-Elgua/Swibe.git
 cd Swibe
 npm install
-npm test    # 354 tests passing
+npm test    # 363 tests passing
 ```
 
 ## Quick Start
@@ -516,7 +516,7 @@ The `EthicsValidator` AST visitor enforces structural constraints at parse time:
 
 ## Permission System
 
-Granular per-action permission control with six modes:
+Granular per-action permission control with seven modes:
 
 | Mode | Behavior |
 |------|----------|
@@ -525,6 +525,7 @@ Granular per-action permission control with six modes:
 | `plan` | Ask once per session, then auto-approve |
 | `monitor` | Run the action but log everything for review |
 | `quarantine` | Run in isolated container with no side effects |
+| `simulate` | Dry-run sandbox — returns predicted effects without execution |
 | `refuse` | Always deny |
 
 **Mandatory permissions:** High-risk primitives (`mcp`, `pilot`, `edit`, `mint`, `witness`, `viewport`, `bridge`, `escrow`, `slash`, `bash`, `file_write`, `net`) require an explicit `permission {}` block. The compiler will warn if these are used without one.
@@ -628,7 +629,7 @@ src/
   neural.js             # SovereignNeuralLayer (86B neurons, cortical routing)
   sovereign-vault.js    # BIP-39 + Ed25519 + AES-256-GCM identity
   repl.js               # Interactive REPL
-  visitor.js            # AST visitors (ThinkCollector, EthicsValidator)
+  visitor.js            # AST visitors (ThinkCollector, EthicsValidator, LayerValidator)
   permissions.js        # PermissionGate with ethics-modulated access control
   mcp-client.js         # MCPConnection + MCPHub (JSON-RPC 2.0)
   think-loop.js         # Agentic iteration engine with tool registry
@@ -663,10 +664,11 @@ src/
 test/
   bipon39.test.js       # BIPỌ̀N39 identity conformance (35 tests)
 tests/
-  swibe.test.js         # Core language suites (63 tests)
-  tokenomics.test.js    # Three-token economy (38 tests)
+  swibe.test.js         # Core language suites (65 tests)
+  tokenomics.test.js    # Three-token economy (39 tests)
   adversarial.test.js   # Adversarial attack resistance (34 tests)
   hardening.test.js     # Security hardening (25 tests)
+  v3.3.1_security.test.js # v3.3.1 security E2E (6 tests)
   tier1_backends.test.js  # Tier 1 backends (4 tests)
   tier2_backends.test.js  # Tier 2 backends (8 tests)
   tier3_backends.test.js  # Tier 3 backends (15 tests)
@@ -686,7 +688,7 @@ grammar.ebnf            # Full EBNF specification
 
 ## Test & Audit Status
 
-### Core Language Tests (tests/swibe.test.js — 63 tests)
+### Core Language Tests (tests/swibe.test.js — 65 tests)
 
 | Suite | Tests | Status |
 |-------|-------|--------|
@@ -702,13 +704,14 @@ grammar.ebnf            # Full EBNF specification
 | v3.4 VSCode Extension | 4 | Pass |
 | v3.6+v3.7 Registry + Docs | 5 | Pass |
 
-### Tokenomics & Security Tests (97 tests)
+### Tokenomics & Security Tests (104 tests)
 
 | Suite | Tests | Status |
 |-------|-------|--------|
-| Tokenomics (Sabbath, Èṣù tax, wallets, decay, conversion, escrow) | 38 | Pass |
+| Tokenomics (Sabbath, Èṣù tax, wallets, decay, conversion, escrow) | 39 | Pass |
 | Adversarial (commingling, treasury, rounding, VeilSim, entropy, UBI) | 34 | Pass |
 | Hardening (secure policy, monitor/quarantine, staking gates, escrow timeout, burn audit, layer ordering) | 25 | Pass |
+| v3.3.1 Security E2E (sovereign readiness, receipt chain, appeal/interest, SovereignError) | 6 | Pass |
 
 ### BIPỌ̀N39 Identity Tests (test/bipon39.test.js — 35 tests)
 
@@ -753,7 +756,7 @@ grammar.ebnf            # Full EBNF specification
 
 | | | |
 |---|---|---|
-| **Total** | **354** | **All passing** |
+| **Total** | **363** | **All passing** |
 
 ## Roadmap
 
