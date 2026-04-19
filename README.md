@@ -1,6 +1,6 @@
 ![Version](https://img.shields.io/badge/version-v3.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-97%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-329%20passing-brightgreen)
 ![Backends](https://img.shields.io/badge/backends-44-orange)
 [![npm](https://img.shields.io/badge/npm-@bino--elgua/swibe-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
 
@@ -24,7 +24,7 @@ For local development:
 git clone https://github.com/Bino-Elgua/Swibe.git
 cd Swibe
 npm install
-npm test    # 97 tests across 6 suites
+npm test    # 329 tests across all suites
 ```
 
 ## Quick Start
