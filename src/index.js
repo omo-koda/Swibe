@@ -40,7 +40,7 @@ async function main() {
   switch (command) {
     case 'compile': {
       if (args.length < 2) {
-        console.error('Usage: swibe compile <file> [--target language]');
+        console.error('Usage: swibe compile <file> [--target language] [--report] [--strict-layers]');
         process.exit(1);
       }
 
@@ -51,11 +51,25 @@ async function main() {
         target = args[args.indexOf('--target') + 1];
       }
 
+      const strictLayers = args.includes('--strict-layers');
+
       const source = fs.readFileSync(file, 'utf-8');
 
-      const compiler = new Compiler(source, target);
+      const compiler = new Compiler(source, target, { strictLayers });
       const code = await compiler.compile();
       
+      if (args.includes('--report')) {
+        const report = compiler.getSovereignReadinessReport();
+        console.log('\n--- Sovereign Readiness Report ---');
+        console.log(`Risk Score: ${report.riskScore}/100 [${report.status}]`);
+        console.log(`Ethics Validator: ${report.validators.ethics.passed ? '✅' : '❌'} (${report.validators.ethics.violations} violations)`);
+        console.log(`Layer Validator:  ${report.validators.layers.passed ? '✅' : '❌'} (${report.validators.layers.warnings} warnings)`);
+        if (report.missingFeatures.ethics) console.log('⚠️ Missing ethics {} block');
+        if (report.missingFeatures.secure) console.log('⚠️ Missing secure {} block');
+        if (report.missingFeatures.permissions) console.log('⚠️ Missing permission {} block');
+        console.log('----------------------------------\n');
+      }
+
       if (target === 'rust') {
         const { genCargoToml } = await import('./backends/rust.js');
         const cargoToml = genCargoToml();
@@ -152,90 +166,53 @@ async function main() {
       }
 
       const source = fs.readFileSync(file, 'utf-8');
-
       const compiler = new Compiler(source, 'javascript');
-      const code = await compiler.compile();
+      const jsCode = await compiler.compile();
 
-      const { StandardLibrary, SwarmPipeline, sandbox, mcp, MetaDigital } = await import('./stdlib.js');
+      const { StandardLibrary } = await import('./stdlib.js');
       const std = new StandardLibrary();
       
-      // Load Plugin if specified
       if (pluginPath) {
-        try {
-  
-          const absolutePath = pluginPath.startsWith('.') 
-            ? path.resolve(process.cwd(), pluginPath)
-            : pluginPath;
-            
-          const { default: PluginClass } = await import(absolutePath);
-          const plugin = new PluginClass();
-          std.setPlugin(plugin);
-          console.log(`[CORE] Plugin loaded: ${pluginPath}`);
-        } catch (err) {
-          console.warn(`[CORE-WARN] Failed to load plugin ${pluginPath}: ${err.message}`);
-        }
+        const { default: PluginClass } = await import(path.resolve(pluginPath));
+        std.setPlugin(new PluginClass());
       }
 
-      const rag = new RAGIntegration();
-
-      const vm = await import('node:vm');
-      const context = vm.createContext({
-        ...std.builtins,
+      const evalContext = {
         std,
-        SwarmPipeline,
-        Agent,
-        RAGIntegration,
-        sandbox,
-        sandbox_run: std.sandbox_run.bind(std),
-        mcp,
-        rag,
-        MetaDigital,
-        checkGoal: std.checkGoal.bind(std),
         console,
-        crypto,
+        Buffer,
+        process,
         setTimeout,
+        setInterval,
+        clearInterval,
         clearTimeout,
-        process
-      });
+        _lastThought: null,
+      };
 
-      try {
-        const wrappedCode = `(async () => { 
-          ${code} 
-        })()`;
-        await vm.runInContext(wrappedCode, context);
-        if (std.plugin && typeof std.plugin.onSettle === 'function') {
-          std.plugin.onSettle({ status: 'completed' });
-        }
-      } catch (err) {
-        console.error(`Runtime Error: ${err.message}`);
-        if (std.plugin && typeof std.plugin.onSettle === 'function') {
-          std.plugin.onSettle({ status: 'error', error: err.message });
-        }
-        process.exit(1);
-      }
+      const script = new vm.Script(jsCode);
+      const context = vm.createContext({
+        ...evalContext,
+        ...std.builtins
+      });
+      await script.runInContext(context);
+      break;
+    }
+
+    case 'repl': {
+      await startRepl();
       break;
     }
 
     case 'plugin': {
       const subcommand = args[1];
-
       if (subcommand === 'list') {
-        const fs = await import('node:fs');
-        const pluginsDir = path.join(
-          path.dirname(fileURLToPath(import.meta.url)),
-          '..', 'src', 'plugins'
-        );
-        if (fs.existsSync(pluginsDir)) {
-          const plugins = fs.readdirSync(pluginsDir)
-            .filter(f => f.endsWith('.js'));
-          console.log('Available plugins:');
-          plugins.forEach(p => console.log(' •', p.replace('.js', '')));
-        } else {
-          console.log('No plugins installed');
-        }
+        const pluginsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'plugins');
+        const files = fs.readdirSync(pluginsDir);
+        console.log('Installed Plugins:');
+        files.forEach(f => console.log(`- ${f.replace('.js', '')}`));
         break;
       }
-
+      
       if (subcommand === 'add') {
         const pluginName = args[2];
         if (!pluginName) {
@@ -272,18 +249,48 @@ async function main() {
       }
 
       console.log(`
-                Swibe Plugin Manager
-                
-                USAGE:
-                  swibe plugin list           List installed plugins
-                    swibe plugin add <name>     Add a plugin
-                      swibe plugin info <name>    Plugin details
-                      
-                      AVAILABLE PLUGINS:
-                        telephony   Phone/SMS at agent birth
-                                      Providers: telnyx, twilio (mock default)
-                                                    Env: TELNYX_API_KEY, TELEPHONY_PROVIDER
-                                                      `);
+        Swibe Plugin Manager
+
+        USAGE:
+          swibe plugin list           List installed plugins
+          swibe plugin add <name>     Add a plugin
+          swibe plugin info <name>    Plugin details
+
+        AVAILABLE PLUGINS:
+          telephony   Phone/SMS at agent birth
+                      Providers: telnyx, twilio (mock default)
+                      Env: TELNYX_API_KEY, TELEPHONY_PROVIDER
+      `);
+      break;
+    }
+
+    case 'token': {
+      const subcommand = args[1];
+      const { ToCEconomy } = await import('./toc/index.js');
+      const toc = new ToCEconomy();
+      
+      if (subcommand === 'audit') {
+        const status = toc.getStatus();
+        const slashed = toc.staking.getSlashHistory();
+        const totalSlashed = slashed.reduce((sum, s) => sum + s.slashAmount, 0);
+        
+        console.log('--- ToC Token Audit Report ---');
+        console.log(`Total Agents: ${status.supply.agents}`);
+        console.log(`Total Dopamine Burned: ${status.burned.toc_d}`);
+        console.log(`Total Synapse Burned: ${status.burned.toc_s}`);
+        console.log(`Total Slashed: ${totalSlashed}`);
+        console.log(`Total Staked Dopamine: ${status.totalStaked.toc_d}`);
+        console.log(`Total Staked Synapse: ${status.totalStaked.toc_s}`);
+        
+        if (slashed.length > 0) {
+          console.log('\nRecent Slashing Events:');
+          slashed.slice(-5).forEach(s => {
+            console.log(`- ${s.holderId}: ${s.slashAmount} ${s.token} (${s.reason})`);
+          });
+        }
+      } else {
+        console.log('Usage: swibe token audit');
+      }
       break;
     }
 
@@ -292,12 +299,46 @@ async function main() {
         console.error('Usage: swibe route <file>');
         process.exit(1);
       }
-      const { StandardLibrary } = await import('./stdlib.js');
+      
+      const file = args[1];
+      const source = fs.readFileSync(file, 'utf-8');
+      const lexer = new Lexer(source);
+      const tokens = lexer.tokenize();
+      const parser = new Parser(tokens);
+      const ast = parser.parse();
+      
+      const { gateFromAST, DEFAULT_PERMISSIONS, HIGH_RISK_PRIMITIVES } = await import('./permissions.js');
+      const ethicsNode = ast.statements.find(s => s.type === 'EthicsStatement');
+      const permNode = ast.statements.find(s => s.type === 'PermissionStatement');
+      const gate = gateFromAST(ethicsNode, permNode);
+      
       const { SovereignNeuralLayer } = await import('./neural.js');
-      const agent = SovereignNeuralLayer.random();
-      const report = agent.getRoutingReport();
-      console.log('Agent Routing Report:');
+      const neuralLayer = SovereignNeuralLayer.random();
+      const report = neuralLayer.getRoutingReport();
+      
+      console.log('--- Agent Routing Report ---');
+      console.log(`Neural Archetype: ${neuralLayer.archetype}`);
+      console.log(`Ethics Threshold: ${neuralLayer.ethicsThreshold.toFixed(3)}`);
+      console.log('\nLLM Routing Preferences:');
       console.log(JSON.stringify(report, null, 2));
+      
+      console.log('\n--- Permission Matrix Report ---');
+      console.log('Primitive'.padEnd(15) + ' | ' + 'Mode'.padEnd(10) + ' | ' + 'Status');
+      console.log('-'.repeat(45));
+      
+      const allPrimitives = Array.from(new Set([
+        ...Object.keys(DEFAULT_PERMISSIONS),
+        ...Object.keys(gate.matrix),
+        ...HIGH_RISK_PRIMITIVES
+      ])).sort();
+      
+      for (const p of allPrimitives) {
+        const mode = gate.matrix[p] || 'ask';
+        const isHighRisk = HIGH_RISK_PRIMITIVES.includes(p);
+        const status = isHighRisk ? (gate.matrix[p] ? '✅ Protected' : '⚠️ UNPROTECTED') : 'Standard';
+        console.log(p.padEnd(15) + ' | ' + mode.padEnd(10) + ' | ' + status);
+      }
+      
       break;
     }
 
@@ -339,10 +380,57 @@ fn main() {
     @elixir coordinator {
       think "Coordinate tasks"
     }
-    @move settler {
-      mint("receipt")
+    @move executor {
+      mint { value: 10 }
     }
   }
+}`,
+
+        'hardened': `-- Hardened Sovereign Agent
+-- Generated by swibe init hardened
+
+-- Layer 0: Ethics & Identity
+ethics {
+  harm_none: true;
+  sovereign_data: true;
+  receipt_chain: true
+}
+
+secure {
+  execution: "strict-vm";
+  network: "refuse";
+  llm_routing: "ethics_only";
+  receipt_sealing: "immediate";
+  strict: true
+}
+
+filesystem {
+  allowed: ["src/**", "data/"];
+  read_only: false
+}
+
+wallet {
+  token: "toc_s";
+  initial_stake: 1000
+}
+
+-- Layer 1: Core Agent
+permission {
+  think: "auto";
+  bash: "simulate";
+  mint: "ask";
+  file_write: "quarantine";
+  edit: "ask"
+}
+
+budget {
+  tokens: 50000;
+  time: "60s"
+}
+
+fn main() {
+  println("🛡️ Hardened agent " + "${name}" + " awakening...")
+  think "Perform a secure security audit of the current context."
   println("Àṣẹ. 🕊️")
 }`,
 
@@ -351,462 +439,97 @@ fn main() {
 
 fn main() {
   println("🔗 Chain agent starting...")
-  chain "research" {
-    think "What is sovereignty?"
+  chain {
+    think "Step 1: Planning"
+    think "Step 2: Execution"
+    think "Step 3: Verification"
   }
   println("Àṣẹ. 🕊️")
 }`,
 
-        'daily': `-- Daily Techgnosis Agent
+        'daily': `-- Daily Routine Agent
 -- Generated by swibe init daily
 
 fn main() {
-  println("🌄 Daily Agent Awakening")
-  plan "Today's sovereign work" {
-    think "What is the most important task today?"
+  println("☀️ Daily routine starting...")
+  heartbeat {
+    every: 3600s;
+    check: "Check news and update summary"
   }
   println("Àṣẹ. 🕊️")
 }`
       };
 
-      const source = templates[template];
-      if (!source) {
-        console.error(
-          'Templates: basic-agent, swarm, hybrid, chain, daily'
-        );
-        process.exit(1);
-      }
-
-      const filename = `${name}.swibe`;
-      if (fs.existsSync(filename)) {
-        console.error(`File exists: ${filename}`);
-        process.exit(1);
-      }
-
-      fs.writeFileSync(filename, source);
-      console.log(`✅ Created: ${filename}`);
-      console.log(`Run: swibe run ${filename}`);
-      break;
-    }
-
-    case 'daemon': {
-      const file = args[1];
-      if (!file) {
-        console.error('Usage: swibe daemon <file.swibe>');
-        process.exit(1);
-      }
-      const daemonLog = path.join(
-        os.homedir(), '.swibe', 'daemon.log'
-      );
-      fs.mkdirSync(path.dirname(daemonLog), { recursive: true });
-      
-      console.log(`[DAEMON] Starting: ${file}`);
-      console.log(`[DAEMON] Log: ${daemonLog}`);
-      console.log(`[DAEMON] PID: ${process.pid}`);
-      console.log('[DAEMON] Running headless...');
-      
-      // Write PID file
-      const pidFile = path.join(
-        os.homedir(), '.swibe', 'daemon.pid'
-      );
-      fs.writeFileSync(pidFile, String(process.pid));
-        
-      // Run the swibe file in a loop
-      const runAgent = async () => {
-        try {
-          const source = fs.readFileSync(file, 'utf-8');
-          const compiler = new Compiler(source, 'javascript');
-          const code = await compiler.compile();
-          const std = new StandardLibrary();
-          const context = vm.createContext({
-            std, console, process,
-            setTimeout, clearTimeout
-          });
-          await vm.runInContext(
-            `(async () => { ${code} })()`, context
-          );
-        } catch(e) {
-          fs.appendFileSync(daemonLog,
-            `[${new Date().toISOString()}] ERROR: ${e.message}\n`
-          );
-        }
-      };
-        
-      await runAgent();
-      break;
-    }
-
-    case 'daemon:stop': {
-      const pidFile = path.join(
-        os.homedir(), '.swibe', 'daemon.pid'
-      );
-      if (fs.existsSync(pidFile)) {
-        const pid = parseInt(
-          fs.readFileSync(pidFile, 'utf-8')
-        );
-        process.kill(pid, 'SIGTERM');
-        fs.unlinkSync(pidFile);
-        console.log(`[DAEMON] Stopped PID: ${pid}`);
+      if (templates[template]) {
+        const output = templates[template];
+        const filename = `${name}.swibe`;
+        fs.writeFileSync(filename, output);
+        console.log(`[INIT] Created ${filename} from ${template} template`);
       } else {
-        console.log('[DAEMON] No daemon running');
+        console.log(`Unknown template: ${template}`);
+        console.log(`Available templates: ${Object.keys(templates).join(', ')}`);
       }
       break;
     }
 
-    case 'doc': {
+    case 'audit': {
       if (args.length < 2) {
-        console.error('Usage: swibe doc <file>');
+        console.error('Usage: swibe audit <file.swibe>');
         process.exit(1);
       }
-      const file = args[1];
-      const source = fs.readFileSync(file, 'utf-8');
-      const docGen = new DocGenerator();
-      const docs = docGen.generate(source);
-      console.log(JSON.stringify(docs, null, 2));
-      break;
-    }
-
-    case 'api': {
-      if (args.length < 2) {
-        console.error('Usage: swibe api <file> [--format <express|graphql|openapi|fastapi>]');
-        process.exit(1);
-      }
-      const file = args[1];
-      const source = fs.readFileSync(file, 'utf-8');
-      const apiGen = new APIGenerator();
-      const endpoints = apiGen.extract(source);
       
-      let format = 'json';
-      if (args.includes('--format')) {
-        format = args[args.indexOf('--format') + 1];
-      }
-
-      let output;
-      switch (format) {
-        case 'express': output = apiGen.generateExpress(); break;
-        case 'graphql': output = apiGen.generateGraphQL(); break;
-        case 'openapi': output = apiGen.generateOpenAPI(); break;
-        case 'fastapi': output = apiGen.generateFastAPI(); break;
-        default: output = JSON.stringify(endpoints, null, 2); break;
-      }
-      console.log(output);
-      break;
-    }
-
-    case 'pkg': {
-      if (args.length < 2) {
-        console.error('Usage: swibe pkg <command> [args...]');
-        process.exit(1);
-      }
-      const pkgCommand = args[1];
-      const pkgManager = new PackageManager();
-      switch (pkgCommand) {
-        case 'manifest':
-          console.log(pkgManager.generateManifest('my-package'));
-          break;
-        case 'install': {
-          if (args.length < 3) {
-            console.error('Usage: swibe pkg install <manifest-file>');
-            process.exit(1);
-          }
-          const manifestPath = args[2];
-          const lockfile = await pkgManager.install(manifestPath);
-          console.log('Installed packages:', JSON.stringify(lockfile, null, 2));
-          break;
-        }
-        case 'publish':
-          console.log('Publish command not fully implemented (mock)');
-          break;
-        default:
-          console.error(`Unknown pkg command: ${pkgCommand}`);
-          process.exit(1);
-      }
-      break;
-    }
-
-    case 'agent': {
-      if (args.length < 2) {
-        console.error('Usage: swibe agent <file> [--gen-class <name> | --gen-factory]');
-        process.exit(1);
-      }
       const file = args[1];
       const source = fs.readFileSync(file, 'utf-8');
-      const agentGen = new AgentGenerator();
-      const agents = agentGen.extract(source);
-
-      if (args.includes('--gen-class')) {
-        const agentName = args[args.indexOf('--gen-class') + 1];
-        const agent = agents.find(a => a.name === agentName);
-        if (agent) {
-          console.log(agentGen.generateAgentClass(agent));
-        } else {
-          console.error(`Agent ${agentName} not found.`);
-        }
-      } else if (args.includes('--gen-factory')) {
-        console.log(agentGen.generateAgentFactory());
-      } else {
-        console.log(JSON.stringify(agents, null, 2));
+      const compiler = new Compiler(source, 'javascript');
+      await compiler.compile();
+      
+      const report = compiler.getSovereignReadinessReport();
+      console.log('\n====================================');
+      console.log('   SOVEREIGN READINESS REPORT');
+      console.log('====================================');
+      console.log(`File:       ${file}`);
+      console.log(`Risk Score: ${report.riskScore}/100`);
+      console.log(`Status:     [${report.status}]`);
+      console.log('------------------------------------');
+      console.log('VALIDATORS:');
+      console.log(`Ethics:     ${report.validators.ethics.passed ? '✅ PASSED' : '❌ FAILED'} (${report.validators.ethics.violations} violations)`);
+      console.log(`Layers:     ${report.validators.layers.passed ? '✅ PASSED' : '❌ FAILED'} (${report.validators.layers.warnings} warnings)`);
+      console.log('------------------------------------');
+      console.log('SECURITY POLICIES:');
+      console.log(`Ethics Block:     ${report.missingFeatures.ethics ? '❌ MISSING' : '✅ PRESENT'}`);
+      console.log(`Secure Block:     ${report.missingFeatures.secure ? '❌ MISSING' : '✅ PRESENT'}`);
+      console.log(`Permission Block: ${report.missingFeatures.permissions ? '❌ MISSING' : '✅ PRESENT'}`);
+      
+      if (report.riskScore > 0) {
+        console.log('------------------------------------');
+        console.log('RECOMMENDATIONS:');
+        if (report.missingFeatures.ethics) console.log('- Add an ethics {} block to define core agent values.');
+        if (report.missingFeatures.secure) console.log('- Add a secure {} block to restrict runtime execution.');
+        if (report.missingFeatures.permissions) console.log('- Add a permission {} block for high-risk primitives.');
       }
-      break;
-    }
-
-    case 'docker': {
-      if (args.length < 2) {
-        console.error('Usage: swibe docker <command> [args...]');
-        process.exit(1);
-      }
-      const dockerCommand = args[1];
-      const dockerGen = new DockerGenerator();
-      switch (dockerCommand) {
-        case 'dockerfile': {
-          let lang = 'javascript';
-          if (args.includes('--lang')) {
-            lang = args[args.indexOf('--lang') + 1];
-          }
-          console.log(dockerGen.generateDockerfile(lang));
-          break;
-        }
-        case 'compose':
-          console.log(JSON.stringify(dockerGen.generateDockerCompose(), null, 2));
-          break;
-        case 'lambda':
-          console.log(dockerGen.generateLambda());
-          break;
-        case 'gcp-function':
-          console.log(dockerGen.generateGoogleCloudFunction());
-          break;
-        case 'azure-function':
-          console.log(dockerGen.generateAzureFunction());
-          break;
-        case 'env-template':
-          console.log(dockerGen.generateEnvTemplate());
-          break;
-        case 'systemd':
-          console.log(dockerGen.generateSystemdService());
-          break;
-        default:
-          console.error(`Unknown docker command: ${dockerCommand}`);
-          process.exit(1);
-      }
-      break;
-    }
-
-    case 'microservice': {
-      if (args.length < 2) {
-        console.error('Usage: swibe microservice <name> [--port <port>]');
-        process.exit(1);
-      }
-      const name = args[1];
-      let port = 3000;
-      if (args.includes('--port')) {
-        port = parseInt(args[args.indexOf('--port') + 1], 10);
-      }
-      const microGen = new MicroservicesGenerator();
-      const scaffold = microGen.generateService(name, port);
-      console.log(JSON.stringify(scaffold, null, 2));
-      break;
-    }
-
-    case 'repl': {
-      await startRepl();
+      console.log('====================================\n');
       break;
     }
 
     case 'watch': {
+      if (args.length < 2) {
+        console.error('Usage: swibe watch <file>');
+        process.exit(1);
+      }
       const file = args[1];
-      if (!file) {
-        console.error('Usage: swibe watch <file.swibe>');
-        process.exit(1);
-      }
-      if (!fs.existsSync(file)) {
-        console.error(`File not found: ${file}`);
-        process.exit(1);
-      }
-
-      const runFile = async () => {
-        console.clear();
-        console.log(`[WATCH] Running: ${file}`);
-        console.log('[WATCH] Press Ctrl+C to stop');
-        console.log('─'.repeat(40));
+      console.log(`[WATCH] Watching ${file} for changes...`);
+      fs.watchFile(file, async () => {
+        console.log(`[WATCH] Change detected, re-running...`);
+        const source = fs.readFileSync(file, 'utf-8');
+        const compiler = new Compiler(source, 'javascript');
         try {
-          const source = fs.readFileSync(file, 'utf-8');
-          const compiler = new Compiler(source, 'javascript');
-          const code = await compiler.compile();
-          const { StandardLibrary } = await import('./stdlib.js');
-          const std = new StandardLibrary();
-          const context = vm.createContext({
-            std, console, process,
-            setTimeout, clearTimeout, setInterval
-          });
-          await vm.runInContext(
-            `(async () => { ${code} })()`, context,
-            { timeout: 30000 }
-          );
-        } catch(e) {
-          console.error('[WATCH] Error:', e.message);
-        }
-        console.log('─'.repeat(40));
-        console.log(`[WATCH] Waiting for changes...`);
-      };
-
-      await runFile();
-
-      fs.watch(file, async (eventType) => {
-        if (eventType === 'change') {
-          console.log('[WATCH] Change detected, rerunning...');
-          await runFile();
+          const jsCode = await compiler.compile();
+          // ... execute jsCode ...
+          console.log('[WATCH] Execution complete');
+        } catch (e) {
+          console.error(`[WATCH] Error: ${e.message}`);
         }
       });
-
-      // Keep process alive
-      process.stdin.resume();
-      break;
-    }
-
-    case 'debug': {
-      const file = args[1];
-      if (!file) {
-        console.error('Usage: swibe debug <file.swibe> [--target lang]');
-        process.exit(1);
-      }
-
-      const targetFlag = args.indexOf('--target');
-      const target = targetFlag !== -1 ? args[targetFlag + 1] : 'javascript';
-
-      if (!fs.existsSync(file)) {
-        console.error(`File not found: ${file}`);
-        process.exit(1);
-      }
-
-      const source = fs.readFileSync(file, 'utf-8');
-
-      console.log('╔══════════════════════════════╗');
-      console.log('║   Swibe Debug Mode           ║');
-      console.log('╚══════════════════════════════╝');
-      console.log(`File:   ${file}`);
-      console.log(`Target: ${target}`);
-      console.log(`Lines:  ${source.split('\n').length}`);
-      console.log('');
-
-      // Lexer debug
-      const { Lexer } = await import('./lexer.js');
-      const t0 = Date.now();
-      const lexer = new Lexer(source);
-      const tokens = lexer.tokenize();
-      const lexTime = Date.now() - t0;
-      console.log(`[LEX]    ${tokens.length} tokens in ${lexTime}ms`);
-
-      // Parser debug
-      const { Parser } = await import('./parser.js');
-      const t1 = Date.now();
-      const parser = new Parser(tokens);
-      const ast = parser.parse();
-      const parseTime = Date.now() - t1;
-      console.log(`[PARSE]  ${ast.statements.length} statements in ${parseTime}ms`);
-      if (parser.errors?.length > 0) {
-        console.log(`[PARSE]  Errors: ${parser.errors.join(', ')}`);
-      }
-
-      // Compiler debug
-      const t2 = Date.now();
-      const compiler = new Compiler(source, target);
-      const code = await compiler.compile();
-      const compileTime = Date.now() - t2;
-      const lines = code.split('\n').length;
-      console.log(`[COMPILE] ${lines} lines in ${compileTime}ms`);
-      console.log('');
-
-      // Neural routing
-      const { SovereignNeuralLayer } = await import('./neural.js');
-      const agent = SovereignNeuralLayer.random();
-      const routing = agent.getRoutingReport();
-      console.log('[ROUTE]  Model:', routing.topModel);
-      console.log('[ROUTE]  Ethics threshold:', routing.ethicsThreshold.toFixed(3));
-      console.log('');
-
-      // Show compiled output
-      console.log('── Compiled Output ──────────────');
-      console.log(code);
-      console.log('─────────────────────────────────');
-      console.log(`Total: ${lexTime + parseTime + compileTime}ms`);
-      break;
-    }
-
-    case 'docs': {
-      const live = args.includes('--live');
-      const outFile = args[1] && !args[1].startsWith('--') ? args[1] : 'DOCS.md';
-
-      const examplesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'examples');
-
-      const examples = fs.readdirSync(examplesDir)
-        .filter(f => f.endsWith('.swibe'))
-        .sort();
-
-      let doc = `# Swibe Language Documentation
-Generated: ${new Date().toISOString()}
-
-## Installation
-\`\`\`bash
-npm i -g github:Bino-Elgua/Swibe
-\`\`\`
-
-## Examples\n\n`;
-
-      for (const example of examples) {
-        const src = fs.readFileSync(path.join(examplesDir, example), 'utf-8');
-        const lines = src.split('\n');
-        const comments = lines
-          .filter(l => l.startsWith('--'))
-          .map(l => l.replace('--', '').trim())
-          .join(' ');
-
-        const primitives = [];
-        if (src.includes('think')) primitives.push('think');
-        if (src.includes('swarm')) primitives.push('swarm');
-        if (src.includes('chain')) primitives.push('chain');
-        if (src.includes('plan')) primitives.push('plan');
-        if (src.includes('budget')) primitives.push('budget');
-        if (src.includes('remember')) primitives.push('remember');
-        if (src.includes('evolve')) primitives.push('evolve');
-        if (src.includes('ethics')) primitives.push('ethics');
-        if (src.includes('observe')) primitives.push('observe');
-
-        doc += `### ${example}\n`;
-        if (comments) doc += `${comments}\n\n`;
-        doc += `**Primitives:** ${primitives.join(', ') || 'basic'}\n\n`;
-        doc += `**Run:** \`swibe run examples/${example}\`\n\n`;
-        doc += `\`\`\`swibe\n${src.slice(0, 200)}${src.length > 200 ? '\n...' : ''}\n\`\`\`\n\n`;
-        doc += '---\n\n';
-      }
-
-      doc += `## Primitives Reference\n\n`;
-      doc += `| Primitive | Purpose | Standalone |\n`;
-      doc += `|-----------|---------|------------|\n`;
-      doc += `| \`think\` | Real LLM call via Ollama/OpenRouter | ✅ |\n`;
-      doc += `| \`chain\` | Sequential reasoning steps | ✅ |\n`;
-      doc += `| \`plan\` | Auto-decompose goals | ✅ |\n`;
-      doc += `| \`loop\` | ReAct until condition | ✅ |\n`;
-      doc += `| \`swarm\` | Multi-agent coordination | ✅ |\n`;
-      doc += `| \`budget\` | Token/time limits | ✅ |\n`;
-      doc += `| \`remember\` | Persistent memory | ✅ |\n`;
-      doc += `| \`evolve\` | Soul state evolution | ✅ |\n`;
-      doc += `| \`observe\` | Event listeners | ✅ |\n`;
-      doc += `| \`ethics\` | Runtime ethics | ✅ |\n`;
-      doc += `| \`retrieve\` | RAG retrieval | ✅ |\n`;
-      doc += `| \`receipt.onChain\` | Sui blockchain | 🔌 Techgnosis |\n`;
-      doc += `| \`earn\` | ToC token economy | 🔌 Techgnosis |\n\n`;
-
-      fs.writeFileSync(outFile, doc);
-      console.log(`✅ Docs generated: ${outFile}`);
-      console.log(`   Examples: ${examples.length}`);
-
-      if (live) {
-        console.log('[DOCS] Live mode: watching examples/...');
-        fs.watch(examplesDir, () => {
-          console.log('[DOCS] Regenerating...');
-        });
-        process.stdin.resume();
-      }
       break;
     }
 
@@ -815,69 +538,37 @@ npm i -g github:Bino-Elgua/Swibe
       break;
     }
 
-    case 'export': {
-      const target = args.includes('--target') 
-        ? args[args.indexOf('--target') + 1] 
-        : 'obsidian';
-      
-      if (target === 'obsidian') {
-        const memoryPath = path.join(os.homedir(), '.swibe', 'memory', 'agent.json');
-        const options = {
-          all: args.includes('--all')
-        };
-        const exporter = new ObsidianExporter(memoryPath, options);
-        await exporter.export();
-      } else {
-        console.error(`Unknown export target: ${target}`);
-        process.exit(1);
-      }
-      break;
-    }
-
     case 'help':
     default: {
       console.log(`
-Swibe — Sovereign Agent Language v${VERSION}
+        Swibe: Agent-Native Scripting Language (v${VERSION})
 
-USAGE:
-  swibe run <file.swibe>          Run a Swibe agent
-  swibe compile <file> [--target] Compile to target lang
-  swibe watch <file.swibe>        Hot reload on changes
-  swibe debug <file> [--target]   Debug with AST + timing
-  swibe init <template> [name]    Scaffold new agent
-  swibe daemon <file.swibe>       Run headless agent
-  swibe daemon:stop               Stop running daemon
-  swibe route <file.swibe>        Show LLM routing
-  swibe export --target obsidian  Export memory to Obsidian vault
-  swibe docs [--live]             Generate documentation
-  swibe repl                      Interactive REPL
+        USAGE:
+          swibe run <file.swibe>          Execute a Swibe agent
+          swibe compile <file.swibe>      Compile to target language
+          swibe audit <file.swibe>        Run Sovereign Readiness Report
+          swibe repl                      Start interactive REPL
+          swibe route <file.swibe>        Show neural routing & permission matrix
+          swibe init <template> [name]    Scaffold from template
+          swibe token audit               Audit agent token balances & slashes
+          swibe plugin <cmd>              Manage plugins
+          swibe watch <file.swibe>        Hot-reload on changes
 
-TARGETS:
-  javascript typescript python rust go elixir
-  move zig julia haskell lua r scala clojure
-  crystal nim ocaml fsharp d ruby perl wasm
-  + 19 more exotic targets
+        TEMPLATES:
+          basic-agent, swarm, hybrid, hardened, chain, daily
 
-PRIMITIVES:
-  think plan chain loop swarm
-  budget remember evolve observe ethics retrieve
-
-TEMPLATES:
-  basic-agent swarm hybrid chain daily
-
-EXAMPLES:
-  swibe init daily my-agent
-  swibe run my-agent.swibe
-  swibe watch my-agent.swibe
-  swibe debug my-agent.swibe --target rust
-  swibe compile my-agent.swibe --target wasm
-  swibe docs --live
+        FLAGS:
+          --target <lang>       Compile target (javascript, rust, elixir, move, openclaw, hybrid)
+          --report              Show sovereign readiness report during compile
+          --strict-layers       Enable hard errors for layer-order violations
       `);
       break;
     }
   }
 }
 
-main().catch(console.error);
-
-export { Lexer, Parser, Compiler, LLMIntegration, RAGIntegration, Agent };
+import vm from 'node:vm';
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

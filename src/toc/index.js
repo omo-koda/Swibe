@@ -39,6 +39,27 @@ export class ToCEconomy {
     this.bridge = new EventBridge(this, this.elegbara);
   }
 
+  appealSlash(agentId, slashId, evidence, receiptChain) {
+    return this.staking.appealSlash(agentId, slashId, evidence, receiptChain);
+  }
+
+  collectInterest(agentId) {
+    return this.staking.processInterest(agentId);
+  }
+
+  getStakeStatus(agentId) {
+    const wallet = this.wallets.get(agentId);
+    if (!wallet) return null;
+    return {
+      balances: {
+        dopamine: wallet.balance('toc_d'),
+        synapse: wallet.balance('toc_s'),
+      },
+      stakes: this.staking.getAllStakes(agentId),
+      slashes: this.staking.getSlashHistory(agentId),
+    };
+  }
+
   /**
    * Spawn an agent from a VM birth signal.
    * OSOVM op_agent_birth (0x3e) locks 10 Àṣẹ and emits the endowment signal.

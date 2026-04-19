@@ -1,16 +1,18 @@
-![Version](https://img.shields.io/badge/version-v3.3.0-blue)
+![Version](https://img.shields.io/badge/version-v3.3.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Tests](https://img.shields.io/badge/tests-354%20passing-brightgreen)
 ![Backends](https://img.shields.io/badge/backends-44-orange)
 [![npm](https://img.shields.io/badge/npm-@bino--elgua/swibe-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
 
-# Swibe: Agent-Native Scripting Language (v3.3.0)
+# Swibe: Agent-Native Scripting Language (v3.3.1)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
 Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 44 backend targets, runs self-repairing swarms, and persists state via a BIPỌ̀N39 ritual vault.
 
-v3.3 adds a complete three-token economy (Àṣẹ/Dopamine/Synapse) with neural birth endowment (86B Dopamine + 86M Synapse per agent), burn conversions, creator royalties, job escrow, and staking/slashing — on top of multimodal perception, computer control, the full tool system, MCP integration, agentic think loops, and production hardening.
+v3.3 adds a complete three-token economy (Àṣẹ/Dopamine/Synapse) with neural birth endowment (86B Dopamine + 86M Synapse per agent), burn conversions, creator royalties, job escrow, and staking/slashing.
+
+v3.3.1 introduces **Security Hardening**: strict layer enforcement, formal `secure` block policies (`llm_routing`, `receipt_sealing`), `simulate` permission mode, Merkle-hardened receipt chains, and the Sovereign Readiness Report.
 
 ## Installation
 
@@ -24,33 +26,28 @@ For local development:
 git clone https://github.com/Bino-Elgua/Swibe.git
 cd Swibe
 npm install
-npm test    # 354 tests across 19 suites
+npm test    # 354 tests passing
 ```
 
 ## Quick Start
 
 ```swibe
--- Sovereign agent with full tool system
-ethics {
-  harm_none: true;
-  sovereign_data: true;
-  receipt_chain: true
+-- Fully Hardened Sovereign Agent
+-- Layer 0: Ethics & Identity
+ethics { harm_none: true; sovereign_data: true }
+secure { 
+  execution: "strict-vm"; 
+  llm_routing: "ethics_only"; 
+  strict: true 
 }
 
-permission {
-  think: "auto";
-  bash: "plan";
-  mint: "ask"
-}
+-- Layer 1: Core Agent
+permission { think: "auto"; bash: "simulate"; mint: "ask" }
+budget { tokens: 100000; time: "300s" }
 
 think "Analyze codebase for security issues" {
   loop: true,
   max_iterations: 5
-}
-
-budget {
-  tokens: 100000;
-  time: "300s"
 }
 ```
 
@@ -70,7 +67,8 @@ swibe run agent.swibe
 | `swibe debug <file> --target <lang>` | Debug with lexer/parser/compile timing + AST stats |
 | `swibe daemon <file.swibe>` | Run headless agent (PID managed in `~/.swibe/`) |
 | `swibe daemon:stop` | Stop running daemon |
-| `swibe route <file.swibe>` | Show neural LLM routing report |
+| `swibe route <file.swibe>` | Show neural routing & permission matrix report |
+| `swibe token audit` | Audit agent token balances, burns, and slashes |
 | `swibe docs [--live]` | Auto-generate documentation from examples |
 | `swibe plugin list` | List installed plugins |
 | `swibe docker dockerfile --lang <lang>` | Generate Dockerfile, Lambda, GCP, Azure, systemd configs |
@@ -368,6 +366,37 @@ escrow "delivery_job" {
 | **Budget slashing** | 10% Dopamine slashed on budget overruns |
 | **Escrow timeout** | Auto-refund Àṣẹ if job not completed in 7 days (configurable) |
 | **Burn audit trail** | Every Dopamine burn links to a sealed receipt hash |
+
+## Security & Hardening (v3.3.1)
+
+Swibe v3.3.1 introduces a formal security framework based on layered architecture and policy-driven sandboxing.
+
+### Sovereign Readiness Report
+The compiler now performs a pre-compile static analysis pass that runs all validators (Ethics, Layer, Permission, Secure) and produces a report with a **Risk Score** (0-100).
+```bash
+swibe compile agent.swibe --report
+```
+
+### Enhanced Secure Block
+The `secure {}` block (Layer 0) now supports advanced policy fields:
+
+| Policy | Values | Effect |
+|--------|--------|--------|
+| `llm_routing` | `ethics_only`, `performance_first` | Forces safety models when ethics threshold is high |
+| `receipt_sealing` | `immediate`, `batch` | Immediate sealing for high-security environments |
+| `strict` | `true`, `false` | Turn layer-order warnings into hard errors |
+
+### Advanced Permission Modes
+Three new high-security modes added to the `permission {}` matrix:
+
+| Mode | Behavior |
+|------|----------|
+| `simulate` | Run in a dry-run sandbox; returns predicted effects without execution |
+| `monitor` | Allow action but log full telemetry to on-chain audit trail |
+| `quarantine` | Auto-apply isolation on iteration N+1 if N violated ethics or budget |
+
+### Merkle-Hardened Receipt Chain
+The internal receipt chain now uses a **Merkle Tree** structure. Every `think` call produces a receipt that includes the Merkle root of all previous history, enabling privacy-preserving audits and proof of non-tampering.
 
 ## 44 Compilation Targets
 

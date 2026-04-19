@@ -1,5 +1,5 @@
 /**
- * Lisp Backend
+ * Lisp Backend for Swibe
  */
 
 export function genLisp(node) {
@@ -22,6 +22,11 @@ export function genLisp(node) {
 
     case 'FunctionCall':
       return `(${node.name} ${node.args.map(a => genLisp(a)).join(' ')})`;
+
+    case 'ThinkStatement': {
+      const prompt = genLisp(node.prompt);
+      return `(format t "Thinking: ~a~%" ${prompt})`;
+    }
 
     case 'Number':
       return String(node.value);

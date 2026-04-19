@@ -718,3 +718,28 @@ describe('Swibe v3.2 — Compiler Hardening', () => {
     expect(validator.violations.length).toBeGreaterThan(0);
   });
 });
+
+describe('Swibe v3.3 — Tokenomics and Async', () => {
+  it('supports await operator and stake_status built-in', async () => {
+    const source = `
+      fn main() {
+        let status = await stake_status();
+        println(status.balances.dopamine);
+      }
+    `;
+    const compiler = new Compiler(source, 'javascript');
+    const code = await compiler.compile();
+    
+    expect(code).toContain('await std.stake_status()');
+    expect(code).toContain('status.balances.dopamine');
+  });
+
+  it('StandardLibrary has high-risk execution primitives', () => {
+    const std = new StandardLibrary();
+    expect(std.builtins.pilot).toBeDefined();
+    expect(std.builtins.witness).toBeDefined();
+    expect(std.builtins.viewport).toBeDefined();
+    expect(std.builtins.gestalt).toBeDefined();
+    expect(std.builtins.mcp).toBeDefined();
+  });
+});

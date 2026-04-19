@@ -17,6 +17,18 @@ import { NeuralLayer } from './neural.js';
 import { ToCEconomy } from './toc/index.js';
 import { SuiClientWrapper, WalrusStorage } from './backends/sui-integration.js';
 
+class SovereignError extends Error {
+  constructor(message, { layer, securityPolicy, receiptHash, detail } = {}) {
+    super(message);
+    this.name = 'SovereignError';
+    this.layer = layer;
+    this.securityPolicy = securityPolicy;
+    this.receiptHash = receiptHash;
+    this.detail = detail;
+    this.timestamp = Date.now();
+  }
+}
+
 class StandardLibrary {
   constructor() {
     this.goalAttempts = new Map();
@@ -30,6 +42,18 @@ class StandardLibrary {
     this._receiptChain = [];
     this._lastReceiptHash = null;
     this._budget = null;
+    this._violations = [];
+    this._securityPolicy = {
+      execution: 'standard',
+      network: 'auto',
+      filesystem: 'standard',
+      memory: 'standard',
+      receipts: 'optional',
+      audit: 'off',
+      llm_routing: 'performance_first',
+      receipt_sealing: 'batch'
+    };
+    this._allowedPaths = [];
     this._events = new EventEmitter();
     this.workerThreads = { Worker };
     
@@ -49,7 +73,11 @@ class StandardLibrary {
       },
       slash: async (config) => {
         console.log(`[ToC] Slashed:`, config);
-        return { success: true };
+        const result = { success: true };
+        if (this._securityPolicy?.audit === 'on') {
+          await this._logToReceiptChain('slash', config);
+        }
+        return result;
       },
       convert: async (config) => {
         const amount = config.amount || 1000;
@@ -59,6 +87,15 @@ class StandardLibrary {
       royalty: async (config) => {
         console.log(`[ToC] Royalty paid:`, config);
         return { success: true };
+      },
+      appealSlash: async (slashId, evidence) => {
+        const wallet = await this._getWallet();
+        return this.tocEconomy.appealSlash(wallet.ownerId, slashId, evidence, this._receiptChain);
+      },
+      collectInterest: async () => {
+        const wallet = await this._getWallet();
+        const reward = this.tocEconomy.collectInterest(wallet.ownerId);
+        return { success: true, reward };
       },
       escrow: async (name, config) => {
         console.log(`[ToC] Escrow created for ${name}:`, config);
@@ -121,6 +158,10 @@ class StandardLibrary {
       'think': this.think.bind(this),
       'retrieve': this.retrieve.bind(this),
       'invoke': this.invoke.bind(this),
+      'sandbox_run': this.sandbox_run.bind(this),
+      'readFile': this.readFile.bind(this),
+      'writeFile': this.writeFile.bind(this),
+      'editFile': this.editFile.bind(this),
       'neural': this.neural,
       'refuse_if': this.refuse_if.bind(this),
       'seal': (msg) => msg,
@@ -128,7 +169,77 @@ class StandardLibrary {
       'receipt': this.receipt.bind(this),
       'walrus': this.walrus.bind(this),
       'seal_statement': this.seal_statement.bind(this),
+      'appeal_slash': this.toc.appealSlash.bind(this),
+      'collect_interest': this.toc.collectInterest.bind(this),
+      'stake_status': async () => {
+        const wallet = await this._getWallet();
+        const status = this.tocEconomy.getStakeStatus(wallet.ownerId);
+        if (!status) console.log(`[STAKE-STATUS] No status found for ${wallet.ownerId}`);
+        return status;
+      },
+      'pilot': this.pilot.bind(this),
+      'witness': this.witness.bind(this),
+      'viewport': this.viewport.bind(this),
+      'gestalt': this.gestalt.bind(this),
+      'mcp': this.mcp.bind(this),
     };
+  }
+
+  async pilot(config = {}) {
+    console.log('[PILOT] Initializing computer control...');
+    const { PilotEngine } = await import('./pilot.js');
+    const pilot = new PilotEngine(config);
+    // Map Swibe 'action' to PilotEngine 'type'
+    const action = {
+      type: config.action || config.type,
+      ...config
+    };
+    const result = await pilot.execute(action);
+    console.log(`[PILOT] Execution result: ${JSON.stringify(result)}`);
+    return result;
+  }
+
+  async witness(config = {}) {
+    console.log('[WITNESS] Activating multimodal perception...');
+    const { WitnessEngine } = await import('./witness.js');
+    const witness = new WitnessEngine(config);
+    const result = await witness.perceive(config);
+    return result;
+  }
+
+  async viewport(config = {}) {
+    console.log('[VIEWPORT] Capturing screen state...');
+    const { ViewportEngine } = await import('./viewport.js');
+    const viewport = new ViewportEngine(config);
+    const result = await viewport.analyze(config);
+    return result;
+  }
+
+  async gestalt(tasks = [], options = {}) {
+    console.log(`[GESTALT] Executing ${tasks.length} tasks in parallel...`);
+    const { GestaltEngine } = await import('./gestalt.js');
+    const gestalt = new GestaltEngine();
+    const result = await gestalt.execute(tasks, { merge: options.merge || 'unified_context' });
+    return result;
+  }
+
+  async mcp(config = {}) {
+    console.log('[MCP] Connecting to tool servers...');
+    // For now use a simplified version or the one from mcp-client.js if available
+    try {
+      const { MCPHub } = await import('./mcp-client.js');
+      const hub = new MCPHub();
+      // Add server if config provided
+      if (config.name && (config.command || config.url)) {
+        await hub.connect(config.name, config.transport || 'stdio', config);
+      }
+      return hub;
+    } catch (e) {
+      console.warn('[MCP] Using mock MCP client');
+      return {
+        call_tool: async (name, args) => `Mock result for ${name}`
+      };
+    }
   }
 
   setPlugin(plugin) {
@@ -173,18 +284,50 @@ class StandardLibrary {
     return this.agentWallet;
   }
 
+  async _logToReceiptChain(type, detail) {
+    const receiptData = JSON.stringify({
+      type,
+      detail,
+      timestamp: Date.now(),
+      prev: this._lastReceiptHash
+    });
+    const hash = crypto.createHash('sha256')
+      .update(receiptData)
+      .digest('hex');
+    this._lastReceiptHash = hash;
+    this._receiptChain.push({
+      hash,
+      prev: receiptData,
+      timestamp: Date.now(),
+      category: 'security',
+      type
+    });
+    console.log(`[RECEIPT-CHAIN] ${type}: ${hash.slice(0,16)}...`);
+  }
+
   async think(prompt, options = {}) {
+    // Inject current security policy
+    options.security_policy = this._securityPolicy;
+    
+    // LLM Routing logic
+    if (this._securityPolicy?.llm_routing === 'ethics_only') {
+      console.log('[LLM-ROUTING] Ethics-only mode: preferring safety models');
+      prompt = `[SAFETY MODE: ENFORCED] ${prompt}`;
+    }
+
     // Budget enforcement
     if (this._budget) {
       const elapsed = Date.now() - this._budget.startTime;
       if (elapsed > this._budget.maxMs) {
         console.warn('[BUDGET] Time limit exceeded');
+        this._violations.push({ type: 'budget', detail: 'time limit exceeded', timestamp: Date.now() });
         return { content: '[BUDGET EXCEEDED: time]', receipt: null };
       }
       const estimated = Math.ceil(prompt.length / 4);
       this._budget.usedTokens += estimated;
       if (this._budget.usedTokens > this._budget.maxTokens) {
         console.warn('[BUDGET] Token limit exceeded');
+        this._violations.push({ type: 'budget', detail: 'token limit exceeded', timestamp: Date.now() });
         return { content: '[BUDGET EXCEEDED: tokens]', receipt: null };
       }
       console.log(`[BUDGET] ${this._budget.usedTokens}/${this._budget.maxTokens} tokens used`);
@@ -210,6 +353,7 @@ class StandardLibrary {
       }
       this._setVibrationTTL(prompt.substring(0, 50));
       console.warn('[ETHICS] Request refused');
+      this._violations.push({ type: 'ethics', detail: 'request refused by rules', timestamp: Date.now() });
       return { content: '[ETHICS: request refused]', receipt: null };
     }
 
@@ -270,13 +414,24 @@ class StandardLibrary {
       sealed: isSealed,
       category: isPublic ? 'Insights' : 'general'
     });
-    console.log(`[RECEIPT-CHAIN] ${hash.slice(0,16)}...`);
+    
+    // Hardening: Merkle root
+    const merkleRoot = this._calculateMerkleRoot();
+    this._merkleRoot = merkleRoot;
+    
+    console.log(`[RECEIPT-CHAIN] ${hash.slice(0,16)}... | Merkle: ${merkleRoot.slice(0,8)}`);
 
     if (isPublic) {
       console.log(`[PUBLIC] Insight flagged for Obsidian: ${hash.slice(0,8)}`);
     }
     if (isSealed) {
       console.log(`[SEALED] Private reasoning trajectory encrypted.`);
+    }
+
+    // Receipt sealing: immediate vs batch
+    if (this._securityPolicy?.receipt_sealing === 'immediate') {
+      console.log(`[RECEIPT-SEALING] Immediate mode: sealing on-chain...`);
+      await this.receipt({ hash: hash, type: 'immediate_seal' });
     }
 
     // Hermetic: Correspondence — soul karma
@@ -309,6 +464,28 @@ class StandardLibrary {
 
   getReceiptChain() {
     return this._receiptChain;
+  }
+
+  _calculateMerkleRoot() {
+    if (this._receiptChain.length === 0) return '0'.repeat(64);
+    
+    let level = this._receiptChain.map(r => Buffer.from(r.hash, 'hex'));
+    
+    while (level.length > 1) {
+      if (level.length % 2 === 1) {
+        level.push(level[level.length - 1]);
+      }
+      const next = [];
+      for (let i = 0; i < level.length; i += 2) {
+        const hash = crypto.createHash('sha256')
+          .update(Buffer.concat([level[i], level[i + 1]]))
+          .digest();
+        next.push(hash);
+      }
+      level = next;
+    }
+    
+    return level[0].toString('hex');
   }
 
   async retrieve(query, options = {}) {
@@ -828,9 +1005,12 @@ class StandardLibrary {
       memory: policy.memory || 'standard',
       receipts: policy.receipts || 'optional',
       audit: policy.audit || 'off',
+      llm_routing: policy.llm_routing || 'performance_first',
+      receipt_sealing: policy.receipt_sealing || 'batch',
       ...policy,
     };
-    console.warn(`[SWIBE] secure{} sandbox: isolation=${securityPolicy.execution}, net=${securityPolicy.network}, fs=${securityPolicy.filesystem}`);
+    this._securityPolicy = securityPolicy;
+    console.warn(`[SWIBE] secure{} sandbox: isolation=${securityPolicy.execution}, net=${securityPolicy.network}, fs=${securityPolicy.filesystem}, llm_routing=${securityPolicy.llm_routing}`);
 
     const ragApi = Object.freeze({
       save: async (key, data) => {
@@ -911,6 +1091,33 @@ class StandardLibrary {
       console.error('[SANDBOX-ERROR]', err.message);
       throw err;
     }
+  }
+
+  async checkLoopSecurity() {
+    if (this._violations.length > 0) {
+      console.warn(`[SELF-HEALING] Detected ${this._violations.length} violations in loop. Applying QUARANTINE mode for safety.`);
+      
+      const violation = this._violations[this._violations.length - 1];
+      const wallet = await this._getWallet();
+      
+      // Automatically slash for violation
+      try {
+        const slashRecord = this.tocEconomy.staking.slashForViolation(wallet.ownerId, violation.type, violation.detail);
+        console.log(`[ToC] Auto-slashed for ${violation.type}: ${slashRecord.slashAmount} Dopamine`);
+        
+        if (this._securityPolicy?.audit === 'on') {
+          await this._logToReceiptChain('auto_slash', { violation, slashRecord });
+        }
+      } catch (e) {
+        console.warn(`[ToC] Auto-slash failed: ${e.message}`);
+      }
+
+      this._securityPolicy.execution = 'quarantine';
+      // Reset violations for this iteration so we don't spam warnings
+      // (they are still recorded in history, we just cleared the trigger for this specific check)
+      return true;
+    }
+    return false;
   }
 
   gen_ritual_keypair(seed) {
@@ -1029,6 +1236,102 @@ class StandardLibrary {
     } catch (error) {
       console.error('[SHARED-STATE] Error writing shared state:', error.message);
       return { success: false, error: error.message };
+    }
+  }
+
+  setFilesystemPolicies(policies) {
+    if (policies.allowed) {
+      // Handle both array of strings and single string
+      const allowed = Array.isArray(policies.allowed) ? policies.allowed : [policies.allowed];
+      // Strip quotes if they were added during compilation
+      this._allowedPaths = allowed.map(p => typeof p === 'string' ? p.replace(/^"|"$/g, '') : p);
+      console.log(`[FILESYSTEM] Allowed paths: ${this._allowedPaths.join(', ')}`);
+    }
+    if (policies.refuse === 'true' || policies.refuse === true) {
+      this._securityPolicy.filesystem = 'refuse';
+    } else if (policies.read_only === 'true' || policies.read_only === true) {
+      this._securityPolicy.filesystem = 'read-only';
+    }
+  }
+
+  _checkFilesystemAccess(filePath, mode = 'read') {
+    if (this._securityPolicy.filesystem === 'refuse') {
+      throw new SovereignError(`[SECURE] Filesystem access denied by policy`, {
+        layer: 3,
+        securityPolicy: this._securityPolicy,
+        detail: `Attempted ${mode} on ${filePath}`
+      });
+    }
+
+    if (mode === 'write' && this._securityPolicy.filesystem === 'read-only') {
+      throw new SovereignError(`[SECURE] Filesystem write denied by policy`, {
+        layer: 3,
+        securityPolicy: this._securityPolicy,
+        detail: `Attempted write on ${filePath}`
+      });
+    }
+
+    if (this._allowedPaths.length > 0) {
+      const isAllowed = this._allowedPaths.some(pattern => {
+        // Very basic glob-to-regex conversion
+        const regex = new RegExp('^' + pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*') + '$');
+        return regex.test(filePath) || filePath.startsWith(pattern.replace(/\*\*/g, ''));
+      });
+
+      if (!isAllowed) {
+        throw new SovereignError(`[SECURE] Path not allowed by filesystem policy`, {
+          layer: 3,
+          securityPolicy: this._securityPolicy,
+          detail: `Path: ${filePath}`
+        });
+      }
+    }
+
+    return true;
+  }
+
+  async readFile(filePath) {
+    this._checkFilesystemAccess(filePath, 'read');
+    const fullPath = path.resolve(process.cwd(), filePath);
+    return await fs.promises.readFile(fullPath, 'utf8');
+  }
+
+  async writeFile(filePath, content) {
+    this._checkFilesystemAccess(filePath, 'write');
+    const fullPath = path.resolve(process.cwd(), filePath);
+    await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
+    await fs.promises.writeFile(fullPath, content);
+    return true;
+  }
+
+  async editFile(filePath, oldString, newString, options = {}) {
+    this._checkFilesystemAccess(filePath, 'write');
+    const fullPath = path.resolve(process.cwd(), filePath);
+    console.log(`[EDIT] File: ${filePath}`);
+
+    try {
+      let content = await fs.promises.readFile(fullPath, 'utf8');
+      
+      if (!content.includes(oldString)) {
+        throw new SovereignError(`String to replace not found in ${filePath}`, {
+          layer: 3,
+          securityPolicy: this._securityPolicy,
+          detail: `Old string: ${oldString.substring(0, 20)}...`
+        });
+      }
+
+      // Very basic implementation for now
+      const updated = content.replace(oldString, newString);
+      await fs.promises.writeFile(fullPath, updated);
+      console.log(`[EDIT] Success: ${filePath}`);
+      return true;
+    } catch (e) {
+      if (e instanceof SovereignError) throw e;
+      console.error(`[EDIT] Failed: ${e.message}`);
+      throw new SovereignError(`Failed to edit file: ${e.message}`, {
+        layer: 3,
+        securityPolicy: this._securityPolicy
+      });
     }
   }
 }

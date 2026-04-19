@@ -1,5 +1,5 @@
 /**
- * Matlab Backend
+ * Matlab Backend for Swibe
  */
 
 function indentCode(code, spaces) {
@@ -33,6 +33,14 @@ export function genMatlab(node) {
     case 'FunctionCall':
       return `${node.name}(${node.args.map(a => genMatlab(a)).join(', ')})`;
 
+    case 'BinaryOp':
+      return `${genMatlab(node.left)} ${node.op} ${genMatlab(node.right)}`;
+
+    case 'ThinkStatement': {
+      const prompt = genMatlab(node.prompt);
+      return `disp(['Thinking: ', ${prompt}])`;
+    }
+
     case 'Number':
       return String(node.value);
 
@@ -47,9 +55,6 @@ export function genMatlab(node) {
 
     case 'ArrayLiteral':
       return `[${node.elements.map(e => genMatlab(e)).join(', ')}]`;
-
-    case 'BinaryOp':
-      return `${genMatlab(node.left)} ${node.op} ${genMatlab(node.right)}`;
 
     default:
       return '';

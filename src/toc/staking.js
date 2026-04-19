@@ -21,6 +21,65 @@ export class StakingEngine extends EventEmitter {
     this.registry = walletRegistry;
     this.stakes = new Map();
     this.slashHistory = [];
+    this.interestLastRun = new Map(); // holderId -> timestamp
+  }
+
+  appealSlash(holderId, slashRecordId, evidence = '', receiptChain = []) {
+    const record = this.slashHistory[slashRecordId];
+    if (!record || record.holderId !== holderId) {
+      throw new Error(`Invalid slash record for appeal: ${slashRecordId}`);
+    }
+
+    if (record.appealed) {
+      throw new Error('This slash record has already been appealed');
+    }
+
+    record.appealed = true;
+    record.appealTimestamp = Date.now();
+    record.appealEvidence = evidence;
+    record.appealReceiptChain = receiptChain;
+    record.appealStatus = 'pending';
+
+    console.log(`[STAKING] Appeal filed for slash ${slashRecordId} by ${holderId}`);
+    this.emit('appeal', { holderId, slashRecordId, evidence });
+
+    return { success: true, appealId: slashRecordId, status: 'pending_human_review' };
+  }
+
+  processInterest(holderId, nowMs = Date.now()) {
+    const wallet = this.registry.get(holderId);
+    if (!wallet || wallet.ownerType !== 'agent') return 0;
+
+    const lastRun = this.interestLastRun.get(holderId) || wallet.created;
+    const elapsed = nowMs - lastRun;
+    const DAY_MS = 86_400_000;
+    
+    if (elapsed < DAY_MS) return 0;
+
+    const days = Math.floor(elapsed / DAY_MS);
+    const stakes = this.getAllStakes(holderId);
+    const stakedSynapse = stakes
+      .filter(s => s.token === TOKEN_TYPE.TOC_S)
+      .reduce((sum, s) => sum + s.amount, 0);
+
+    if (stakedSynapse <= 0) {
+      this.interestLastRun.set(holderId, nowMs);
+      return 0;
+    }
+
+    // 0.1% daily Dopamine reward for staked Synapse
+    const INTEREST_RATE = 0.001; 
+    const reward = Math.floor(stakedSynapse * INTEREST_RATE * days);
+
+    if (reward > 0) {
+      wallet.receive(TOKEN_TYPE.TOC_D, reward, 'staking_interest');
+      console.log(`[STAKING] Interest reward: ${reward} Dopamine for ${holderId} (${days} days)`);
+    }
+
+    this.interestLastRun.set(holderId, nowMs);
+    this.emit('interest', { holderId, reward, days });
+
+    return reward;
   }
 
   stake(holderId, token, amount, purpose = 'service') {

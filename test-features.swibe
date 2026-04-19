@@ -1,0 +1,35 @@
+-- Test new features
+ethics {
+  harm_none: true
+}
+
+secure {
+  execution: "standard"; -- Not strict-vm, should trigger warning for pilot
+  audit: "on"
+}
+
+filesystem {
+  allowed: ["test-*.swibe"];
+  read_only: false
+}
+
+permission {
+  think: "auto";
+  pilot: "ask";
+  edit: "auto"
+}
+
+fn main() {
+  println("Checking stake status...")
+  let status = await stake_status()
+  println("Stake Status: " + status.balances.dopamine)
+
+  -- This should trigger a warning in audit because execution is not strict-vm
+  pilot { action: "list_files" }
+
+  -- This should work because it's allowed
+  writeFile("test-output.txt", "Hello from Swibe")
+  
+  -- This should fail because it's not allowed
+  readFile("package.json")
+}

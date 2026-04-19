@@ -27,6 +27,7 @@ const PermissionMode = Object.freeze({
   PLAN:       'plan',
   MONITOR:    'monitor',
   QUARANTINE: 'quarantine',
+  SIMULATE:   'simulate',
   REFUSE:     'refuse',
 });
 
@@ -109,6 +110,15 @@ class PermissionGate {
       entry.reason = 'Quarantine-mode: action runs in isolation, no side effects persist';
       this.auditLog.push(entry);
       return { granted: true, reason: entry.reason, quarantined: true };
+    }
+
+    // Simulate: allow but only as dry-run
+    if (mode === PermissionMode.SIMULATE) {
+      entry.granted = true;
+      entry.simulated = true;
+      entry.reason = 'Simulate-mode: dry-run only, returns predicted effects without execution';
+      this.auditLog.push(entry);
+      return { granted: true, reason: entry.reason, simulated: true };
     }
 
     // Auto: check ethics threshold

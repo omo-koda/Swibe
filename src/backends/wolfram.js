@@ -1,5 +1,5 @@
 /**
- * Wolfram Backend
+ * Wolfram Backend for Swibe
  */
 
 export function genWolfram(node) {
@@ -27,6 +27,14 @@ export function genWolfram(node) {
     case 'FunctionCall':
       return `${node.name}[${node.args.map(a => genWolfram(a)).join(', ')}]`;
 
+    case 'BinaryOp':
+      return `${genWolfram(node.left)} ${node.op} ${genWolfram(node.right)}`;
+
+    case 'ThinkStatement': {
+      const prompt = genWolfram(node.prompt);
+      return `Print["Thinking: ", ${prompt}]`;
+    }
+
     case 'Number':
       return String(node.value);
 
@@ -41,9 +49,6 @@ export function genWolfram(node) {
 
     case 'ArrayLiteral':
       return `{${node.elements.map(e => genWolfram(e)).join(', ')}}`;
-
-    case 'BinaryOp':
-      return `${genWolfram(node.left)} ${node.op} ${genWolfram(node.right)}`;
 
     default:
       return '';

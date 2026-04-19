@@ -1,5 +1,5 @@
 /**
- * R Backend
+ * R Backend for Swibe
  */
 
 function indentCode(code, spaces) {
@@ -33,6 +33,14 @@ export function genR(node) {
     case 'FunctionCall':
       return `${node.name}(${node.args.map(a => genR(a)).join(', ')})`;
 
+    case 'BinaryOp':
+      return `${genR(node.left)} ${node.op} ${genR(node.right)}`;
+
+    case 'ThinkStatement': {
+      const prompt = genR(node.prompt);
+      return `cat("Thinking:", ${prompt}, "\n")`;
+    }
+
     case 'Number':
       return String(node.value);
 
@@ -40,16 +48,13 @@ export function genR(node) {
       return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
 
     case 'Boolean':
-      return String(node.value);
+      return String(node.value).toUpperCase();
 
     case 'Identifier':
       return node.name;
 
     case 'ArrayLiteral':
       return `c(${node.elements.map(e => genR(e)).join(', ')})`;
-
-    case 'BinaryOp':
-      return `${genR(node.left)} ${node.op} ${genR(node.right)}`;
 
     default:
       return '';

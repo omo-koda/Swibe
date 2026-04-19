@@ -424,4 +424,17 @@ describe('Full System Integration', () => {
     expect(agent.identity.odu).toBeLessThanOrEqual(255);
     expect(agent.identity.address).toMatch(/^swibe:\/\//);
   });
+
+  it('getStakeStatus returns correct balances', async () => {
+    const agentId = 'stake-agent-1';
+    await economy.spawnAgent(agentId);
+    const status = economy.getStakeStatus(agentId);
+    
+    expect(status).not.toBeNull();
+    expect(status.balances).toBeDefined();
+    expect(status.balances.dopamine).toBe(86_000_000_000);
+    expect(status.balances.synapse).toBe(86_000_000);
+    expect(status.stakes).toBeInstanceOf(Array);
+    expect(status.slashes).toBeInstanceOf(Array);
+  });
 });

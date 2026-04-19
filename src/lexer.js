@@ -98,6 +98,7 @@ const TokenType = {
   PUBLIC_FACING: 'PUBLIC_FACING',
   WEB_INGEST: 'WEB_INGEST',
   SOVEREIGN: 'SOVEREIGN',
+  FILESYSTEM: 'FILESYSTEM',
 
   // Operators
   PLUS: 'PLUS',
@@ -372,7 +373,10 @@ class Lexer {
     public_facing: TokenType.PUBLIC_FACING,
     web_ingest: TokenType.WEB_INGEST,
     sovereign: TokenType.SOVEREIGN,
-    };  addToken(type, value = null) {
+    filesystem: TokenType.FILESYSTEM,
+    };
+
+    addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);
     this.tokens.push(token);
   }

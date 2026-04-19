@@ -62,7 +62,8 @@ class Parser {
       const allowed = [
         TokenType.PRINTLN, TokenType.RAG, TokenType.AI, TokenType.EMBED, 
         TokenType.GOAL, TokenType.ROLE, TokenType.AGENT, TokenType.MINT,
-        TokenType.RECEIPT, TokenType.SEAL, TokenType.WALRUS
+        TokenType.RECEIPT, TokenType.SEAL, TokenType.WALRUS,
+        TokenType.FILESYSTEM, TokenType.POLICY
       ];
       if (type === TokenType.IDENTIFIER && allowed.includes(current.type)) {
         this.advance();
@@ -170,7 +171,6 @@ class Parser {
       return this.parseSkillDecl();
     }
 
-    // Secure block
     if (token.type === TokenType.SECURE) {
       return this.parseSecureBlock();
     }
@@ -284,6 +284,11 @@ class Parser {
     // Permission statement
     if (token.type === TokenType.PERMISSION) {
       return this.parsePermissionStatement();
+    }
+
+    // Filesystem statement
+    if (token.type === TokenType.FILESYSTEM) {
+      return this.parseFilesystemBlock();
     }
 
     // MCP statement
@@ -973,19 +978,13 @@ class Parser {
         continue;
       }
       // Parse policy key-value pairs (execution, network, filesystem, memory, receipts, audit)
-      const tok = this.current();
-      if (tok.type === TokenType.IDENTIFIER || tok.type === TokenType.STRING) {
-        const key = tok.value;
-        this.advance();
-        if (this.current().type === TokenType.COLON) {
-          this.advance();
-          const value = this.parseExpression();
-          const val = typeof value === 'object' && value.value !== undefined ? value.value : value;
-          policies[key] = val;
-        } else {
-          // It's a statement inside the secure block, not a policy field
-          body.push(new ASTNode('Identifier', { name: key }));
-        }
+      if (this.peek().type === TokenType.COLON) {
+        const keyToken = this.expect(TokenType.IDENTIFIER);
+        const key = keyToken.value;
+        this.expect(TokenType.COLON);
+        const value = this.parseExpression();
+        const val = typeof value === 'object' && value.value !== undefined ? value.value : value;
+        policies[key] = val;
       } else {
         // Parse nested statements inside secure block
         body.push(this.parseStatement());
@@ -1108,6 +1107,27 @@ class Parser {
     }
     this.expect(TokenType.RBRACE);
     return new ASTNode('PermissionStatement', { rules });
+  }
+
+  parseFilesystemBlock() {
+    this.expect(TokenType.FILESYSTEM);
+    this.expect(TokenType.LBRACE);
+    const policies = {};
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      if (this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+        continue;
+      }
+      const keyToken = this.expect(TokenType.IDENTIFIER);
+      const key = keyToken.value;
+      this.expect(TokenType.COLON);
+      const value = this.parseExpression();
+      policies[key] = value;
+      if (this.current().type === TokenType.SEMICOLON) this.advance();
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.RBRACE);
+    return new ASTNode('FilesystemBlock', { policies });
   }
 
   parseMCPStatement() {
@@ -1700,6 +1720,12 @@ class Parser {
   }
 
   parseUnary() {
+    if (this.current().type === TokenType.AWAIT) {
+      this.advance();
+      const expr = this.parseUnary();
+      return new ASTNode('UnaryOp', { op: 'await ', expr });
+    }
+
     if (this.current().type === TokenType.NOT) {
       this.advance();
       const expr = this.parseUnary();

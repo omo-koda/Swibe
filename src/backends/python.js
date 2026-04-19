@@ -1,5 +1,5 @@
 /**
- * Python Backend
+ * Python Backend for Swibe
  */
 
 function indentCode(code, spaces) {
@@ -11,9 +11,10 @@ export function genPython(node) {
   if (!node) return '';
 
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       const code = node.statements.map(s => genPython(s)).join('\n\n');
       return code + '\n\nif __name__ == "__main__":\n  main()';
+    }
 
     case 'FunctionDecl':
       return (
@@ -21,8 +22,19 @@ export function genPython(node) {
         indentCode(genPython(node.body), 2)
       );
 
-    case 'Block':
-      return node.statements.map(s => genPython(s)).join('\n');
+    case 'Block': {
+      const stmts = node.statements.map(s => genPython(s));
+      if (stmts.length > 0) {
+        const last = node.statements[node.statements.length - 1];
+        if (['BinaryOp', 'FunctionCall', 'Number', 'String', 'Identifier', 'ArrayLiteral'].includes(last.type)) {
+          // Only add return if it's not a print call
+          if (!(last.type === 'FunctionCall' && last.name === 'print')) {
+            stmts[stmts.length - 1] = 'return ' + stmts[stmts.length - 1];
+          }
+        }
+      }
+      return stmts.length > 0 ? stmts.join('\n') : 'pass';
+    }
 
     case 'VariableDecl':
       return `${node.name} = ${genPython(node.value)}`;
@@ -36,6 +48,14 @@ export function genPython(node) {
       } else {
         return `${node.name}(${node.args.map(a => genPython(a)).join(', ')})`;
       }
+
+    case 'BinaryOp':
+      return `(${genPython(node.left)} ${node.op} ${genPython(node.right)})`;
+
+    case 'ThinkStatement': {
+      const prompt = genPython(node.prompt);
+      return `print(f"Thinking: {${prompt}}")`;
+    }
 
     case 'Number':
       return String(node.value);

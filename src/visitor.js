@@ -149,6 +149,14 @@ export class EthicsValidator extends ASTVisitor {
         node: node,
       });
     }
+    if (this._hasSecure && this._secureExecution !== 'strict-vm') {
+      this.violations.push({
+        type: 'witness_insecure_execution',
+        message: 'Witness used with secure block but execution is not "strict-vm". High risk.',
+        node: node,
+        severity: 'warning'
+      });
+    }
   }
 
   visitPilotStatement(node) {
@@ -167,6 +175,14 @@ export class EthicsValidator extends ASTVisitor {
         node: node,
       });
     }
+    if (this._hasSecure && this._secureExecution !== 'strict-vm') {
+      this.violations.push({
+        type: 'pilot_insecure_execution',
+        message: 'Pilot used with secure block but execution is not "strict-vm". High risk.',
+        node: node,
+        severity: 'warning'
+      });
+    }
   }
 
   visitViewportStatement(node) {
@@ -182,8 +198,9 @@ export class EthicsValidator extends ASTVisitor {
 
   visitSecureBlock(node) {
     this._hasSecure = true;
+    this._secureExecution = node.policies?.execution;
     // Validate that secure policy fields are recognized
-    const validPolicies = ['execution', 'network', 'filesystem', 'memory', 'receipts', 'audit'];
+    const validPolicies = ['execution', 'network', 'filesystem', 'memory', 'receipts', 'audit', 'llm_routing', 'receipt_sealing', 'strict'];
     if (node.policies) {
       for (const key of Object.keys(node.policies)) {
         if (!validPolicies.includes(key)) {
@@ -194,6 +211,17 @@ export class EthicsValidator extends ASTVisitor {
           });
         }
       }
+    }
+  }
+
+  visitFilesystemBlock(node) {
+    this._hasFilesystem = true;
+    if (!this._hasEthics) {
+      this.violations.push({
+        type: 'filesystem_without_ethics',
+        message: 'Filesystem policy declaration requires an ethics {} block',
+        node: node,
+      });
     }
   }
 
@@ -341,6 +369,7 @@ const LAYER_MAP = {
   // Layer 0 – Ethics & Identity
   EthicsStatement: 0,
   SecureBlock: 0,
+  FilesystemBlock: 0,
   NeuralLayer: 0,
   WalletStatement: 0,
   TokenStatement: 0,
@@ -369,12 +398,45 @@ const LAYER_MAP = {
 const LAYER_NAMES = ['Ethics & Identity', 'Core Agent', 'Coordination', 'Execution'];
 
 export class LayerValidator extends ASTVisitor {
-  constructor() {
+  constructor(options = {}) {
     super();
     this.warnings = [];
+    this.strict = options.strict || false;
+    this.targetLanguage = options.targetLanguage || 'javascript';
     this._highestLayer = -1;
     this._highestLayerNode = null;
     this._order = [];
+  }
+
+  visitSecureBlock(node) {
+    if (node.policies && (node.policies.strict === true || node.policies.strict === 'true')) {
+      this.strict = true;
+    }
+    return this.visitDefault(node);
+  }
+
+  visitMintStatement(node) {
+    if (this.targetLanguage !== 'move' && this.targetLanguage !== 'javascript' && this.targetLanguage !== 'all') {
+      this.warnings.push({
+        type: 'unsupported_primitive',
+        message: `Primitive "mint" is primarily supported on "move" or "javascript" targets. Current target: "${this.targetLanguage}".`,
+        node,
+        severity: 'warning'
+      });
+    }
+    return this.visitDefault(node);
+  }
+
+  visitWalrusStatement(node) {
+    if (this.targetLanguage !== 'move' && this.targetLanguage !== 'javascript' && this.targetLanguage !== 'all') {
+      this.warnings.push({
+        type: 'unsupported_primitive',
+        message: `Primitive "walrus" is primarily supported on "move" or "javascript" targets. Current target: "${this.targetLanguage}".`,
+        node,
+        severity: 'warning'
+      });
+    }
+    return this.visitDefault(node);
   }
 
   visit(node) {

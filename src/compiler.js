@@ -45,6 +45,12 @@ import { genTypeScript } from './backends/typescript.js';
 import { genRaku } from './backends/raku.js';
 import { genRuby } from './backends/ruby.js';
 import { genPerl } from './backends/perl.js';
+import { genPython } from './backends/python.js';
+import { genR } from './backends/r.js';
+import { genLisp } from './backends/lisp.js';
+import { genMatlab } from './backends/matlab.js';
+import { genWolfram } from './backends/wolfram.js';
+import { genAgentSkills } from './backends/agent-skills.js';
 
 class Compiler {
   constructor(source, targetLanguage = 'javascript', options = {}) {
@@ -54,6 +60,7 @@ class Compiler {
     this.ast = null;
     this.options = {
       strictInternalPasses: false,
+      strictLayers: false,
       ...options,
     };
     this.warnings = [];
@@ -111,14 +118,23 @@ class Compiler {
 
     // Run layer ordering validator
     try {
-      const layerValidator = new LayerValidator();
+      const layerValidator = new LayerValidator({ 
+        strict: this.options.strictLayers,
+        targetLanguage: this.targetLanguage
+      });
       for (const stmt of (ast.statements || [])) {
         layerValidator.visit(stmt);
       }
       for (const w of layerValidator.warnings) {
+        if (layerValidator.strict) {
+          throw new Error(w.message);
+        }
         this._warn('LAYER-ORDER', new Error(w.message));
       }
     } catch (error) {
+      if (this.options.strictLayers || error.message.includes('Layer ')) {
+         throw error;
+      }
       this._warn('LAYER-ORDER', error);
     }
 
@@ -126,6 +142,53 @@ class Compiler {
     await this.processPrompts(this.ast);
     const code = await this.generateCode(this.ast);
     return code;
+  }
+
+  getSovereignReadinessReport() {
+    if (!this.ast) {
+      throw new Error('Must call compile() before getting readiness report');
+    }
+
+    const ethicsValidator = new EthicsValidator();
+    const layerValidator = new LayerValidator({ targetLanguage: this.targetLanguage });
+    for (const stmt of (this.ast.statements || [])) {
+      ethicsValidator.visit(stmt);
+      layerValidator.visit(stmt);
+    }
+
+    const violations = ethicsValidator.violations;
+    const warnings = layerValidator.warnings;
+    
+    // Risk score calculation (0-100, higher is riskier)
+    let riskScore = 0;
+    riskScore += violations.length * 20;
+    riskScore += warnings.length * 5;
+    
+    // Additional risk factors
+    const hasSecure = ethicsValidator._hasSecure;
+    const hasEthics = ethicsValidator._hasEthics;
+    const hasPermissions = ethicsValidator._hasPermissions;
+    
+    if (!hasEthics) riskScore += 30;
+    if (!hasSecure) riskScore += 15;
+    if (!hasPermissions) riskScore += 25;
+    
+    riskScore = Math.min(100, Math.max(0, riskScore));
+
+    return {
+      riskScore,
+      status: riskScore < 30 ? 'SOVEREIGN' : (riskScore < 70 ? 'CAUTIOUS' : 'VULNERABLE'),
+      validators: {
+        ethics: { violations: violations.length, passed: violations.length === 0 },
+        layers: { warnings: warnings.length, passed: warnings.length === 0 },
+      },
+      missingFeatures: {
+        ethics: !hasEthics,
+        secure: !hasSecure,
+        permissions: !hasPermissions,
+      },
+      timestamp: new Date().toISOString()
+    };
   }
 
   async processPrompts(node, depth = 0) {
@@ -193,7 +256,12 @@ class Compiler {
       case 'raku': return genRaku(node);
       case 'ruby': return genRuby(node);
       case 'perl': return genPerl(node);
-      case 'python': return this.genPython(node);
+      case 'python': return genPython(node);
+      case 'r': return genR(node);
+      case 'lisp': return genLisp(node);
+      case 'matlab': return genMatlab(node);
+      case 'wolfram': return genWolfram(node);
+      case 'agent-skills': return genAgentSkills(node, this.genJavaScript.bind(this));
       case 'openclaw': {
         const { OpenClawGenerator } = await import('./backends/openclaw.js');
         const gen = new OpenClawGenerator(this.ast, this.source);
@@ -204,11 +272,6 @@ class Compiler {
         const gen = new WasmGenerator(this.ast);
         return gen.generate();
       }
-      case 'r': return this.genR(node);
-      case 'lisp': return this.genLisp(node);
-      case 'matlab': return this.genMatlab(node);
-      case 'wolfram': return this.genWolfram(node);
-      case 'agent-skills': return this.genAgentSkills(node);
       default: return this.genJavaScript(node);
     }
   }
@@ -247,8 +310,8 @@ class Compiler {
   genJavaScript(node) {
     if (!node) return '';
     switch (node.type) {
-      case 'Program':
-        let code = node.statements.map(s => {
+      case 'Program': {
+        let innerCode = node.statements.map(s => {
           const code = this.genJavaScript(s);
           return code.endsWith(';') || code.endsWith('}') ? code : code + ';';
         }).join('\n\n');
@@ -256,9 +319,11 @@ class Compiler {
         // Append main call if main function is defined
         const hasMain = node.statements.some(s => s.type === 'FunctionDecl' && s.name === 'main');
         if (hasMain) {
-          code += '\n\nif (typeof main === "function") {\n  if (main.constructor.name === "AsyncFunction") {\n    main().catch(console.error);\n  } else {\n    main();\n  }\n}';
+          innerCode += '\n\nif (typeof main === "function") {\n  if (main.constructor.name === "AsyncFunction") {\n    await main();\n  } else {\n    main();\n  }\n}';
         }
-        return code;
+        
+        return `(async () => {\n${this.indentCode(innerCode, 2)}\n})().catch(err => {\n  console.error('[SWIBE-RUNTIME-ERROR]', err);\n  process.exit(1);\n});`;
+      }
       case 'FunctionDecl': {
         // Strip type annotations: 'a: i32' -> 'a', handles both {name,type} objects and 'a: i32' strings
         const jsParams = node.params.map(p =>
@@ -278,8 +343,16 @@ class Compiler {
         return `return ${this.genJavaScript(node.value)};`;
       case 'FunctionCall':
         const args = node.args.map(a => this.genJavaScript(a)).join(', ');
+        const stdBuiltins = [
+          'think', 'retrieve', 'invoke', 'birth', 'swarmScale', 
+          'readSharedState', 'writeSharedState', 'stake_status',
+          'collect_interest', 'appeal_slash'
+        ];
+        
         if (node.name === 'print') {
           return `console.log(${args})`;
+        } else if (stdBuiltins.includes(node.name)) {
+          return `await std.${node.name}(${args})`;
         } else {
           return `${node.name}(${args})`;
         }
@@ -313,6 +386,8 @@ class Compiler {
       case 'Nil': return 'null';
       case 'BinaryOp':
         return `(${this.genJavaScript(node.left)} ${node.op} ${this.genJavaScript(node.right)})`;
+      case 'UnaryOp':
+        return `(${node.op}${this.genJavaScript(node.expr)})`;
       case 'SwarmStatement': {
         const steps = (node.steps || node.agents || []).map(s => {
           const role = typeof s.role === 'string' ? `"${s.role}"` : (s.role ? this.genJavaScript(s.role) : '"agent"');
@@ -360,7 +435,7 @@ class Compiler {
       }
       case 'LoopStatement': {
         const until = node.until || '';
-        const maxAttempts = node.maxAttempts 
+        const maxAttempts = node.maxAttempts
           || parseInt(process.env.SWIBE_LOOP_MAX) || 10;
         const body = this.genJavaScript(node.body);
         return `
@@ -368,8 +443,10 @@ class Compiler {
         let _loopDone = false;
         while (!_loopDone && _loopAttempts < ${maxAttempts}) {
           _loopAttempts++;
+          if (typeof std !== 'undefined') await std.checkLoopSecurity();
           ${body}
           // Check until condition
+
           if ("${until}" && typeof _lastThought === 'string') {
             if (_lastThought.toLowerCase().includes(
               "${until}".replace('until:', '').trim().toLowerCase()
@@ -556,6 +633,12 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
         });
         return `std._permissions = {\n${rules.join(',\n')}\n};\nconsole.log('[PERMISSION] Matrix loaded:', Object.keys(std._permissions).length, 'rules');`;
       }
+      case 'FilesystemBlock': {
+        const entries = Object.entries(node.policies).map(([k, v]) => {
+          return `${k}: ${this.genJavaScript(v)}`;
+        }).join(', ');
+        return `await std.setFilesystemPolicies({ ${entries} });`;
+      }
       case 'MCPStatement': {
         const entries = Object.entries(node.config || {}).map(([k, v]) =>
           `  ${k}: ${this.genJavaScript(v)}`
@@ -717,160 +800,6 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
       }
       default: return `/* Unhandled: ${node.type} */`;
     }
-  }
-
-  genPython(node) {
-    if (!node) return '';
-    switch (node.type) {
-      case 'Program': {
-        const code = node.statements.map(s => this.genPython(s)).join('\n\n');
-        return code + '\n\nif __name__ == "__main__":\n  main()';
-      }
-      case 'FunctionDecl': return `def ${node.name}(${node.params.map(p => p.name).join(', ')}):\n` + this.indentCode(this.genPython(node.body), 2);
-      case 'Block': {
-        const stmts = node.statements.map(s => this.genPython(s));
-        if (stmts.length > 0) {
-          const last = node.statements[node.statements.length - 1];
-          if (['BinaryOp', 'FunctionCall', 'Number', 'String', 'Identifier', 'ArrayLiteral'].includes(last.type)) {
-            // Only add return if it's not a print call
-            if (!(last.type === 'FunctionCall' && last.name === 'print')) {
-              stmts[stmts.length - 1] = 'return ' + stmts[stmts.length - 1];
-            }
-          }
-        }
-        return stmts.join('\n');
-      }
-      case 'VariableDecl': return `${node.name} = ${this.genPython(node.value)}`;
-      case 'Return': return `return ${this.genPython(node.value)}`;
-      case 'FunctionCall': {
-        if (node.name === 'print') {
-          return `print(${node.args.map(a => this.genPython(a)).join(', ')})`;
-        } else {
-          return `${node.name}(${node.args.map(a => this.genPython(a)).join(', ')})`;
-        }
-      }
-      case 'BinaryOp': return `(${this.genPython(node.left)} ${node.op} ${this.genPython(node.right)})`;
-      case 'ThinkStatement': {
-        const prompt = this.genPython(node.prompt);
-        return `print(f"Thinking: {${prompt}}")`;
-      }
-      case 'Number': return String(node.value);
-      case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
-      case 'Boolean': return node.value ? 'True' : 'False';
-      case 'Nil': return 'None';
-      case 'Identifier': return node.name;
-      case 'ArrayLiteral': return `[${node.elements.map(e => this.genPython(e)).join(', ')}]`;
-      default: return '';
-    }
-  }
-
-  genR(node) {
-    if (!node) return '';
-    switch (node.type) {
-      case 'Program': return node.statements.map(s => this.genR(s)).join('\n\n');
-      case 'FunctionDecl': return `${node.name} <- function(${node.params.map(p => p.name).join(', ')}) {\n` + this.indentCode(this.genR(node.body), 2) + '\n}';
-      case 'VariableDecl': return `${node.name} <- ${this.genR(node.value)}`;
-      case 'Block': return node.statements.map(s => this.genR(s)).join('\n');
-      case 'Return': return this.genR(node.value);
-      case 'FunctionCall': return `${node.name}(${node.args.map(a => this.genR(a)).join(', ')})`;
-      case 'Number': return String(node.value);
-      case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
-      case 'Boolean': return String(node.value);
-      case 'Identifier': return node.name;
-      case 'ArrayLiteral': return `c(${node.elements.map(e => this.genR(e)).join(', ')})`;
-      case 'BinaryOp': return `${this.genR(node.left)} ${node.op} ${this.genR(node.right)}`;
-      case 'ThinkStatement': {
-        const prompt = this.genR(node.prompt);
-        return `cat("Thinking:", ${prompt}, "\n")`;
-      }
-      default: return '';
-    }
-  }
-
-  genLisp(node) {
-    if (!node) return '';
-    switch (node.type) {
-      case 'Program': return node.statements.map(s => this.genLisp(s)).join('\n');
-      case 'FunctionDecl': return `(defun ${node.name} (${node.params.map(p => p.name).join(' ')})\n  ${this.genLisp(node.body)}\n)`;
-      case 'VariableDecl': return `(setq ${node.name} ${this.genLisp(node.value)})`;
-      case 'Block': return `(progn\n  ${node.statements.map(s => this.genLisp(s)).join('\n  ')}\n)`;
-      case 'FunctionCall': return `(${node.name} ${node.args.map(a => this.genLisp(a)).join(' ')})`;
-      case 'Number': return String(node.value);
-      case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
-      case 'Boolean': return node.value ? 't' : 'nil';
-      case 'Identifier': return node.name;
-      case 'ArrayLiteral': return `'(${node.elements.map(e => this.genLisp(e)).join(' ')})`;
-      case 'BinaryOp': return `(${node.op} ${this.genLisp(node.left)} ${this.genLisp(node.right)})`;
-      case 'ThinkStatement': {
-        const prompt = this.genLisp(node.prompt);
-        return `(format t "Thinking: ~a~%" ${prompt})`;
-      }
-      default: return '';
-    }
-  }
-
-  genMatlab(node) {
-    if (!node) return '';
-    switch (node.type) {
-      case 'Program': return node.statements.map(s => this.genMatlab(s)).join('\n\n');
-      case 'FunctionDecl': return `function varargout = ${node.name}(${node.params.map(p => p.name).join(', ')})\n` + this.indentCode(this.genMatlab(node.body), 4) + '\nend';
-      case 'VariableDecl': return `${node.name} = ${this.genMatlab(node.value)};`;
-      case 'Block': return node.statements.map(s => this.genMatlab(s)).join('\n');
-      case 'Return': return this.genMatlab(node.value);
-      case 'FunctionCall': return `${node.name}(${node.args.map(a => this.genMatlab(a)).join(', ')})`;
-      case 'Number': return String(node.value);
-      case 'String': return `'${node.value.replace(/\n/g, '\\n')}'`;
-      case 'Boolean': return node.value ? 'true' : 'false';
-      case 'Identifier': return node.name;
-      case 'ArrayLiteral': return `[${node.elements.map(e => this.genMatlab(e)).join(', ')}]`;
-      case 'BinaryOp': return `${this.genMatlab(node.left)} ${node.op} ${this.genMatlab(node.right)}`;
-      case 'ThinkStatement': {
-        const prompt = this.genMatlab(node.prompt);
-        return `disp(['Thinking: ', ${prompt}])`;
-      }
-      default: return '';
-    }
-  }
-
-  genWolfram(node) {
-    if (!node) return '';
-    switch (node.type) {
-      case 'Program': return node.statements.map(s => this.genWolfram(s)).join('\n');
-      case 'FunctionDecl': return `${node.name}[${node.params.map(p => p.name).join(', ')}] := ` + this.genWolfram(node.body);
-      case 'VariableDecl': return `${node.name} = ${this.genWolfram(node.value)}`;
-      case 'Block': return `Block[{}, ${node.statements.map(s => this.genWolfram(s)).join('; ')}]`;
-      case 'Return': return this.genWolfram(node.value);
-      case 'FunctionCall': return `${node.name}[${node.args.map(a => this.genWolfram(a)).join(', ')}]`;
-      case 'Number': return String(node.value);
-      case 'String': return `"${node.value.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
-      case 'Boolean': return String(node.value);
-      case 'Identifier': return node.name;
-      case 'ArrayLiteral': return `{${node.elements.map(e => this.genWolfram(e)).join(', ')}}`;
-      case 'BinaryOp': return `${this.genWolfram(node.left)} ${node.op} ${this.genWolfram(node.right)}`;
-      case 'ThinkStatement': {
-        const prompt = this.genWolfram(node.prompt);
-        return `Print["Thinking: ", ${prompt}]`;
-      }
-      default: return '';
-    }
-  }
-
-  genAgentSkills(node) {
-    if (node.type === 'SkillDecl') {
-      const instructions = node.body.filter(item => item.type === 'SkillProperty' && item.name === 'prompt').map(item => this.genJavaScript(item.value))[0] || "";
-      const tools = node.body.filter(item => item.type === 'SkillProperty' && item.name === 'tools').flatMap(item => item.value.elements ? item.value.elements.map(e => e.value) : []) || [];
-      return JSON.stringify({ version: "2026.1", name: node.name, type: "skill", instructions, tools, resources: [] }, null, 2);
-    }
-    if (node.type === 'SwarmStatement') {
-      return JSON.stringify({ version: "2026.1", type: "swarm", agents: node.steps.map(s => s.name), pipeline: node.steps.map(s => s.name).join(" => "), memory: "rag.last_iteration" }, null, 2);
-    }
-    if (node.type === 'LoopStatement') {
-      return JSON.stringify({ version: "2026.1", type: "loop", until: node.until, trace: true }, null, 2);
-    }
-    if (node.type === 'Program') {
-      return node.statements.map(s => this.genAgentSkills(s)).filter(s => s !== "").join('\n---\n');
-    }
-    return '';
   }
 
   indentCode(code, spaces) {
