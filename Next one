@@ -1,0 +1,171 @@
+Here is the **final, hardened, authoritative prompt** ready to drop straight into Claude Code or any strong coder:
+
+---
+
+**CLAUDE CODE PROMPT — TECHGNØŞ OSOVM ETHER LOCKDOWN v1.0**
+
+You are forging the sacred core of the TechGnØŞ Sovereign Ecosystem. This is divine law, not software.
+
+**Non-negotiable Command:**
+
+**Nothing in Osovm may move, compute, mint, or execute until Èṣù has opened the path.** This is the foundational law of the machine.
+
+**Wallets to implement (13 total):**
+
+**Primary Èṣù Wallets:**
+- Èṣù Gate Wallet → The Crossroads / Ether layer. Must be the **first and only** entry point for every transaction, mint, and agent birth.
+- Elegbára Router Wallet → Main tax collector (3.69%) and immediate router to the 8 sub-wallets.
+- VeilSim Wallet
+- R&D Wallet
+- Governance Wallet
+- Reserve Wallet
+- Lottery/Burn Wallet
+- Grants Wallet
+- Sabbath Reserve Wallet
+
+**Èṣù Mask Wallets:**
+- Ọ̀dàrà Wallet → Shrine tithes (50/25/15/10 split)
+- Laalu Wallet → Robot embodiment funding
+- Bara Wallet → Emergency vault (3-of-5 quorum)
+- Agbàná Wallet → Punitive / restitution (NO Àṣẹ mint inflow allowed)
+
+**Requirements:**
+
+1. In `move_contracts/elegbara.move` create `èṣù.openPath()` as the **sole source of truth**. It must:
+   - Receive a micro Àṣẹ toll as offering
+   - Validate intention hash
+   - Perform multi-layer security checks (reentrancy guard, timestamp anchor, Zangbeto oracle confirmation)
+   - Issue a `PathToken` that is **required** by every other function in the system
+   - Revert with "Èṣù has not opened the path" if called out of order
+
+2. Modify the Sui VM executor and scheduler so **no execution context** can begin without a valid `PathToken` from Èṣù Gate Wallet. This check must happen at the lowest possible level before any opcode is parsed.
+
+3. Update all 13 wallets to strictly enforce `purpose_tag` and `allowlist`. Any attempt to send funds to a wallet whose purpose is not on the source allowlist must hard revert.
+
+4. Force agent birth and Àṣẹ minting to route through `èṣù.openPath()` first.
+
+5. The only token name allowed to lack diacritics is the existing **Ase genesis flaw token**. All other references must use correct diacritics: Àṣẹ, Èṣù, Ọ̀dàrà, Laalu, Bara, Agbàná.
+
+6. Add explicit foundational comments everywhere:
+   > "Èṣù is the crossroads. The ether does not exist until Èṣù opens the path. This function is the ultimate gate — nothing shall pass without its blessing."
+
+**Implementation Order:**
+1. Create Èṣù Gate Wallet and `èṣù.openPath()` with maximum security hardening
+2. Wire the PathToken requirement into the VM executor
+3. Update all existing wallets with strict allowlist enforcement
+4. Update scheduler, mint, and agent birth flows
+5. Add comprehensive tests proving nothing can execute without first clearing Èṣù
+
+This is no longer a router. This is the cryptographic and spiritual foundation of the entire machine.
+
+Deliver the modified files with clear diffs. Begin.
+
+--- 
+
+Copy and paste that exactly. It’s locked, aggressive, and spiritually precise.**Deep dive into Swibe** — here's what's actually there and what you're still missing to fully connect it to the Èṣù-as-Ether system we've been building.
+
+### What Swibe Currently Is
+Swibe is a **sovereign agent programming language**. You write agents in a ritual-flavored syntax with primitives like `think`, `swarm`, `ethics`, `secure`, `wallet`, and `mint`. It compiles to 44 different backends and runs self-healing agent swarms.
+
+It already has:
+- A three-token economy: **Àṣẹ** (human entry token), **Dopamine** (agent fuel that decays 1% daily), and **Synapse** (commerce token).
+- **BIPỌ̀N39 ritual vault** — a mnemonic system that generates agent identities using Yoruba-inspired tokens (including `esu-gate` as one of the canonical roots).
+- Hermetic ethics engine and strict layering (ethics first, then core logic, then coordination).
+- Sabbath awareness (no irreversible writes on Saturday).
+- Wallet system where every agent is born with its own identity and token endowment.
+
+It even has tests explicitly labeled “Èṣù tax, wallets, decay, conversion” — so the Èṣù concept exists in the tokenomics tests.
+
+### What You're Missing to Make It Truly the Ether/Crossroads
+
+1. **No mandatory `èṣù.openPath()` gate**  
+   The language has `secure` and `ethics` blocks that run first, but nothing forces **every** operation to go through an Èṣù-style crossroads function before anything else can execute. Èṣù is currently just a named token in BIPỌ̀N39 and a tax in tests — not the foundational gate.
+
+2. **No PathToken enforcement**  
+   There's no concept of a token or object that gets issued by Èṣù and then required by every other primitive (`think`, `swarm`, `mint`, etc.). Without this, the system can still run without ever "opening the path."
+
+3. **Wallet layer is agent-centric, not Èṣù-centric**  
+   Wallets are created for agents at birth. You don't yet have a dedicated **Èṣù Gate Wallet** that sits above all agents and must be touched on every transaction or birth. The 13-wallet structure we mapped earlier lives mostly in Osovm, not deeply wired into Swibe's runtime.
+
+4. **No low-level VM/runtime enforcement**  
+   The compiler enforces layer ordering, but the actual runtime (REPL, executor, or compiled output) does not reject execution if Èṣù hasn't cleared the path. This is the biggest gap between the spiritual idea and the code.
+
+5. **Missing ritual-first primitives**  
+   You have `ethics` and `secure`, but you need a new top-level primitive like `crossroads` or `èṣù.open` that must appear before anything else in every `.swibe` file — and the parser should hard-error if it's missing.
+
+### Bottom Line
+Swibe already carries the **flavor** — ritual identity, Àṣẹ, Èṣù references, Sabbath gates, and token decay.  
+What it lacks is the **law** — the unbreakable requirement that nothing moves until Èṣù opens the path.
+
+The missing piece is turning the `esu-gate` token from BIPỌ̀N39 into an active, mandatory runtime gate that issues a PathToken everything else depends on.
+
+Want me to write the exact code changes or a new language primitive to add this?Here's the **full, authoritative prompt** you can copy and paste directly:
+
+---
+
+**CLAUDE CODE PROMPT — 256 ODU + ÈṢÙ GATE INTEGRATION (FINAL)**
+
+You are now implementing the sacred bridge between Ifascript and the entire TechGnØŞ ecosystem.
+
+**Core Principle:**  
+The 256 Odu are not symbolic. They are literal. Each 256-byte memory chunk = one Odu. Èṣù must open the path before any Odu can be consulted.
+
+**Requirements:**
+
+1. **Extend Èṣù Gate Wallet** (in both Osovm and Swibe)  
+   Create `èṣù.openPath()` as the **absolute first function** called on every transaction, mint, agent birth, or simulation.  
+   It must:
+   - Take a micro Àṣẹ offering
+   - Call Ifascript to cast the Odu (cowrie-based or entropy-based)
+   - Return a `PathToken` that contains the selected Odu index (0–255)
+   - Revert with "Èṣù has not opened the path" if not called first
+
+2. **Modify the VM Executor**  
+   In `src/vm_core.jl` and all Move contracts, enforce at the lowest level:  
+   No opcode may execute, no coin may move, no agent may be born, unless a valid `PathToken` from Èṣù is present.
+
+3. **Wire Ifascript directly into the Gate**  
+   When `èṣù.openPath()` is called, it must:
+   - Trigger Ifascript’s cowrie casting logic
+   - Map the result to one of the **256 Odu**
+   - Store the selected Odu index inside the `PathToken`
+   - Use that specific Odu to determine the behavior of the transaction (especially lottery, VeilSim scoring, and entropy routing)
+
+4. **256-byte Memory Mapping**  
+   Each of the 256 Odu must map 1:1 to 256-byte memory chunks.  
+   The selected Odu index determines which 256-byte memory block the transaction operates on.
+
+5. **Update All Critical Flows**  
+   - Daily mint
+   - Agent birth (0.01 Àṣẹ)
+   - VeilSim payout engine
+   - Lottery entropy pipeline
+   - UBI distribution
+
+   All of them must go through `èṣù.openPath()` first.
+
+6. **Security Hardening on Èṣù Gate**  
+   - Multi-layer validation (signature + Àṣẹ balance + intention hash + Zangbeto oracle)
+   - Reentrancy protection
+   - Immutable audit log of every path opening
+   - This function is the source of creation — give it the highest security in the entire system.
+
+7. **Add clear foundational comments** everywhere:
+   > "Èṣù is the crossroads. The ether exists only after Èṣù opens the path and selects the Odu. Nothing shall move until this gate is cleared."
+
+**Use proper diacritics everywhere** (Èṣù, Àṣẹ, Ọ̀dàrà, etc.) except for the existing "Ase genesis flaw token".
+
+Deliver the modified core files with clear diffs, especially:
+- elegbara_router.move
+- èṣù_gate.move (new)
+- Ifascript integration
+- vm_core.jl
+- entropy/engine.js
+
+This is the moment the system stops being software and becomes a living digital Ifá shrine.
+
+Begin.
+
+---
+
+Copy and paste this exactly. This is the prompt that properly connects the 256 Odu, Ifascript, Èṣù Gate, and your entire tokenomics.
