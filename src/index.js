@@ -274,14 +274,17 @@ async function main() {
         const status = toc.getStatus();
         const slashed = toc.staking.getSlashHistory();
         const totalSlashed = slashed.reduce((sum, s) => sum + s.slashAmount, 0);
+        const agentCount = toc.wallets.wallets.size;
         
         console.log('--- ToC Token Audit Report ---');
-        console.log(`Total Agents: ${status.supply.agents}`);
-        console.log(`Total Dopamine Burned: ${status.burned.toc_d}`);
-        console.log(`Total Synapse Burned: ${status.burned.toc_s}`);
+        console.log(`Total Agents: ${agentCount}`);
+        console.log(`Dopamine Supply: ${status.supply.toc_d || 0}`);
+        console.log(`Synapse Supply: ${status.supply.toc_s || 0}`);
+        console.log(`Total Dopamine Burned: ${status.burned.toc_d || 0}`);
+        console.log(`Total Synapse Burned: ${status.burned.toc_s || 0}`);
         console.log(`Total Slashed: ${totalSlashed}`);
-        console.log(`Total Staked Dopamine: ${status.totalStaked.toc_d}`);
-        console.log(`Total Staked Synapse: ${status.totalStaked.toc_s}`);
+        console.log(`Total Staked Dopamine: ${status.totalStaked.toc_d || 0}`);
+        console.log(`Total Staked Synapse: ${status.totalStaked.toc_s || 0}`);
         
         if (slashed.length > 0) {
           console.log('\nRecent Slashing Events:');

@@ -7,6 +7,59 @@
  */
 
 // ────────────────────────────────────────────────────────────
+// Typo Correction Map
+// ────────────────────────────────────────────────────────────
+
+const TYPO_MAP = {
+  // Common misspellings of Swibe primitives
+  'thnk': 'think', 'thnik': 'think', 'thinke': 'think', 'thinkk': 'think',
+  'swram': 'swarm', 'sawrm': 'swarm', 'swamr': 'swarm', 'swrm': 'swarm',
+  'ehtics': 'ethics', 'ethcis': 'ethics', 'ethiks': 'ethics', 'etihcs': 'ethics',
+  'budegt': 'budget', 'buget': 'budget', 'bugdet': 'budget',
+  'permision': 'permission', 'permssion': 'permission', 'premission': 'permission',
+  'remmeber': 'remember', 'remeber': 'remember', 'rember': 'remember', 'remmenber': 'remember',
+  'evovel': 'evolve', 'evovle': 'evolve', 'evolev': 'evolve',
+  'pritnln': 'println', 'printl': 'println', 'prinltn': 'println',
+  'walelt': 'wallet', 'walet': 'wallet',
+  'secrue': 'secure', 'secuer': 'secure', 'sercure': 'secure',
+  'chian': 'chain', 'cahin': 'chain',
+  'withness': 'witness', 'witnes': 'witness',
+  'heartbear': 'heartbeat', 'heatbeat': 'heartbeat',
+  'gesatlt': 'gestalt', 'gestlat': 'gestalt',
+  'pilto': 'pilot', 'poilt': 'pilot',
+  'viewprot': 'viewport', 'vieport': 'viewport',
+  'birht': 'birth', 'brith': 'birth',
+  'coordiante': 'coordinate', 'cordinate': 'coordinate',
+  'nueral': 'neural', 'nuerl': 'neural',
+  'tokne': 'token', 'tken': 'token',
+  'esrcow': 'escrow', 'escorw': 'escrow',
+  'royalyt': 'royalty', 'roylaty': 'royalty',
+  'convetr': 'convert', 'convet': 'convert',
+  'observ': 'observe', 'obsreve': 'observe',
+};
+
+/**
+ * Correct typos in Swibe source input.
+ * Replaces misspelled primitives with correct forms.
+ * @param {string} input — Raw user input
+ * @returns {{ corrected: string, corrections: string[] }}
+ */
+export function correctTypos(input) {
+  const corrections = [];
+  let corrected = input;
+
+  for (const [typo, fix] of Object.entries(TYPO_MAP)) {
+    const regex = new RegExp(`\\b${typo}\\b`, 'gi');
+    if (regex.test(corrected)) {
+      corrected = corrected.replace(regex, fix);
+      corrections.push(`${typo} → ${fix}`);
+    }
+  }
+
+  return { corrected, corrections };
+}
+
+// ────────────────────────────────────────────────────────────
 // Intent Definitions
 // ────────────────────────────────────────────────────────────
 

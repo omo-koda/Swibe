@@ -13,7 +13,7 @@ import { Parser } from './parser.js';
 import { Compiler } from './compiler.js';
 import { StandardLibrary } from './stdlib.js';
 import { LLMIntegration } from './llm-integration.js';
-import { matchIntent, injectDefaults } from './intent-parser.js';
+import { matchIntent, injectDefaults, correctTypos } from './intent-parser.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -224,9 +224,11 @@ async function executeSwibe(source, std) {
   const compiler = new Compiler(wrapped, 'javascript');
   const code = await compiler.compile();
 
+  // The compiler's genJavaScript already wraps in an async IIFE
+  // with its own main() call. Execute the compiled output directly.
   const fn = new Function(
     'std', 'console',
-    `return (async () => {\n${code}\nawait main();\n})()`
+    `return (async () => {\n${code}\n})()`
   );
   await fn(std, console);
 }
@@ -367,15 +369,22 @@ export async function startRepl(options = {}) {
     // Reset prompt
     rl.setPrompt(promptStr());
 
-    const source = multilineBuffer;
+    let source = multilineBuffer;
     multilineBuffer = '';
     braceDepth = 0;
 
-    try {
-      await executeSwibe(source, std);
-    } catch (err) {
-      // In forgiving mode, catch parse errors and translate
-      if (state.forgiving) {
+    // Typo correction (both modes)
+    const { corrected, corrections } = correctTypos(source);
+    if (corrections.length > 0) {
+      console.log(`\x1b[90m  ✏️  Auto-corrected: ${corrections.join(', ')}\x1b[0m`);
+      source = corrected;
+    }
+
+    // In forgiving mode, try intent parser FIRST (before compile)
+    if (state.forgiving) {
+      try {
+        await executeSwibe(source, std);
+      } catch (err) {
         const isSyntax = err.message?.includes('Unexpected') ||
                          err.message?.includes('parse') ||
                          err.message?.includes('Expected');
@@ -392,8 +401,12 @@ export async function startRepl(options = {}) {
             `\x1b[31m[ERROR]\x1b[0m ${err.message}`
           );
         }
-      } else {
-        // Strict mode — show friendly errors with forgiving hint
+      }
+    } else {
+      // Strict mode
+      try {
+        await executeSwibe(source, std);
+      } catch (err) {
         if (err.message?.includes('Unexpected token') ||
             err.message?.includes('parse') ||
             err.message?.includes('Expected')) {

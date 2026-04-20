@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchIntent, injectDefaults } from '../src/intent-parser.js';
+import { matchIntent, injectDefaults, correctTypos } from '../src/intent-parser.js';
 
 describe('Forgiving REPL — Intent Parser', () => {
   it('should match "what can you do" as self-intro intent', () => {
@@ -99,5 +99,37 @@ describe('Forgiving REPL — Default Injection', () => {
     const result = injectDefaults(code);
     const permCount = (result.match(/permission\s*\{/g) || []).length;
     expect(permCount).toBe(1);
+  });
+});
+
+describe('Forgiving REPL — Typo Correction', () => {
+  it('should correct "thnk" to "think"', () => {
+    const { corrected, corrections } = correctTypos('thnk "hello"');
+    expect(corrected).toBe('think "hello"');
+    expect(corrections).toContain('thnk → think');
+  });
+
+  it('should correct "swram" to "swarm"', () => {
+    const { corrected } = correctTypos('swram { thnk "task" }');
+    expect(corrected).toBe('swarm { think "task" }');
+  });
+
+  it('should correct "ehtics" to "ethics"', () => {
+    const { corrected } = correctTypos('ehtics { harm_none: true }');
+    expect(corrected).toBe('ethics { harm_none: true }');
+  });
+
+  it('should correct multiple typos at once', () => {
+    const { corrected, corrections } = correctTypos('ehtics { harm_none: true }\npermision { thnk: "auto" }');
+    expect(corrected).toContain('ethics');
+    expect(corrected).toContain('permission');
+    expect(corrected).toContain('think');
+    expect(corrections.length).toBe(3);
+  });
+
+  it('should not alter correct input', () => {
+    const { corrected, corrections } = correctTypos('think "hello world"');
+    expect(corrected).toBe('think "hello world"');
+    expect(corrections.length).toBe(0);
   });
 });
