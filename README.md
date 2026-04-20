@@ -26,7 +26,7 @@ For local development:
 git clone https://github.com/Bino-Elgua/Swibe.git
 cd Swibe
 npm install
-npm test    # 363 tests passing
+npm test    # 405 tests passing
 ```
 
 ## Quick Start
@@ -692,29 +692,34 @@ grammar.ebnf            # Full EBNF specification
 
 ## Test & Audit Status
 
-### Core Language Tests (tests/swibe.test.js — 65 tests)
+### Core Language Tests (tests/swibe.test.js — 67 tests)
 
 | Suite | Tests | Status |
 |-------|-------|--------|
 | Core (v0.4) | 5 | Pass |
 | SovereignNeuralLayer | 5 | Pass |
-| Extensions (v0.5) | 9 | Pass |
+| Extensions (v0.5) | 11 | Pass |
 | v2.0 Primitives | 10 | Pass |
 | v2.0 Phase D — Plugins | 4 | Pass |
 | OpenClaw Integration | 6 | Pass |
 | v3.1 Hermetic Ethics | 5 | Pass |
 | v3.2 Compiler Hardening | 5 | Pass |
 | v3.3 REPL | 5 | Pass |
-| v3.4 VSCode Extension | 4 | Pass |
+| v3.4 VSCode Extension | 6 | Pass |
 | v3.6+v3.7 Registry + Docs | 5 | Pass |
 
-### Tokenomics & Security Tests (104 tests)
+### Language Feature Verification (src/swibe-test.js — 23 tests)
+
+Verifies the entire pipeline (Lexer → Parser → Compiler → Target) for all 23 core features.
+- **Status:** 23/23 Passed (100%)
+
+### Tokenomics & Security Tests (132 tests)
 
 | Suite | Tests | Status |
 |-------|-------|--------|
-| Tokenomics (Sabbath, Èṣù tax, wallets, decay, conversion, escrow) | 39 | Pass |
-| Adversarial (commingling, treasury, rounding, VeilSim, entropy, UBI) | 34 | Pass |
-| Hardening (secure policy, monitor/quarantine, staking gates, escrow timeout, burn audit, layer ordering) | 25 | Pass |
+| Tokenomics (Sabbath, Èṣù tax, wallets, decay, conversion, escrow) | 44 | Pass |
+| Adversarial (commingling, treasury, rounding, VeilSim, entropy, UBI) | 49 | Pass |
+| Hardening (secure policy, monitor/quarantine, staking gates, escrow timeout, burn audit, layer ordering) | 33 | Pass |
 | v3.3.1 Security E2E (sovereign readiness, receipt chain, appeal/interest, SovereignError) | 6 | Pass |
 
 ### BIPỌ̀N39 Identity Tests (test/bipon39.test.js — 35 tests)
@@ -729,28 +734,28 @@ grammar.ebnf            # Full EBNF specification
 | Pinned Test Vectors (entropy/seed/master key conformance) | 6 | Pass |
 | Agent Identity (generate, recover, sign, verify, capabilities, address) | 8 | Pass |
 
-### Backend Tests (33 tests)
+### Backend Tests (35 tests)
 
 | Suite | Tests | Status |
 |-------|-------|--------|
 | Tier 1 Backends | 4 | Pass |
 | Tier 2 Backends | 8 | Pass |
-| Tier 3 Backends | 15 | Pass |
+| Tier 3 Backends | 17 | Pass |
 | v0.5 Backend Extensions | 6 | Pass |
 
-### Web Playground Tests (125 tests)
+### Web Playground Tests (112 tests)
 
 | Suite | Tests | Status |
 |-------|-------|--------|
-| Crypto utilities | 29 | Pass |
-| Cipher implementations | 19 | Pass |
-| Input validation | 24 | Pass |
-| Chain crypto | 14 | Pass |
-| BIP-39 helper | 14 | Pass |
+| Crypto utilities | 25 | Pass |
+| Cipher implementations | 15 | Pass |
+| Input validation | 20 | Pass |
+| Chain crypto | 10 | Pass |
+| BIP-39 helper | 12 | Pass |
 | Profile management | 8 | Pass |
 | Encryption | 6 | Pass |
 | Poison radar | 6 | Pass |
-| Address generator hook | 5 | Pass |
+| Address generator hook | 10 | Pass |
 
 ### Other (1 test)
 
