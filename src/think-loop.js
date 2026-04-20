@@ -116,7 +116,7 @@ class ThinkLoop {
     }
 
     // Agentic loop mode
-    let conversation = [{ role: 'user', content: prompt }];
+    const conversation = [{ role: 'user', content: prompt }];
     let lastContent = '';
     let iteration = 0;
 

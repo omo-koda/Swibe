@@ -469,8 +469,8 @@ export class IdeBridge extends EventEmitter {
   }
 
   async _handleCompile(params) {
-    const { Lexer } = await import('./lexer.js');
-    const { Parser } = await import('./parser.js');
+    const { Lexer: _Lexer } = await import('./lexer.js');
+    const { Parser: _Parser } = await import('./parser.js');
     const { Compiler } = await import('./compiler.js');
 
     const compiler = new Compiler(

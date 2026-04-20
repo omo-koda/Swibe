@@ -69,7 +69,7 @@ export class UBIEngine extends EventEmitter {
     const cutoff = nowMs - ACTIVITY_WINDOW_MS;
     const eligible = [];
 
-    for (const [userId, user] of this.users) {
+    for (const [_userId, user] of this.users) {
       if (user.isVerified && user.lastActiveTimestamp >= cutoff) {
         eligible.push(user);
       }

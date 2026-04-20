@@ -68,7 +68,7 @@ export class EscrowEngine extends EventEmitter {
     escrow.resolved = Date.now();
 
     // Unlock the escrowed Àṣẹ from human wallet (it was locked, not spent)
-    const humanWallet = this.registry.get(escrow.humanId);
+    const _humanWallet = this.registry.get(escrow.humanId);
 
     let distribution = null;
     if (this.royalty) {
@@ -139,7 +139,7 @@ export class EscrowEngine extends EventEmitter {
    */
   expireStale(now = Date.now()) {
     const expired = [];
-    for (const [id, escrow] of this.escrows) {
+    for (const [_id, escrow] of this.escrows) {
       if (escrow.status === ESCROW_STATUS.LOCKED && now >= escrow.expiresAt) {
         escrow.status = ESCROW_STATUS.EXPIRED;
         escrow.resolved = now;

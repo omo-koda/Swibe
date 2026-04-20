@@ -18,7 +18,7 @@ export const PASS_LABEL  = ' Ọ̀RÍ:';         // leading space is normative
 export const ALLOWED_ENT = [128, 160, 192, 224, 256];
 
 function toNFKD(s) { return s.normalize('NFKD'); }
-function toNFC(s)  { return s.normalize('NFC'); }
+function _toNFC(s)  { return s.normalize('NFC'); }
 
 export function bitsPerWord(mode) {
   return mode === '256' ? 8 : 11;

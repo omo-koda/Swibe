@@ -60,7 +60,7 @@ export class EventBridge extends EventEmitter {
       dopamine_endowment: 86_000_000_000,
       synapse_endowment: 86_000_000,
     };
-    const wallet = await this.economy.spawnAgent(agentId, creatorId, 10, vmSignal);
+    const _wallet = await this.economy.spawnAgent(agentId, creatorId, 10, vmSignal);
 
     // Step 3: Record processed event
     const processed = {

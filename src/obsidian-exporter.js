@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import os from 'node:os';
 
 class ObsidianExporter {
@@ -129,7 +128,7 @@ This is the public identity and knowledge graph entry for a Swibe sovereign agen
     }
 
     const content = metadata.content.toLowerCase();
-    const prompt = metadata.prompt.toLowerCase();
+    const _prompt = metadata.prompt.toLowerCase();
 
     if (content.includes('error') || content.includes('failed') || content.includes('refuse')) {
       return 'Failures';

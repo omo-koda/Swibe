@@ -41,7 +41,7 @@ import { genAda } from './backends/ada.js';
 import { genCOBOL } from './backends/cobol.js';
 import { genSmalltalk } from './backends/smalltalk.js';
 import { genD } from './backends/d.js';
-import { genTypeScript } from './backends/typescript.js';
+import { genTypeScript as _genTypeScript } from './backends/typescript.js';
 import { genRaku } from './backends/raku.js';
 import { genRuby } from './backends/ruby.js';
 import { genPerl } from './backends/perl.js';
@@ -336,12 +336,13 @@ class Compiler {
           const code = this.genJavaScript(s);
           return '  ' + code + (code.endsWith(';') || code.endsWith('}') ? '' : ';');
         }).join('\n') + '\n}';
-      case 'VariableDecl':
+      case 'VariableDecl': {
         const kw = node.isConst ? 'const' : (node.isMut ? 'let' : 'var');
         return `${kw} ${node.name} = ${this.genJavaScript(node.value)};`;
+      }
       case 'Return':
         return `return ${this.genJavaScript(node.value)};`;
-      case 'FunctionCall':
+      case 'FunctionCall': {
         const args = node.args.map(a => this.genJavaScript(a)).join(', ');
         const stdBuiltins = [
           'think', 'retrieve', 'invoke', 'birth', 'swarmScale', 
@@ -356,6 +357,7 @@ class Compiler {
         } else {
           return `${node.name}(${args})`;
         }
+      }
       case 'Call':
         return `${this.genJavaScript(node.callee)}(${node.args.map(a => this.genJavaScript(a)).join(', ')})`;
       case 'MethodCall':
@@ -386,6 +388,18 @@ class Compiler {
       case 'Nil': return 'null';
       case 'BinaryOp':
         return `(${this.genJavaScript(node.left)} ${node.op} ${this.genJavaScript(node.right)})`;
+      case 'Assignment':
+        return `${this.genJavaScript(node.left)} = ${this.genJavaScript(node.right)}`;
+      case 'Closure': {
+        const params = node.params.join(', ');
+        const body = this.genJavaScript(node.body);
+        return `(${params}) => ${body}`;
+      }
+      case 'ArrowFunction': {
+        const params = node.params.join(', ');
+        const body = this.genJavaScript(node.body);
+        return `(${params}) => ${body}`;
+      }
       case 'UnaryOp':
         return `(${node.op}${this.genJavaScript(node.expr)})`;
       case 'SwarmStatement': {
@@ -427,6 +441,9 @@ class Compiler {
         const fieldNames = node.fields.map(f => f.name);
         return `class ${node.name} {\n  constructor(${fieldNames.join(', ')}) {\n${fieldNames.map(f => `    this.${f} = ${f};`).join('\n')}\n  }\n}`;
       }
+      case 'AgentDecl': {
+        return `const ${node.name} = new Agent(${this.genJavaScript(node.config)})`;
+      }
       case 'EnumDecl':
         return `const ${node.name} = Object.freeze({\n${node.variants.map((v, i) => `  ${v}: ${i}`).join(',\n')}\n});`;
       case 'Match': {
@@ -455,6 +472,17 @@ class Compiler {
             }
           }
         }`;
+      }
+      case 'ForStatement': {
+        const item = node.item;
+        const iterable = this.genJavaScript(node.iterable);
+        const body = this.genJavaScript(node.body);
+        return `for (const ${item} of ${iterable}) ${body}`;
+      }
+      case 'WhileStatement': {
+        const condition = this.genJavaScript(node.condition);
+        const body = this.genJavaScript(node.body);
+        return `while (${condition}) ${body}`;
       }
       case 'AppDecl': {
         const configEntries = Object.entries(node.config).map(([k, v]) => `  const ${k} = ${this.genJavaScript(v)};`).join('\n');
@@ -770,33 +798,6 @@ console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
           `  ${k}: ${this.genJavaScript(v)}`
         );
         return `const __escrow = await std.toc.escrow(${name}, {\n${entries.join(',\n')}\n});`;
-      }
-      case 'WitnessStatement': {
-        const entries = Object.entries(node.config || {}).map(([k, v]) =>
-          `  ${k}: ${this.genJavaScript(v)}`
-        );
-        return `await std.witness({\n${entries.join(',\n')}\n});`;
-      }
-      case 'PilotStatement': {
-        const entries = Object.entries(node.config || {}).map(([k, v]) =>
-          `  ${k}: ${this.genJavaScript(v)}`
-        );
-        return `await std.pilot({\n${entries.join(',\n')}\n});`;
-      }
-      case 'ViewportStatement': {
-        const entries = Object.entries(node.config || {}).map(([k, v]) =>
-          `  ${k}: ${this.genJavaScript(v)}`
-        );
-        return `await std.viewport({\n${entries.join(',\n')}\n});`;
-      }
-      case 'GestaltStatement': {
-        const tasks = (node.concurrent || []).map(c =>
-          `  std.${c.action}(${this.genJavaScript(c.value)})`
-        );
-        const mergeStr = typeof node.merge === 'string'
-          ? `"${node.merge}"`
-          : this.genJavaScript(node.merge);
-        return `await std.gestalt([\n${tasks.join(',\n')}\n], { merge: ${mergeStr} });`;
       }
       default: return `/* Unhandled: ${node.type} */`;
     }

@@ -59,7 +59,7 @@ class StandardLibrary {
     
     // Sui & Walrus
     this.sui = new SuiClientWrapper({
-      packageId: process.env.SUI_PACKAGE_ID || '0x434ad5a62d3d9e03d32840c213699b703e7e43685e13028290f653456789abcd' // Placeholder
+      packageId: process.env.SUI_PACKAGE_ID || ''
     });
     this.walrusStorage = new WalrusStorage();
 
@@ -237,7 +237,7 @@ class StandardLibrary {
     } catch (e) {
       console.warn('[MCP] Using mock MCP client');
       return {
-        call_tool: async (name, args) => `Mock result for ${name}`
+        call_tool: async (name, _args) => `Mock result for ${name}`
       };
     }
   }
@@ -451,7 +451,7 @@ class StandardLibrary {
           );
           console.log(`[CORRESPONDENCE] Karma: ${soul.karma}`);
         }
-      } catch(e) {}
+      } catch (_e) { /* karma tracking is non-critical */ }
     }
     
     this._events.emit('think.complete', {
@@ -488,7 +488,7 @@ class StandardLibrary {
     return level[0].toString('hex');
   }
 
-  async retrieve(query, options = {}) {
+  async retrieve(query) {
     try {
       const results = await this.rag.search(query);
       if (results.length > 0) {
@@ -1204,9 +1204,21 @@ class StandardLibrary {
     }
   }
 
+  _sanitizeNamespace(namespace) {
+    if (!namespace || typeof namespace !== 'string') {
+      throw new SovereignError('[SECURE] Invalid namespace', { layer: 3 });
+    }
+    const sanitized = namespace.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (sanitized !== namespace || sanitized.includes('..')) {
+      throw new SovereignError(`[SECURE] Namespace contains invalid characters: ${namespace}`, { layer: 3 });
+    }
+    return sanitized;
+  }
+
   async readSharedState(config) {
     const { namespace } = config;
-    const filePath = path.join(process.cwd(), 'shared_state', `${namespace}.json`);
+    const safe = this._sanitizeNamespace(namespace);
+    const filePath = path.join(process.cwd(), 'shared_state', `${safe}.json`);
 
     try {
       const data = await fs.promises.readFile(filePath, 'utf8');
@@ -1220,12 +1232,14 @@ class StandardLibrary {
   }
 
   async writeSharedState(config) {
-    let { namespace, data = {} } = config;
+    const { namespace } = config;
+    let { data = {} } = config;
     if (!data || typeof data !== 'object') {
       data = {};
     }
+    const safe = this._sanitizeNamespace(namespace);
     const dirPath = path.join(process.cwd(), 'shared_state');
-    const filePath = path.join(dirPath, `${namespace}.json`);
+    const filePath = path.join(dirPath, `${safe}.json`);
 
     try {
       // Ensure directory exists
@@ -1272,10 +1286,24 @@ class StandardLibrary {
     }
 
     if (this._allowedPaths.length > 0) {
+      const normalized = path.normalize(filePath).replace(/\\/g, '/');
+      if (normalized.includes('..')) {
+        throw new SovereignError(`[SECURE] Path traversal detected`, {
+          layer: 3,
+          securityPolicy: this._securityPolicy,
+          detail: `Path: ${filePath}`
+        });
+      }
       const isAllowed = this._allowedPaths.some(pattern => {
-        // Very basic glob-to-regex conversion
-        const regex = new RegExp('^' + pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*') + '$');
-        return regex.test(filePath) || filePath.startsWith(pattern.replace(/\*\*/g, ''));
+        const GLOB_PLACEHOLDER = '<<GLOBSTAR>>';
+        const escaped = pattern
+          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+          .replace(/\*\*/g, GLOB_PLACEHOLDER)
+          .replace(/\*/g, '[^/]*')
+          .replace(new RegExp(GLOB_PLACEHOLDER.replace(/[[\]<>]/g, '\\$&'), 'g'), '.*');
+        const regex = new RegExp('^' + escaped + '$');
+        const base = pattern.replace(/\*\*.*/g, '').replace(/\*.*/g, '');
+        return regex.test(normalized) || (base && normalized.startsWith(base));
       });
 
       if (!isAllowed) {
@@ -1304,13 +1332,13 @@ class StandardLibrary {
     return true;
   }
 
-  async editFile(filePath, oldString, newString, options = {}) {
+  async editFile(filePath, oldString, newString) {
     this._checkFilesystemAccess(filePath, 'write');
     const fullPath = path.resolve(process.cwd(), filePath);
     console.log(`[EDIT] File: ${filePath}`);
 
     try {
-      let content = await fs.promises.readFile(fullPath, 'utf8');
+      const content = await fs.promises.readFile(fullPath, 'utf8');
       
       if (!content.includes(oldString)) {
         throw new SovereignError(`String to replace not found in ${filePath}`, {

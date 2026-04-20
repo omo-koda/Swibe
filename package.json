@@ -1,6 +1,6 @@
 {
   "name": "@bino-elgua/swibe",
-  "version": "3.3.3",
+  "version": "3.4.0",
   "description": "Agent-native scripting language. 39+ compile targets. Sovereign by design.",
   "main": "src/index.js",
   "bin": {
@@ -49,9 +49,9 @@
     "@testing-library/react": "^14.0.0",
     "@vitejs/plugin-react": "^4.0.0",
     "eslint": "^8.50.0",
-    "jsdom": "^22.1.0",
+    "jsdom": "^29.0.2",
     "prettier": "^3.0.0",
-    "vitest": "^1.6.1"
+    "vitest": "^4.1.4"
   },
   "optionalDependencies": {
     "isolated-vm": "^6.1.2"

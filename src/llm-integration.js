@@ -18,6 +18,10 @@ class LLMIntegration {
     this.providers = ['ollama', 'claude', 'openrouter', 'hf', 'grok'];
   }
 
+  hasPromptSupport() {
+    return true; // All providers support basic prompting
+  }
+
   initializeTools() {
     return {
       openai: { name: 'OpenAI API', models: ['gpt-4', 'gpt-3.5'], features: ['chat', 'embeddings', 'vision'] },
@@ -32,7 +36,7 @@ class LLMIntegration {
 
   async think(prompt, options = {}) {
     let content;
-    const multimodal = options.image || options.images;
+    const _multimodal = options.image || options.images;
     
     try {
       // 1. Ollama (default local)

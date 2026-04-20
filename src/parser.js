@@ -30,7 +30,9 @@ class Parser {
   }
 
   advance() {
+    const token = this.current();
     this.pos++;
+    return token;
   }
 
   isAtEnd() {
@@ -63,7 +65,21 @@ class Parser {
         TokenType.PRINTLN, TokenType.RAG, TokenType.AI, TokenType.EMBED, 
         TokenType.GOAL, TokenType.ROLE, TokenType.AGENT, TokenType.MINT,
         TokenType.RECEIPT, TokenType.SEAL, TokenType.WALRUS,
-        TokenType.FILESYSTEM, TokenType.POLICY
+        TokenType.FILESYSTEM, TokenType.POLICY, TokenType.PLAN,
+        TokenType.ANALYTICS, TokenType.WITNESS, TokenType.PILOT,
+        TokenType.VIEWPORT, TokenType.GESTALT, TokenType.EDIT,
+        TokenType.BRIDGE, TokenType.SESSION, TokenType.COORDINATE,
+        TokenType.THINK, TokenType.BIRTH, TokenType.CHAIN,
+        TokenType.STAKE, TokenType.SLASH, TokenType.CONVERT,
+        TokenType.ROYALTY, TokenType.ESCROW, TokenType.COMMONS,
+        TokenType.PUBLIC_FACING, TokenType.WEB_INGEST, TokenType.SOVEREIGN,
+        TokenType.SKILL, TokenType.APP, TokenType.EVOLVE, TokenType.OBSERVE,
+        TokenType.HEARTBEAT, TokenType.PERMISSION, TokenType.MCP, TokenType.BUDGET,
+        TokenType.REMEMBER, TokenType.SHARE, TokenType.ENUM, TokenType.STRUCT,
+        TokenType.FN, TokenType.ASYNC, TokenType.MATCH, TokenType.CASE, TokenType.DEFAULT,
+        TokenType.IF, TokenType.ELSE, TokenType.FOR, TokenType.WHILE, TokenType.LOOP,
+        TokenType.IN, TokenType.BREAK, TokenType.CONTINUE, TokenType.MUT, TokenType.LET,
+        TokenType.CONST
       ];
       if (type === TokenType.IDENTIFIER && allowed.includes(current.type)) {
         this.advance();
@@ -106,6 +122,17 @@ class Parser {
     // Function declaration
     if (token.type === TokenType.FN) {
       return this.parseFunctionDecl();
+    }
+
+    if (token.type === TokenType.ASYNC) {
+      this.advance();
+      const fn = this.parseFunctionDecl();
+      fn.isAsync = true;
+      return fn;
+    }
+
+    if (token.type === TokenType.AGENT) {
+      return this.parseAgentDecl();
     }
 
     // Struct declaration
@@ -193,6 +220,14 @@ class Parser {
     // Loop until goal
     if (token.type === TokenType.LOOP) {
       return this.parseLoopUntil();
+    }
+
+    if (token.type === TokenType.FOR) {
+      return this.parseForStatement();
+    }
+
+    if (token.type === TokenType.WHILE) {
+      return this.parseWhileStatement();
     }
 
     // Target directive (@target)
@@ -382,6 +417,7 @@ class Parser {
     // Think statement (keyword syntax: think "prompt" { config })
     // Falls through to expression parser if followed by ( for backward compat
     if (token.type === TokenType.THINK && this.peek().type !== TokenType.LPAREN) {
+      this.advance();
       return this.parseThinkStatement();
     }
 
@@ -401,7 +437,7 @@ class Parser {
     }
 
     // Variable declaration
-    if (token.type === TokenType.LET || token.type === TokenType.CONST) {
+    if (token.type === TokenType.LET || token.type === TokenType.CONST || token.type === TokenType.MUT) {
       return this.parseVariableDecl();
     }
 
@@ -465,7 +501,6 @@ class Parser {
   }
 
   parseThinkStatement() {
-    this.advance(); // consume THINK token
     const prompt = this.parseExpression();
     const config = {};
     if (this.current().type === TokenType.LBRACE) {
@@ -624,6 +659,26 @@ class Parser {
     };
   }
 
+  parseClosure() {
+    this.expect(TokenType.BAR);
+    const params = [];
+    while (this.current().type !== TokenType.BAR && !this.isAtEnd()) {
+      params.push(this.expect(TokenType.IDENTIFIER).value);
+      if (this.current().type === TokenType.COMMA) this.advance();
+    }
+    this.expect(TokenType.BAR);
+    
+    // Body can be a block or an expression
+    let body;
+    if (this.current().type === TokenType.LBRACE) {
+      body = this.parseBlock();
+    } else {
+      body = this.parseExpression();
+    }
+    
+    return new ASTNode('Closure', { params, body });
+  }
+
   parseParamList() {
     const params = [];
     while (this.current().type !== TokenType.RPAREN) {
@@ -633,7 +688,14 @@ class Parser {
         this.advance();
         type = this.parseType();
       }
-      params.push({ name, type });
+      
+      let defaultValue = null;
+      if (this.current().type === TokenType.ASSIGN) {
+        this.advance();
+        defaultValue = this.parseExpression();
+      }
+      
+      params.push({ name, type, defaultValue });
 
       if (this.current().type !== TokenType.RPAREN) {
         this.expect(TokenType.COMMA);
@@ -655,6 +717,14 @@ class Parser {
   }
 
   parseType() {
+    // Handle [type] array syntax
+    if (this.current().type === TokenType.LBRACKET) {
+      this.advance();
+      const innerType = this.parseType();
+      this.expect(TokenType.RBRACKET);
+      return { array: innerType };
+    }
+
     let type = this.expect(TokenType.IDENTIFIER).value;
 
     // Generic types (e.g., Option<i32>)
@@ -665,7 +735,7 @@ class Parser {
       type = { generic: type, inner: innerType };
     }
 
-    // Array types
+    // Array types (e.g., i32[])
     if (this.current().type === TokenType.LBRACKET) {
       this.advance();
       this.expect(TokenType.RBRACKET);
@@ -736,13 +806,29 @@ class Parser {
 
     const arms = [];
     while (this.current().type !== TokenType.RBRACE) {
-      const pattern = this.parsePattern();
-      this.expect(TokenType.FAT_ARROW);
+      let pattern;
+      if (this.current().type === TokenType.CASE) {
+        this.advance();
+        pattern = this.parsePattern();
+      } else if (this.current().type === TokenType.DEFAULT) {
+        this.advance();
+        pattern = new ASTNode('IdentifierPattern', { name: '_' });
+      } else {
+        pattern = this.parsePattern();
+      }
+
+      // Support both -> and => for arms
+      if (this.current().type === TokenType.ARROW || this.current().type === TokenType.FAT_ARROW) {
+        this.advance();
+      } else {
+        throw new Error(`Expected -> or => after pattern in match arm, got ${this.current().type}`);
+      }
+
       const body = this.parseExpression();
       arms.push({ pattern, body });
 
-      if (this.current().type !== TokenType.RBRACE) {
-        this.expect(TokenType.COMMA);
+      if (this.current().type === TokenType.COMMA) {
+        this.advance();
       }
     }
 
@@ -751,32 +837,60 @@ class Parser {
     return new ASTNode('Match', { expr, arms });
   }
 
+  parseAgentDecl() {
+    this.expect(TokenType.AGENT);
+    const name = this.expect(TokenType.IDENTIFIER).value;
+    
+    let config;
+    if (this.current().type === TokenType.ASSIGN) {
+      this.advance();
+      config = this.parseExpression();
+    } else {
+      config = this.parseExpression(); // Try parsing block as DictLiteral
+    }
+    
+    this.match(TokenType.SEMICOLON);
+    return new ASTNode('AgentDecl', { name, config });
+  }
+
   parseSwarmStatement() {
     this.expect(TokenType.SWARM);
     this.expect(TokenType.LBRACE);
 
     const steps = [];
     while (this.current().type !== TokenType.RBRACE) {
+      // Consume optional separators at the start of loop
+      while (this.current().type === TokenType.COMMA || 
+             this.current().type === TokenType.SEMICOLON ||
+             this.current().type === TokenType.FAT_ARROW) {
+        this.advance();
+      }
+      
+      if (this.current().type === TokenType.RBRACE) break;
+
       let target = null;
 
       // Handle @target shorthand before agent name: @elixir Agent Name { ... }
       if (this.current().type === TokenType.AT_TARGET) {
-        target = this.current().value;
-        this.advance();
+        target = this.advance().value;
       }
 
       let name;
       let role;
 
-      // Check for shorthand: think "worker"
-      if (this.current().type === TokenType.THINK) {
+      // Check for shorthand: think "worker" (standalone)
+      if (this.current().type === TokenType.THINK && this.peek().type === TokenType.STRING) {
         name = 'AnonymousThinker';
+        this.advance();
         role = this.parseThinkStatement();
       } else {
         name = this.expect(TokenType.IDENTIFIER).value;
         this.expect(TokenType.COLON);
         
-        if (this.current().type === TokenType.IDENTIFIER && this.current().value === 'Agent') {
+        if (this.current().type === TokenType.THINK) {
+          this.advance();
+          role = this.parseThinkStatement();
+        } else if (this.current().type === TokenType.IDENTIFIER && this.current().value === 'Agent') {
           this.advance();
           this.expect(TokenType.LBRACE);
           const fields = {};
@@ -789,28 +903,17 @@ class Parser {
           this.expect(TokenType.RBRACE);
           role = new ASTNode('AgentDefinition', { fields });
         } else {
-          role = this.parseExpression();
+          role = this.parsePipeline();
         }
       }
       
-      // Also support trailing @target syntax
-      if (!target && this.current().type === TokenType.AT_TARGET) {
-        target = this.current().value;
-        this.advance();
+      // Also support trailing @target syntax if we haven't seen a fat arrow or comma
+      const targetToken = this.match(TokenType.AT_TARGET);
+      if (targetToken) {
+        target = targetToken.value;
       }
 
       steps.push({ name, role, target });
-
-      if (this.current().type === TokenType.FAT_ARROW) {
-        this.advance();
-      } else if (this.current().type === TokenType.COMMA) {
-        this.advance();
-      } else if (this.current().type === TokenType.RBRACE) {
-        // End of swarm
-        break;
-      } else {
-        throw new Error(`Expected => or , in swarm at ${this.current().line}:${this.current().column}`);
-      }
     }
 
     this.expect(TokenType.RBRACE);
@@ -997,9 +1100,35 @@ class Parser {
 
   parseLoopUntil() {
     this.expect(TokenType.LOOP);
+    
+    // Support "loop until goal: string"
+    if (this.current().type === TokenType.UNTIL) {
+      this.advance();
+      if (this.current().type === TokenType.GOAL) {
+        this.advance();
+        this.expect(TokenType.COLON);
+      }
+    }
+    
     const untilStr = this.expect(TokenType.STRING).value;
     const body = this.parseBlock();
     return new ASTNode('LoopStatement', { until: untilStr, body });
+  }
+
+  parseForStatement() {
+    this.expect(TokenType.FOR);
+    const item = this.expect(TokenType.IDENTIFIER).value;
+    this.expect(TokenType.IN);
+    const iterable = this.parseExpression();
+    const body = this.parseBlock();
+    return new ASTNode('ForStatement', { item, iterable, body });
+  }
+
+  parseWhileStatement() {
+    this.expect(TokenType.WHILE);
+    const condition = this.parseExpression();
+    const body = this.parseBlock();
+    return new ASTNode('WhileStatement', { condition, body });
   }
 
   parseChainStatement() {
@@ -1564,13 +1693,35 @@ class Parser {
       return new ASTNode('IdentifierPattern', { name });
     }
 
+    if (this.current().type === TokenType.STRING) {
+      return new ASTNode('String', { value: this.advance().value });
+    }
+
+    if (this.current().type === TokenType.NUMBER) {
+      return new ASTNode('Number', { value: this.advance().value });
+    }
+
     throw new Error(`Unexpected pattern: ${this.current().type}`);
   }
 
   parseVariableDecl() {
-    const isConst = this.match(TokenType.CONST);
-    if (!isConst) this.expect(TokenType.LET);
-    const isMut = this.match(TokenType.MUT);
+    let isConst = false;
+    let isMut = false;
+
+    if (this.current().type === TokenType.CONST) {
+      isConst = true;
+      this.advance();
+    } else if (this.current().type === TokenType.MUT) {
+      isMut = true;
+      this.advance();
+    } else if (this.current().type === TokenType.LET) {
+      this.advance();
+      if (this.current().type === TokenType.MUT) {
+        isMut = true;
+        this.advance();
+      }
+    }
+
     const name = this.expect(TokenType.IDENTIFIER).value;
 
     let type = null;
@@ -1619,6 +1770,42 @@ class Parser {
   }
 
   parseExpression() {
+    return this.parseAssignment();
+  }
+
+  parseAssignment() {
+    let left = this.parseArrowFunction();
+
+    if (this.current().type === TokenType.ASSIGN) {
+      this.advance();
+      const right = this.parseAssignment();
+
+      if (left.type === 'Identifier' || left.type === 'FieldAccess' || left.type === 'Index') {
+        return new ASTNode('Assignment', { left, right });
+      } else {
+        throw new Error(`Invalid assignment target: ${left.type}`);
+      }
+    }
+
+    return left;
+  }
+
+  parseArrowFunction() {
+    // Basic support for param => expr
+    // We need lookahead to be sure it's an arrow function
+    if (this.current().type === TokenType.IDENTIFIER && this.peek().type === TokenType.FAT_ARROW) {
+      const param = this.advance().value;
+      this.advance(); // consume =>
+      const body = this.parseExpression();
+      return new ASTNode('ArrowFunction', { params: [param], body });
+    }
+    
+    // Support (a, b) => expr
+    if (this.current().type === TokenType.LPAREN) {
+      // This is tricky without backtracking. Let's try a simple version.
+      // If we see ( id, or ( id ) =>
+    }
+
     return this.parsePipeline();
   }
 
@@ -1891,6 +2078,11 @@ class Parser {
       const expr = this.parseExpression();
       this.expect(TokenType.RPAREN);
       return expr;
+    }
+
+    // Closure |args| body
+    if (token.type === TokenType.BAR) {
+      return this.parseClosure();
     }
 
     // Anonymous Dictionary Literal

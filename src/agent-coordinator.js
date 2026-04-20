@@ -332,7 +332,7 @@ export class AgentCoordinator extends EventEmitter {
    * Broadcast a message to all agents
    */
   broadcast(fromRole, message) {
-    for (const [role, agent] of this.agents) {
+    for (const [role, _agent] of this.agents) {
       if (role !== fromRole) {
         this.send(fromRole, role, message);
       }

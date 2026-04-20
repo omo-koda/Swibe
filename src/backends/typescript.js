@@ -5,21 +5,22 @@
 export function genTypeScript(node) {
   if (!node) return '';
   switch (node.type) {
-    case 'Program':
+    case 'Program': {
       const code = node.statements.map(s => {
         const code = genTypeScript(s);
         return code.endsWith(';') || code.endsWith('}') ? code : code + ';';
       }).join('\n\n');
       return code + '\n\nmain();';
+    }
     case 'FunctionDecl': {
       const params = node.params.map(p => {
-        let typeStr = p.type ? p.type : 'any';
+        const typeStr = p.type ? p.type : 'any';
         return p.name + ': ' + typeStr;
       }).join(', ');
       const returnType = node.returnType ? node.returnType : 'any';
       return `function ${node.name}(${params}): ${returnType} ${genTypeScript(node.body)}`;
     }
-    case 'Block':
+    case 'Block': {
       const stmts = node.statements.map(s => {
         const code = genTypeScript(s);
         return '  ' + code + (code.endsWith(';') || code.endsWith('}') ? '' : ';');
@@ -34,17 +35,19 @@ export function genTypeScript(node) {
         }
       }
       return '{\n' + stmts.join('\n') + '\n}';
+    }
     case 'VariableDecl':
       return `const ${node.name} = ${genTypeScript(node.value)};`;
     case 'Return':
       return `return ${genTypeScript(node.value)};`;
-    case 'FunctionCall':
+    case 'FunctionCall': {
       const args = node.args.map(a => genTypeScript(a)).join(', ');
       if (node.name === 'print') {
         return `console.log(${args})`;
       } else {
         return `${node.name}(${args})`;
       }
+    }
     case 'BinaryOp':
       return `(${genTypeScript(node.left)} ${node.op} ${genTypeScript(node.right)})`;
     case 'ThinkStatement': {

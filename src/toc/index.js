@@ -117,6 +117,6 @@ export class ToCEconomy {
   }
 }
 
-export function tocFromAST(node) {
+export function tocFromAST(_node) {
   return new ToCEconomy();
 }

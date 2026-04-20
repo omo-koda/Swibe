@@ -58,7 +58,7 @@ export class EthicsValidator extends ASTVisitor {
     }
   }
 
-  visitEthicsStatement(node) {
+  visitEthicsStatement(_node) {
     this._hasEthics = true;
   }
 
@@ -112,7 +112,7 @@ export class EthicsValidator extends ASTVisitor {
     }
   }
 
-  visitSessionStatement(node) {
+  visitSessionStatement(_node) {
     // Sessions are safe operations — no violation needed
     // But track that sessions are in use for downstream analysis
     this._hasSessions = true;
@@ -130,12 +130,12 @@ export class EthicsValidator extends ASTVisitor {
     this._hasPolicy = true;
   }
 
-  visitAnalyticsStatement(node) {
+  visitAnalyticsStatement(_node) {
     // Analytics is safe — just tracking
     this._hasAnalytics = true;
   }
 
-  visitCoordinateStatement(node) {
+  visitCoordinateStatement(_node) {
     // Coordinate requires a team to be defined
     // (soft check — team might be defined elsewhere)
   }
@@ -225,7 +225,7 @@ export class EthicsValidator extends ASTVisitor {
     }
   }
 
-  visitGestaltStatement(node) {
+  visitGestaltStatement(_node) {
     // Gestalt (parallel execution) is safe but note its presence
   }
 

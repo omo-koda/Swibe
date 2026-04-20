@@ -16,6 +16,8 @@ const TokenType = {
   IF: 'IF',
   ELSE: 'ELSE',
   MATCH: 'MATCH',
+  CASE: 'CASE',
+  DEFAULT: 'DEFAULT',
   ASYNC: 'ASYNC',
   AWAIT: 'AWAIT',
   SPAWN: 'SPAWN',
@@ -30,6 +32,7 @@ const TokenType = {
   FOR: 'FOR',
   WHILE: 'WHILE',
   LOOP: 'LOOP',
+  IN: 'IN',
   PRINTLN: 'PRINTLN',
   TRUE: 'TRUE',
   FALSE: 'FALSE',
@@ -104,7 +107,6 @@ const TokenType = {
   PLUS: 'PLUS',
   MINUS: 'MINUS',
   STAR: 'STAR',
-  SLASH: 'SLASH',
   PERCENT: 'PERCENT',
   EQ: 'EQ',           // ==
   NE: 'NE',           // !=
@@ -114,6 +116,7 @@ const TokenType = {
   GE: 'GE',           // >=
   ASSIGN: 'ASSIGN',   // =
   PIPE: 'PIPE',       // |>
+  BAR: 'BAR',         // |
   ARROW: 'ARROW',     // ->
   FAT_ARROW: 'FAT_ARROW', // =>
   AND: 'AND',         // &&
@@ -298,6 +301,8 @@ class Lexer {
     if: TokenType.IF,
     else: TokenType.ELSE,
     match: TokenType.MATCH,
+    case: TokenType.CASE,
+    default: TokenType.DEFAULT,
     async: TokenType.ASYNC,
     await: TokenType.AWAIT,
     spawn: TokenType.SPAWN,
@@ -312,6 +317,7 @@ class Lexer {
     for: TokenType.FOR,
     while: TokenType.WHILE,
     loop: TokenType.LOOP,
+    in: TokenType.IN,
     println: TokenType.PRINTLN,
     true: TokenType.TRUE,
     false: TokenType.FALSE,
@@ -524,6 +530,7 @@ class Lexer {
           this.advance();
           this.advance();
         } else {
+          this.addToken(TokenType.BAR, '|');
           this.advance();
         }
       } else if (char === ':') {

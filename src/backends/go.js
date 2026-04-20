@@ -260,9 +260,6 @@ export function genGo(node, indent = "") {
     case 'CallToolStatement':
       return `${indent}mcp.CallTool("${node.name}", ${genGo(node.args, "")})`;
 
-    case 'Return':
-      return `${indent}return ${genGo(node.value, "")}`;
-
     case 'Call':
       return `${indent}${genGo(node.callee, "")}(${node.args.map(a => genGo(a, "")).join(', ')})`;
 

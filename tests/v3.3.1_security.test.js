@@ -15,14 +15,23 @@ describe('Swibe v3.3.1 Security Hardening', () => {
 
   it('calculates Merkle root for receipt chain', async () => {
     const std = new StandardLibrary();
+    // Mock the LLM to avoid hanging on network calls
+    const originalThink = std.llm.think;
+    std.llm.think = vi.fn()
+      .mockResolvedValueOnce({ content: 'Thought 1 response', receipt: '0x1' })
+      .mockResolvedValueOnce({ content: 'Thought 2 response', receipt: '0x2' });
+
     // Simulate some thoughts
     await std.think("Thought 1");
     await std.think("Thought 2");
-    
+
     const receipts = std.getReceiptChain();
     expect(receipts.length).toBe(2);
     expect(std._merkleRoot).toBeDefined();
     expect(std._merkleRoot.length).toBe(64);
+
+    // Restore
+    std.llm.think = originalThink;
   });
 
   it('handles simulate permission mode', async () => {

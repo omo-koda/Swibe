@@ -8,8 +8,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { Lexer } from './lexer.js';
-import { Parser } from './parser.js';
 import { Compiler } from './compiler.js';
 import { StandardLibrary } from './stdlib.js';
 import { LLMIntegration } from './llm-integration.js';
@@ -198,7 +196,7 @@ function loadHistory() {
         fs.readFileSync(HISTORY_FILE, 'utf-8')
       );
     }
-  } catch {}
+  } catch (_e) { /* history file unreadable, start fresh */ }
   return [];
 }
 
@@ -209,7 +207,7 @@ function saveHistory(history) {
       HISTORY_FILE,
       JSON.stringify(history.slice(-100), null, 2)
     );
-  } catch {}
+  } catch (_e) { /* non-critical: history save failure */ }
 }
 
 // ────────────────────────────────────────────────────────────

@@ -6,18 +6,9 @@
 import { Lexer } from './lexer.js';
 import { Parser } from './parser.js';
 import { Compiler } from './compiler.js';
-import { LLMIntegration, RAGIntegration, Agent } from './llm-integration.js';
-import { SwibeREPL, startRepl } from './repl.js';
-import { DocGenerator } from './doc-generator.js';
-import { APIGenerator } from './api-generator.js';
-import { PackageManager } from './package-manager.js';
-import { AgentGenerator } from './agent-generator.js';
-import { DockerGenerator } from './docker-generator.js';
-import { MicroservicesGenerator } from './microservices-generator.js';
-import { ObsidianExporter } from './obsidian-exporter.js';
-import crypto from 'node:crypto';
+import { startRepl } from './repl.js';
+import vm from 'node:vm';
 import path from 'node:path';
-import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -527,7 +518,7 @@ fn main() {
         const source = fs.readFileSync(file, 'utf-8');
         const compiler = new Compiler(source, 'javascript');
         try {
-          const jsCode = await compiler.compile();
+          const _jsCode = await compiler.compile();
           // ... execute jsCode ...
           console.log('[WATCH] Execution complete');
         } catch (e) {
@@ -573,7 +564,6 @@ fn main() {
   }
 }
 
-import vm from 'node:vm';
 main().catch(err => {
   console.error(err);
   process.exit(1);

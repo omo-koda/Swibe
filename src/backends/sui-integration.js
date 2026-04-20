@@ -8,9 +8,9 @@
  */
 
 import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
+import { Ed25519Keypair as _Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
-import crypto from 'node:crypto';
+import _crypto from 'node:crypto';
 
 export class SuiClientWrapper {
   constructor(config = {}) {

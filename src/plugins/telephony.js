@@ -5,7 +5,7 @@ export default {
   accountSid: null,
   authToken: null,
 
-  async onBirth(agentData) {
+  async onBirth(_agentData) {
     const provider = process.env.TELEPHONY_PROVIDER || 'mock';
     const apiKey = process.env.TELNYX_API_KEY || process.env.TWILIO_ACCOUNT_SID;
 
@@ -46,12 +46,12 @@ export default {
     return { phone: null, mock: true };
   },
 
-  async onThink(data) {
+  async onThink(_data) {
     // Could log think events to phone via SMS
     // Standalone: no-op
   },
 
-  async onReceipt(receipt) {
+  async onReceipt(_receipt) {
     // Could send receipt notification via SMS
     // Standalone: no-op
   },
