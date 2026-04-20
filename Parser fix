@@ -1,0 +1,116 @@
+I can see you're deep in the parser debugging trenches. Let me give you a focused analysis of what's happening and a clear path to fix the remaining swarm parsing issues.
+
+🔬 Swarm Parser Debug Analysis
+
+From your live debug session, I can see exactly what's happening. Here's the breakdown:
+
+---
+
+Root Cause
+
+```
+[DEBUG] Expected IDENTIFIER, got COLON (':') at 27:10
+```
+
+The parser is trying to read the next step's name (identifier), but it's landing on the colon instead. This means the identifier before the colon was already consumed by something else.
+
+---
+
+Bugs You've Fixed ✅
+
+Bug	Fix	
+Double advance in `parseThinkStatement()`	Removed `this.advance()` — caller already consumed THINK	
+Missing keywords in `expect()` allowed list	Added SKILL, APP, EVOLVE, OBSERVE, HEARTBEAT, PERMISSION, MCP, BUDGET, REMEMBER, SHARE, ENUM, STRUCT, FN, ASYNC, MATCH, CASE, DEFAULT, IF, ELSE, FOR, WHILE, LOOP, IN, BREAK, CONTINUE, MUT, LET, CONST	
+Think shorthand detection	Added `this.peek().type === TokenType.STRING` check	
+
+---
+
+What's Still Broken 🟡
+
+Your current swarm step parsing (lines 878-894):
+
+```javascript
+// Check for shorthand: think "worker" (standalone)
+if (this.current().type === TokenType.THINK && this.peek().type === TokenType.STRING) {
+  name = 'AnonymousThinker';
+  role = this.parseThinkStatement();
+} else {
+  name = this.expect(TokenType.IDENTIFIER).value;
+  this.expect(TokenType.COLON);
+
+  if (this.current().type === TokenType.THINK) {
+    role = this.parseThinkStatement();
+  } else if (...) { ... }
+}
+```
+
+The problem: After `parseThinkStatement()` returns, the loop tries to parse the next step. But if the `=>` separator wasn't consumed, or if `parseThinkStatement()` over-consumed, the parser is out of sync.
+
+---
+
+Most Likely Cause
+
+The `=>` separator is not being consumed after think statements. Check your swarm loop:
+
+```javascript
+while (this.current().type !== TokenType.RBRACE) {
+  // parse step...
+  
+  // MISSING: consume => or , separator here!
+}
+```
+
+Fix needed:
+
+```javascript
+// After parsing each step's role:
+if (this.current().type === TokenType.FAT_ARROW) {
+  this.advance(); // consume =>
+} else if (this.current().type === TokenType.COMMA) {
+  this.advance(); // consume ,
+}
+```
+
+---
+
+Quick Debug Script
+
+Create `debug_tokens.js`:
+
+```javascript
+import { Lexer } from './src/lexer.js';
+import fs from 'fs';
+
+const source = fs.readFileSync('examples/app_genesis.swibe', 'utf8');
+const lexer = new Lexer(source);
+const tokens = lexer.tokenize();
+
+// Print tokens around line 27
+for (let i = 0; i < tokens.length; i++) {
+  const t = tokens[i];
+  if (t.line >= 25 && t.line <= 30) {
+    console.log(`${i}: ${t.type} ('${t.value}') at ${t.line}:${t.column}`);
+  }
+}
+```
+
+Run it to see the exact token sequence. You'll likely see:
+
+```
+... THINK ('think') at 27:4
+... STRING ('"design system"') at 27:10
+... FAT_ARROW ('=>') at 27:24    ← Is this here?
+... IDENTIFIER ('builder') at 28:4  ← Or is this being skipped?
+... COLON (':') at 28:12          ← Parser lands here instead
+```
+
+---
+
+Fix Checklist
+
+- Verify `=>` consumption after each swarm step
+- Check if `parseThinkStatement()` returns at the right token (should be at `=>` or next identifier)
+- Ensure loop handles both `=>` and `,` separators
+- Run token debug to confirm sync
+
+The parser is 90% fixed — just need to handle the separator correctly after think shorthands. Once this works, rerun the full audit and you should hit 100% on all 39 examples.
