@@ -1,18 +1,18 @@
-![Version](https://img.shields.io/badge/version-v3.3.1-blue)
+![Version](https://img.shields.io/badge/version-v3.4.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-363%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-405%20passing-brightgreen)
 ![Backends](https://img.shields.io/badge/backends-44-orange)
 [![npm](https://img.shields.io/badge/npm-@bino--elgua/swibe-brightgreen)](https://www.npmjs.com/package/@bino-elgua/swibe)
 
-# Swibe: Agent-Native Scripting Language (v3.3.1)
+# Swibe: Agent-Native Scripting Language (v3.4.0)
 
 **Autonomous swarms, self-healing loops, and world creation from one sentence.**
 
 Swibe is a sovereign programming language where agents, prompts, neural layers, and secure execution are first-class citizens. Write declarative agentic code that compiles to 44 backend targets, runs self-repairing swarms, and persists state via a BIPỌ̀N39 ritual vault.
 
-v3.3 adds a complete three-token economy (Àṣẹ/Dopamine/Synapse) with neural birth endowment (86B Dopamine + 86M Synapse per agent), burn conversions, creator royalties, job escrow, and staking/slashing.
+v3.4 introduces **Major Core Syntax Expansion**: native `for` and `while` loops, `async` functions, `mut` variable declarations, closure syntax (`|x| expr`), arrow functions (`x => expr`), and first-class `agent` declarations.
 
-v3.3.1 introduces **Security Hardening**: strict layer enforcement, formal `secure` block policies (`llm_routing`, `receipt_sealing`), `simulate` permission mode, Merkle-hardened receipt chains, and the Sovereign Readiness Report.
+v3.3.1 introduced **Security Hardening**: strict layer enforcement, formal `secure` block policies (`llm_routing`, `receipt_sealing`), `simulate` permission mode, Merkle-hardened receipt chains, and the Sovereign Readiness Report.
 
 ## Installation
 
@@ -109,6 +109,10 @@ pilot { mode: "browser"; safe_mode: true }
 | `plan` | Semantic Kernel-style goal decomposition |
 | `swarm` | Multi-agent coordination (async in JS, OTP in Elixir) |
 | `loop until` | Self-healing execution — runs until a goal is verified |
+| `for` / `while` | Standard native control flow loops for agent logic |
+| `mut` | Explicit mutable variable declaration |
+| `async` / `await` | Native asynchronous function and call support |
+| `agent` | First-class agent declaration and instantiation |
 | `budget` | Token, time, and USD cost limits with alert thresholds |
 | `remember` | Three-tier hierarchical memory (working/short-term/long-term) |
 | `evolve` | Soul-state evolution |
@@ -756,7 +760,7 @@ grammar.ebnf            # Full EBNF specification
 
 | | | |
 |---|---|---|
-| **Total** | **363** | **All passing** |
+| **Total** | **405** | **All passing** |
 
 ## Roadmap
 
@@ -775,8 +779,9 @@ grammar.ebnf            # Full EBNF specification
 | v3.5-v3.7 | Complete | Registry hardening, Cloudflare registry worker, docs |
 | v3.1.0 | Complete | Permissions, MCP, think loops, IDE bridge, coordination, production |
 | v3.2.0 | Complete | Witness (multimodal), Pilot (computer control), Viewport (screen), Gestalt (parallel) |
-| **v3.3.0** | **Current** | ToC Tokenomics (Àṣẹ/Dopamine/Synapse), BIPỌ̀N39 identity, neural birth endowment, escrow, royalties |
-| **v3.3.1** | **Current** | Security hardening: formal `secure` policy block, monitor/quarantine permissions, staking gates, slashing, escrow timeout, burn audit, four-layer architecture enforcement |
+| v3.3.0 | Complete | ToC Tokenomics (Àṣẹ/Dopamine/Synapse), BIPỌ̀N39 identity, neural birth endowment, escrow, royalties |
+| v3.3.1 | Complete | Security hardening: formal `secure` policy block, monitor/quarantine permissions, staking gates, slashing, escrow timeout, burn audit, four-layer architecture enforcement |
+| **v3.4.0** | **Current** | Major syntax expansion: loops (for/while), async/await, mut, closures (|x|), agents, array types, and default parameters. |
 | **Next** | Planned | Phase 8: Beacon network, validation consensus, Twelve-Thrones |
 
 ## Environment Variables
