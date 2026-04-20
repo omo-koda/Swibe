@@ -1,6 +1,6 @@
 {
   "name": "@bino-elgua/swibe",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "Agent-native scripting language. 39+ compile targets. Sovereign by design.",
   "main": "src/index.js",
   "bin": {
@@ -16,9 +16,10 @@
     "repl": "node src/index.js repl",
     "compile": "node src/compiler.js",
     "run": "node src/index.js run",
-    "test": "vitest run --config vitest.config.js && vitest run --config web-playground/vitest.config.js",
+    "test": "npm run test:core && npm run test:web && npm run test:features",
     "test:core": "vitest run --config vitest.config.js",
     "test:web": "vitest run --config web-playground/vitest.config.js",
+    "test:features": "node src/swibe-test.js",
     "lint": "eslint src/",
     "format": "prettier --write src/",
     "roadmap": "node src/roadmap-cli.js"
