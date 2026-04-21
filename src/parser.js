@@ -63,6 +63,31 @@ class Parser {
     }
   }
 
+  recoverFromError() {
+    let depth = 0;
+    
+    while (!this.isAtEnd()) {
+      const token = this.current();
+      
+      // Sync to next statement boundary
+      if (token.type === TokenType.SEMICOLON) {
+        this.advance();
+        break;
+      }
+      
+      // Handle nested block recovery
+      if (token.type === TokenType.LBRACE) depth++;
+      if (token.type === TokenType.RBRACE) {
+        depth--;
+        if (depth < 0) { this.advance(); break; }
+      }
+      
+      this.advance();
+    }
+    
+    return { recovered: true, skipped: this.pos };
+  }
+
   expect(type) {
     const current = this.current();
     if (current.type !== type) {
@@ -116,7 +141,7 @@ class Parser {
         if (stmt !== null) statements.push(stmt);
       } catch (error) {
         this.errors.push(error.message);
-        this.synchronize();
+        this.recoverFromError();
       }
     }
     return new ASTNode('Program', { statements });
@@ -1763,7 +1788,7 @@ class Parser {
         if (stmt !== null) statements.push(stmt);
       } catch (error) {
         this.errors.push(error.message);
-        this.synchronize();
+        this.recoverFromError();
         if (this.current().type === TokenType.RBRACE || this.isAtEnd()) break;
       }
     }

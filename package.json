@@ -1,6 +1,6 @@
 {
   "name": "@bino-elgua/swibe",
-  "version": "3.4.2",
+  "version": "3.4.3",
   "description": "Agent-native scripting language. 39+ compile targets. Sovereign by design.",
   "main": "src/index.js",
   "bin": {
@@ -22,7 +22,8 @@
     "test:features": "node src/swibe-test.js",
     "lint": "eslint src/",
     "format": "prettier --write src/",
-    "roadmap": "node src/roadmap-cli.js"
+    "roadmap": "node src/roadmap-cli.js",
+    "postinstall": "node scripts/postinstall.js"
   },
   "keywords": [
     "agents",

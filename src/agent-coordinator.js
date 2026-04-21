@@ -384,6 +384,44 @@ export class AgentCoordinator extends EventEmitter {
   }
 
   /**
+   * Aggregate thoughts from all agents (Consensus)
+   */
+  async aggregate(thought, options = {}) {
+    const timeout = options.timeout ?? 30000;
+    const agents = Array.from(this.agents.values());
+    
+    return Promise.race([
+      this._collectResponses(thought, agents),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('CONSENSUS_TIMEOUT')), timeout)
+      )
+    ]).catch(err => {
+      if (err.message === 'CONSENSUS_TIMEOUT') {
+        console.warn(`[CONSENSUS] Timeout after ${timeout}ms — returning partial results`);
+        return this._getPartialResults();
+      }
+      throw err;
+    });
+  }
+
+  async _collectResponses(thought, agents) {
+    const start = Date.now();
+    const results = await Promise.allSettled(
+      agents.map(async (agent) => {
+        const result = await this.executor(agent, { type: 'thought', prompt: thought });
+        return { agent, result, time: Date.now() - start };
+      })
+    );
+    return results.filter(r => r.status === 'fulfilled').map(r => r.value);
+  }
+
+  _getPartialResults() {
+    return Array.from(this.agents.values())
+      .filter(a => a.results.length > 0)
+      .map(a => ({ agent: a, result: a.results[a.results.length - 1] }));
+  }
+
+  /**
    * Get team performance summary
    */
   summary() {
@@ -462,3 +500,6 @@ export function coordinatorFromAST(node, executor = null) {
 
   return coord;
 }
+
+// CRITICAL: Named + default export for REPL compatibility
+export default AgentCoordinator;

@@ -549,14 +549,14 @@ std._budget = {
 console.log('[BUDGET] Set: ${tokens} tokens, ${timeStr}');`;
       }
       case 'RememberStatement': {
-        const key = this.genJavaScript(node.key);
-        const configEntries = Object.entries(node.config).map(([k, v]) => {
+        const key = node.key ? this.genJavaScript(node.key) : (node.items && node.items.length > 0 ? this.genJavaScript(node.items[0]) : 'null');
+        const config = node.config || {};
+        const configEntries = Object.entries(config).map(([k, v]) => {
           return `${k}: ${this.genJavaScript(v)}`;
         }).join(', ');
-        
+
         return `await std.remember(${key}, { ${configEntries} });`;
-      }
-      case 'CommonsStatement': {
+      }      case 'CommonsStatement': {
         const name = node.name ? this.genJavaScript(node.name) : 'null';
         const configEntries = Object.entries(node.config || {}).map(([k, v]) => {
           return `${k}: ${this.genJavaScript(v)}`;

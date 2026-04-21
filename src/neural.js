@@ -220,3 +220,41 @@ NeuralLayer.prototype.connect = function(pathway) {
   this.synapses += 1;
   console.log(`[NEURAL] Synapse formed with: ${pathway} (Total: ${this.synapses} Sui-synapses)`);
 };
+
+/**
+ * Maintain neural pathway state between REPL evaluations
+ */
+export class ReplNeuralContext {
+  constructor() {
+    this.pathwayCache = new Map(); // contextHash -> pathwayId
+    this.karmaCounter = 0;
+  }
+  
+  getOrCreatePathway(context) {
+    const hash = this._hashContext(context);
+    
+    if (!this.pathwayCache.has(hash)) {
+      // Generate new pathway ID (simulating cortical routing)
+      const pathwayId = `0x${Math.random().toString(16).slice(2, 10).toUpperCase()}`;
+      this.pathwayCache.set(hash, pathwayId);
+      console.log(`[NEURAL] Firing pathway: ${pathwayId} (Context: "${context}")`);
+    }
+    
+    return this.pathwayCache.get(hash);
+  }
+
+  _hashContext(context) {
+    let hash = 0;
+    for (let i = 0; i < context.length; i++) {
+      hash = ((hash << 5) - hash) + context.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash.toString(16);
+  }
+  
+  incrementKarma(points = 1) {
+    this.karmaCounter += points;
+    console.log(`[CORRESPONDENCE] Karma: ${this.karmaCounter}`);
+    return this.karmaCounter;
+  }
+}

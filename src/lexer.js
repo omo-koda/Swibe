@@ -107,28 +107,24 @@ const TokenType = {
   PLUS: 'PLUS',
   MINUS: 'MINUS',
   STAR: 'STAR',
+  SLASH: 'SLASH',
   PERCENT: 'PERCENT',
-  EQ: 'EQ',           // ==
-  NE: 'NE',           // !=
-  LT: 'LT',
-  LE: 'LE',           // <=
-  GT: 'GT',
-  GE: 'GE',           // >=
   ASSIGN: 'ASSIGN',   // =
   PIPE: 'PIPE',       // |>
   BAR: 'BAR',         // |
   ARROW: 'ARROW',     // ->
   FAT_ARROW: 'FAT_ARROW', // =>
+  EQ: 'EQ',           // ==
+  NE: 'NE',           // !=
+  LT: 'LT',           // <
+  LE: 'LE',           // <=
+  GT: 'GT',           // >
+  GE: 'GE',           // >=
   AND: 'AND',         // &&
   OR: 'OR',           // ||
   NOT: 'NOT',         // !
   AMPERSAND: 'AMPERSAND', // &
-  COLON: 'COLON',
   DOUBLE_COLON: 'DOUBLE_COLON', // ::
-  SEMICOLON: 'SEMICOLON',
-  COMMA: 'COMMA',
-  DOT: 'DOT',
-  QUESTION: 'QUESTION',
 
   // Delimiters
   LPAREN: 'LPAREN',
@@ -137,11 +133,13 @@ const TokenType = {
   RBRACE: 'RBRACE',
   LBRACKET: 'LBRACKET',
   RBRACKET: 'RBRACKET',
+  COMMA: 'COMMA',
+  DOT: 'DOT',
+  COLON: 'COLON',
+  SEMICOLON: 'SEMICOLON',
+  QUESTION: 'QUESTION',
 
-  // Special
   EOF: 'EOF',
-  NEWLINE: 'NEWLINE',
-  COMMENT: 'COMMENT',
 };
 
 class Token {
@@ -163,9 +161,12 @@ class Lexer {
     this.pos = 0;
     this.line = 1;
     this.column = 1;
-    this.tokenLine = 1;
-    this.tokenColumn = 1;
     this.tokens = [];
+    
+    // Track structural state
+    this.braceDepth = 0;
+    this.inString = false;
+    this.stringChar = null;
   }
 
   current() {
@@ -173,125 +174,104 @@ class Lexer {
   }
 
   peek(offset = 1) {
+    if (this.pos + offset >= this.source.length) return null;
     return this.source[this.pos + offset];
   }
 
   advance() {
-    if (this.current() === '\n') {
+    const char = this.current();
+    this.pos++;
+    if (char === '\n') {
       this.line++;
       this.column = 1;
     } else {
       this.column++;
     }
-    this.pos++;
+    return char;
   }
 
   skipWhitespace() {
-    while (this.current() && /\s/.test(this.current())) {
+    while (this.pos < this.source.length && /\s/.test(this.current())) {
       this.advance();
     }
   }
 
   readNumber() {
-    const start = this.pos;
-    while (this.current() && /\d/.test(this.current())) {
-      this.advance();
+    let num = '';
+    while (this.pos < this.source.length && /\d/.test(this.current())) {
+      num += this.advance();
     }
     if (this.current() === '.' && /\d/.test(this.peek())) {
-      this.advance();
-      while (this.current() && /\d/.test(this.current())) {
-        this.advance();
+      num += this.advance();
+      while (this.pos < this.source.length && /\d/.test(this.current())) {
+        num += this.advance();
       }
     }
-    return this.source.substring(start, this.pos);
+    return parseFloat(num);
   }
 
   readString(quote) {
-    this.advance(); // skip opening quote
-    const chars = [];
+    let str = '';
+    this.advance(); // consume opening quote
     while (this.pos < this.source.length && this.current() !== quote) {
       if (this.current() === '\\') {
         this.advance();
-        const escaped = {
-          n: '\n',
-          t: '\t',
-          r: '\r',
-          '\\': '\\',
-          '"': '"',
-          "'": "'",
-        }[this.current()];
-        chars.push(escaped || this.current());
-        this.advance();
+        const escaped = this.advance();
+        if (escaped === 'n') str += '\n';
+        else if (escaped === 't') str += '\t';
+        else str += escaped;
       } else {
-        chars.push(this.current());
-        this.advance();
+        str += this.advance();
       }
     }
-    if (this.current() === quote) {
-      this.advance(); // skip closing quote
-    }
-    return chars.join('');
+    this.expect(quote); // consume closing quote
+    return str;
   }
 
   readIdentifier() {
-    const start = this.pos;
-    while (this.current() && /[a-zA-Z0-9_]/.test(this.current())) {
-      this.advance();
+    let ident = '';
+    while (this.pos < this.source.length && /[a-zA-Z0-9_]/.test(this.current())) {
+      ident += this.advance();
     }
-    return this.source.substring(start, this.pos);
+    return ident;
   }
 
   readComment() {
-    const start = this.pos;
-    if ((this.current() === '-' && this.peek() === '-') || (this.current() === '/' && this.peek() === '/')) {
+    while (this.pos < this.source.length && this.current() !== '\n') {
       this.advance();
-      this.advance();
-      while (this.current() && this.current() !== '\n') {
-        this.advance();
-      }
-      return this.source.substring(start, this.pos);
     }
   }
 
   readPrompt() {
-    // %% ... (prompt marker)
-    this.advance(); // skip %
-    this.advance(); // skip %
-    
-    const _start = this.pos;
-    let endOfLine = this.pos;
-    while (this.source[endOfLine] && this.source[endOfLine] !== '\n') {
-      endOfLine++;
+    this.advance(); // %
+    this.advance(); // %
+    let prompt = '';
+    while (this.pos < this.source.length && !(this.current() === '%' && this.peek() === '%')) {
+      prompt += this.advance();
     }
-    
-    const lineContent = this.source.substring(this.pos, endOfLine);
-    const nextPromptIdx = lineContent.indexOf('%%');
-    
-    if (nextPromptIdx !== -1) {
-      // Prompt ends at the next %%
-      const content = lineContent.substring(0, nextPromptIdx).trim();
-      this.pos += nextPromptIdx + 2;
-      this.column += nextPromptIdx + 2;
-      return content;
-    } else {
-      // Prompt takes the rest of the line
-      const content = lineContent.trim();
-      this.pos = endOfLine;
-      this.column += lineContent.length;
-      return content;
-    }
+    this.advance(); // %
+    this.advance(); // %
+    return prompt.trim();
   }
 
   readVoicePrompt() {
-    // [voice: "..."]
-    this.advance(); // skip [
-    let text = '';
-    while (this.current() && this.current() !== ']') {
-      text += this.current();
-      this.advance();
+    // [[voice: ...]]
+    this.advance(); // [
+    this.advance(); // [
+    let voice = '';
+    while (this.pos < this.source.length && !(this.current() === ']' && this.peek() === ']')) {
+      voice += this.advance();
     }
-    this.advance(); // skip ]
-    return text;
+    this.advance(); // ]
+    this.advance(); // ]
+    return voice.trim();
+  }
+
+  expect(char) {
+    if (this.current() !== char) {
+      throw new Error(`Expected '${char}', got '${this.current()}' at ${this.line}:${this.column}`);
+    }
+    this.advance();
   }
 
   keywords = {
@@ -324,6 +304,8 @@ class Lexer {
     nil: TokenType.NIL,
     none: TokenType.NONE,
     some: TokenType.SOME,
+    Option: TokenType.OPTION,
+    Result: TokenType.RESULT,
     let: TokenType.LET,
     const: TokenType.CONST,
     ai: TokenType.AI,
@@ -335,10 +317,6 @@ class Lexer {
     skill: TokenType.SKILL,
     app: TokenType.APP,
     secure: TokenType.SECURE,
-    'meta-digital': TokenType.META_DIGITAL,
-    until: TokenType.UNTIL,
-    goal: TokenType.GOAL,
-    call_tool: TokenType.CALL_TOOL,
     mint: TokenType.MINT,
     receipt: TokenType.RECEIPT,
     seal: TokenType.SEAL,
@@ -380,9 +358,9 @@ class Lexer {
     web_ingest: TokenType.WEB_INGEST,
     sovereign: TokenType.SOVEREIGN,
     filesystem: TokenType.FILESYSTEM,
-    };
+  };
 
-    addToken(type, value = null) {
+  addToken(type, value = null) {
     const token = new Token(type, value, this.tokenLine, this.tokenColumn);
     this.tokens.push(token);
   }
@@ -574,9 +552,11 @@ class Lexer {
         this.advance();
       } else if (char === '{') {
         this.addToken(TokenType.LBRACE, '{');
+        this.braceDepth++;
         this.advance();
       } else if (char === '}') {
         this.addToken(TokenType.RBRACE, '}');
+        this.braceDepth--;
         this.advance();
       } else if (char === '[') {
         this.addToken(TokenType.LBRACKET, '[');

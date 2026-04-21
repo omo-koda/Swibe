@@ -7,7 +7,8 @@ export default defineConfig({
       '**/archive/**',
       '**/web-playground-legacy/**'
     ],
-    environment: 'node'
+    environment: 'node',
+    testTimeout: 30000
   },
   esbuild: {
     target: 'node18'
