@@ -35,6 +35,12 @@ class Parser {
     return token;
   }
 
+  consumeSeparators() {
+    while (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) {
+      this.advance();
+    }
+  }
+
   isAtEnd() {
     return this.current().type === TokenType.EOF;
   }
@@ -527,38 +533,43 @@ class Parser {
     this.expect(TokenType.LBRACE);
     const config = {};
     while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      this.consumeSeparators();
+      if (this.current().type === TokenType.RBRACE) break;
+
       const key = this.expect(TokenType.IDENTIFIER).value;
       this.expect(TokenType.COLON);
       const val = this.parseExpression();
       config[key] = val;
-      if (this.current().type === TokenType.SEMICOLON) this.advance();
     }
     this.expect(TokenType.RBRACE);
-    return {
-      type: 'BudgetStatement',
-      tokens: config.tokens?.value || 10000,
-      time: config.time?.value || '30s'
-    };
+    return new ASTNode('BudgetStatement', { config });
   }
 
   parseRememberStatement() {
     this.expect(TokenType.REMEMBER);
-    this.expect(TokenType.LBRACE);
-    const key = this.parseExpression();
     const config = {};
-    while (this.current().type === TokenType.COMMA) {
+    const items = [];
+    if (this.current().type === TokenType.LBRACE) {
       this.advance();
-      const k = this.expect(TokenType.IDENTIFIER).value;
-      this.expect(TokenType.COLON);
-      const v = this.parseExpression();
-      config[k] = v;
+      while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+        this.consumeSeparators();
+        if (this.current().type === TokenType.RBRACE) break;
+
+        if (this.peek().type === TokenType.COLON) {
+          const key = this.expect(TokenType.IDENTIFIER).value;
+          this.expect(TokenType.COLON);
+          config[key] = this.parseExpression();
+        } else {
+          items.push(this.parseExpression());
+        }
+      }
+      this.expect(TokenType.RBRACE);
+    } else {
+      // Shorthand syntax: remember key
+      const key = this.parseExpression();
+      return new ASTNode('RememberStatement', { key });
     }
-    this.expect(TokenType.RBRACE);
-    return {
-      type: 'RememberStatement',
-      key,
-      config
-    };
+    return new ASTNode('RememberStatement', { items, config });
   }
 
   parseObserveStatement() {
@@ -577,17 +588,16 @@ class Parser {
     this.expect(TokenType.LBRACE);
     const config = {};
     while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      this.consumeSeparators();
+      if (this.current().type === TokenType.RBRACE) break;
+
       const key = this.expect(TokenType.IDENTIFIER).value;
       this.expect(TokenType.COLON);
       const val = this.parseExpression();
       config[key] = val;
-      if (this.current().type === TokenType.COMMA) this.advance();
     }
     this.expect(TokenType.RBRACE);
-    return {
-      type: 'EvolveStatement',
-      config
-    };
+    return new ASTNode('EvolveStatement', { config });
   }
 
   parseEthicsStatement() {
@@ -595,10 +605,9 @@ class Parser {
     this.expect(TokenType.LBRACE);
     const rules = [];
     while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
-      if (this.current().type === TokenType.SEMICOLON) {
-        this.advance();
-        continue;
-      }
+      this.consumeSeparators();
+      if (this.current().type === TokenType.RBRACE) break;
+
       // Parse rule name, which may include dashes
       let rule = this.expect(TokenType.IDENTIFIER).value;
       while (this.current().type === TokenType.MINUS) {
@@ -618,13 +627,9 @@ class Parser {
         value = this.parseExpression();
       }
       rules.push({ rule, value });
-      if (this.current().type === TokenType.SEMICOLON) this.advance();
     }
     this.expect(TokenType.RBRACE);
-    return {
-      type: 'EthicsStatement',
-      rules
-    };
+    return new ASTNode('EthicsStatement', { rules });
   }
 
   parseHeartbeatStatement() {
@@ -632,16 +637,15 @@ class Parser {
     this.expect(TokenType.LBRACE);
     const config = {};
     while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
-      if (this.current().type === TokenType.SEMICOLON) {
-        this.advance(); continue;
-      }
-      const keyToken = this.current();
-      this.advance();
+      this.consumeSeparators();
+      if (this.current().type === TokenType.RBRACE) break;
+
+      const keyToken = this.expect(TokenType.IDENTIFIER);
       const key = keyToken.value;
       if (this.current().type === TokenType.COLON)
         this.advance();
       let val = this.parseExpression();
-      // Handle time suffix: 60s, 300s, 100ms etc
+      // Support unit suffixes like 30s
       if (val.type === 'Number' && this.current().type === TokenType.IDENTIFIER &&
           ['s', 'ms', 'm'].includes(this.current().value)) {
         const suffix = this.current().value;
@@ -649,14 +653,9 @@ class Parser {
         val = new ASTNode('String', { value: val.value + suffix });
       }
       config[key] = val;
-      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON)
-        this.advance();
     }
     this.expect(TokenType.RBRACE);
-    return {
-      type: 'HeartbeatStatement',
-      config
-    };
+    return new ASTNode('HeartbeatStatement', { config });
   }
 
   parseClosure() {
@@ -855,22 +854,33 @@ class Parser {
 
   parseSwarmStatement() {
     this.expect(TokenType.SWARM);
+    
+    let swarmName = null;
+    if (this.current().type === TokenType.STRING) {
+      swarmName = this.advance().value;
+    }
+    
     this.expect(TokenType.LBRACE);
 
     const steps = [];
-    while (this.current().type !== TokenType.RBRACE) {
-      // Consume optional separators at the start of loop
-      while (this.current().type === TokenType.COMMA || 
-             this.current().type === TokenType.SEMICOLON ||
-             this.current().type === TokenType.FAT_ARROW) {
+    while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      // Skip leading separators or empty lines
+      while (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) {
         this.advance();
       }
-      
       if (this.current().type === TokenType.RBRACE) break;
+
+      // Handle behavior statements inside swarm (chain, evolve, heartbeat, etc.)
+      const token = this.current();
+      if ([TokenType.CHAIN, TokenType.EVOLVE, TokenType.HEARTBEAT, TokenType.REMEMBER, TokenType.THINK].includes(token.type)) {
+        const stmt = this.parseStatement();
+        steps.push({ type: 'Behavior', stmt });
+        continue;
+      }
 
       let target = null;
 
-      // Handle @target shorthand before agent name: @elixir Agent Name { ... }
+      // Handle @target shorthand before agent name
       if (this.current().type === TokenType.AT_TARGET) {
         target = this.advance().value;
       }
@@ -907,17 +917,24 @@ class Parser {
         }
       }
       
-      // Also support trailing @target syntax if we haven't seen a fat arrow or comma
+      // Support trailing @target
       const targetToken = this.match(TokenType.AT_TARGET);
       if (targetToken) {
         target = targetToken.value;
       }
 
       steps.push({ name, role, target });
+
+      // Consume separator after step
+      if (this.current().type === TokenType.FAT_ARROW || 
+          this.current().type === TokenType.COMMA ||
+          this.current().type === TokenType.SEMICOLON) {
+        this.advance();
+      }
     }
 
     this.expect(TokenType.RBRACE);
-    return new ASTNode('SwarmStatement', { steps });
+    return new ASTNode('SwarmStatement', { name: swarmName, steps });
   }
 
   parseSwarmScaleStatement() {
@@ -966,16 +983,12 @@ class Parser {
 
     const config = {};
     while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
-      if (this.current().type === TokenType.SEMICOLON || this.current().type === TokenType.COMMA) {
-        this.advance();
-        continue;
-      }
+      this.consumeSeparators();
+      if (this.current().type === TokenType.RBRACE) break;
+
       const key = this.expect(TokenType.IDENTIFIER).value;
       this.expect(TokenType.COLON);
       config[key] = this.parseExpression();
-      if (this.current().type === TokenType.COMMA || this.current().type === TokenType.SEMICOLON) {
-        this.advance();
-      }
     }
 
     this.expect(TokenType.RBRACE);
@@ -1135,17 +1148,20 @@ class Parser {
     this.expect(TokenType.CHAIN);
     let name = null;
     if (this.current().type === TokenType.STRING) {
-      name = this.expect(TokenType.STRING).value;
+      name = this.advance().value;
     }
     this.expect(TokenType.LBRACE);
     const steps = [];
     while (this.current().type !== TokenType.RBRACE && !this.isAtEnd()) {
+      this.consumeSeparators();
+      if (this.current().type === TokenType.RBRACE) break;
+
       const step = this.parseChainStep();
       steps.push(step);
+      
+      // Support optional arrow ->
       if (this.current().type === TokenType.ARROW) {
         this.advance();
-      } else if (this.current().type !== TokenType.RBRACE) {
-        throw new Error(`Expected '→' or '}' in chain, got ${this.current().type}`);
       }
     }
     this.expect(TokenType.RBRACE);
